@@ -1,7 +1,10 @@
 package io.modum.tokenapp.backend.dto;
 
+import javax.validation.constraints.NotNull;
+
 public class AddressRequest {
 
+    @NotNull
     private String address;
 
     public String getAddress() {

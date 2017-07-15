@@ -12,6 +12,8 @@ public interface InvestorRepository extends CrudRepository<Investor, Long> {
 
     Investor findByEmail(String email);
 
+    Optional<Investor> findOptionalByEmailConfirmationToken(String emailConfirmationToken);
+
     List<Investor> findAllByOrderByCreationDateAsc();
 
 }
