@@ -1,9 +1,14 @@
 package io.modum.tokenapp.backend.service;
 
 
+import io.modum.tokenapp.backend.dao.InvestorRepository;
+import io.modum.tokenapp.backend.model.Investor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
@@ -13,6 +18,7 @@ import org.web3j.tx.Contract;
 import org.web3j.tx.ManagedTransaction;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.ExecutionException;
 
@@ -20,14 +26,14 @@ import java.util.concurrent.ExecutionException;
 public class Manager {
 
     @Autowired
-    private Web3j web3j;
+    private ModumToken modumToken;
+
+    @Autowired
+    private InvestorRepository investorRepository;
 
     public void mint() throws ExecutionException, InterruptedException {
-
-    }
-
-    public void deploy() {
-        //Credentials credentials = WalletUtils.loadCredentials("123456", "/home/draft/.ethereum/testnet/keystore/"+ACCOUNT1);
-        //ModumToken contract = ModumToken.deploy(web3j, credentials, ManagedTransaction.GAS_PRICE, Contract.GAS_LIMIT, BigInteger.ZERO, new Utf8String(contractName)).get();
+        for(Investor investor:investorRepository.findAll()) {
+            modumToken.mint(new Address(investor.getWalletAddress()), new Uint256(1000000));
+        }
     }
 }
