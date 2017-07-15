@@ -15,7 +15,7 @@ springBoot {
 }
 
 dependencies {
-    compile ':commons'
+    compile project(':commons')
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.cloud:spring-cloud-starter-zuul:1.3.1.RELEASE'
