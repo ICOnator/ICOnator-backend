@@ -1,0 +1,21 @@
+plugins {
+    id 'base'
+    id 'idea'
+}
+
+allprojects {
+    group 'io.modum.tokenapp'
+    version '0.0.1-SNAPSHOT'
+}
+
+subprojects {
+//    apply from: "${rootProject.projectDir}/gradle/validation.gradle"
+//    compileJava {
+//        options.encoding = 'UTF-8'
+//        options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation' << '-Werror'
+//    }
+//    compileTestJava {
+//        options.encoding = 'UTF-8'
+//        options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation' << '-Werror'
+//    }
+}

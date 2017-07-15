@@ -1,0 +1,60 @@
+<FindBugsFilter>
+    <Match>
+        <Or>
+            <Bug code="CD"/>
+            <Bug code="PRMC"/>
+            <Bug code="IMC"/>
+            <Bug code="OPM"/>
+            <Bug code="UrF"/>
+            <Bug code="UwF"/>
+            <Bug code="MRC"/>
+            <Bug code="UP"/>
+            <Bug code="UTAO"/>
+            <Bug code="EXS"/>
+            <Bug code="NAB"/>
+            <Bug code="JPAI"/>
+            <Bug code="USBR"/>
+            <Bug code="CFS"/>
+            <Bug code="CLI"/>
+            <Bug code="SIC"/>
+            <Bug code="UCPM"/>
+            <Bug code="NP"/>
+            <Bug code="WEM"/>
+            <Bug code="RV"/>
+            <Bug code="HES"/>
+            <Bug code="DLC"/>
+            <Bug code="ISB"/>
+            <Bug code="LO"/>
+            <Bug code="Dm"/>
+            <Bug code="SECCRLFLOG"/>
+            <Bug code="SECSC"/>
+            <Bug code="RR"/>
+            <Bug code="TR"/>
+            <Bug code="SCII"/>
+            <Bug code="SECWTM"/>
+            <Bug code="SECPTI"/>
+            <Bug code="SECSSQ"/>
+            <Bug code="SECCU"/>
+            <Bug code="SECHOC"/>
+            <Bug code="SECHRS"/>
+            <Bug code="SECIC"/>
+            <Bug code="SECSSN"/>
+            <Bug code="BL"/>
+            <Bug code="SECSH"/>
+            <Bug code="DMC"/>
+            <Bug code="ITC"/>
+            <Bug code="CC"/>
+            <Bug code="EI"/>
+            <Bug code="EI2"/>
+            <Bug code="PZLA"/>
+            <Bug code="TBP"/>
+            <Bug code="SECSHR"/>
+            <Bug code="SECSHUA"/>
+            <Bug code="SECXSS2"/>
+            <Bug code="USFW"/>
+            <Bug code="OCP"/>
+            <Bug code="SECSPRCSRFPD"/>
+            <Bug code="OI"/>
+        </Or>
+    </Match>
+</FindBugsFilter>

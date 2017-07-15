@@ -1,0 +1,75 @@
+apply plugin: 'pmd'
+
+pmd {
+    toolVersion = '5.6.1'
+    ignoreFailures = project.hasProperty('skipStaticChecks') && project.skipStaticChecks as boolean
+    consoleOutput = false
+}
+
+tasks.withType(Pmd) {
+    if (name == 'pmdMain') {
+        source = 'src/main/java'
+        ruleSetFiles = files("${rootProject.projectDir}/config/pmd/ruleSetMain.xml")
+        ruleSets = []
+    } else {
+        ruleSetFiles = files("${rootProject.projectDir}/config/pmd/ruleSetTest.xml")
+        ruleSets = []
+    }
+}
+
+apply plugin: 'checkstyle'
+
+checkstyle {
+    toolVersion = '7.7'
+    ignoreFailures = project.hasProperty('skipStaticChecks') && project.skipStaticChecks as boolean
+    showViolations = false
+
+    repositories {
+        jcenter()
+        maven {
+            url "http://sevntu-checkstyle.github.com/sevntu.checkstyle/maven2"
+        }
+    }
+}
+
+tasks.withType(Checkstyle) {
+    if (name == 'checkstyleMain') {
+        source = 'src/main/java'
+        //noinspection GroovyAssignabilityCheck
+        configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyleMain.xml")
+    } else {
+        //noinspection GroovyAssignabilityCheck
+        configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyleTest.xml")
+    }
+}
+
+apply plugin: 'findbugs'
+
+findbugs {
+    toolVersion = '3.0.1'
+    ignoreFailures = project.hasProperty('skipStaticChecks') && project.skipStaticChecks as boolean
+    effort = 'max'
+    reportLevel = 'low'
+}
+
+tasks.withType(FindBugs) {
+    if (name == 'findbugsMain') {
+        excludeFilter = file("${rootProject.projectDir}/config/findbugs/excludeMain.xml")
+    } else {
+        excludeFilter = file("${rootProject.projectDir}/config/findbugs/excludeTest.xml")
+
+    }
+    pluginClasspath = project.configurations.findbugsPlugins
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+dependencies {
+    findbugsPlugins 'com.mebigfatguy.fb-contrib:fb-contrib:7.0.1'
+    findbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.6.0'
+    findbugsPlugins 'com.digitalreasoning.sdp:findbugs-extensions-drs:1.1.0'
+    checkstyle 'com.thomasjensen.checkstyle.addons:checkstyle-addons:4.1.2'
+    checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.23.1'
+}

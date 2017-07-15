@@ -1,0 +1,8 @@
+rootProject.name = 'tokenapp-backend'
+['services'].each { String dir ->
+    file(dir).listFiles().each { File module ->
+        include "${dir}:${module.name}"
+    }
+}
+
+include "commons"
