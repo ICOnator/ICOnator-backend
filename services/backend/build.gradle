@@ -33,6 +33,9 @@ dependencies {
     runtime 'org.postgresql:postgresql'
     runtime 'com.h2database:h2'
 
+    // Ethereum and Bitcoin libs
+    compile "org.ethereum:ethereumj-core:1.5.+"
+
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     compileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'

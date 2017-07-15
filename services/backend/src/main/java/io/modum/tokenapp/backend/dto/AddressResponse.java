@@ -9,16 +9,18 @@ public class AddressResponse {
         return ether;
     }
 
-    public void setEther(String ether) {
+    public AddressResponse setEther(String ether) {
         this.ether = ether;
+        return this;
     }
 
     public String getBtc() {
         return btc;
     }
 
-    public void setBtc(String btc) {
+    public AddressResponse setBtc(String btc) {
         this.btc = btc;
+        return this;
     }
 
 }

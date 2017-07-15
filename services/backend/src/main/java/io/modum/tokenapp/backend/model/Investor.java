@@ -31,11 +31,17 @@ public class Investor {
     @Column(name = "wallet_address")
     private String walletAddress;
 
-    @Column(name = "payIn_ether_address")
+    @Column(name = "pay-in_ether_address")
     private String payInEtherAddress;
 
-    @Column(name = "payIn_bitcoin_address")
+    @Column(name = "pay-in_ether_private-key")
+    private String payInEtherPrivateKey;
+
+    @Column(name = "pay-in_bitcoin_address")
     private String payInBitcoinAddress;
+
+    @Column(name = "pay-in_bitcoin_private-key")
+    private String payInBitcoinPrivateKey;
 
     @Column(name = "return_ether_address")
     private String returnEtherAddress;
@@ -106,12 +112,30 @@ public class Investor {
         return this;
     }
 
+    public String getPayInEtherPrivateKey() {
+        return payInEtherPrivateKey;
+    }
+
+    public Investor setPayInEtherPrivateKey(String payInEtherPrivateKey) {
+        this.payInEtherPrivateKey = payInEtherPrivateKey;
+        return this;
+    }
+
     public String getPayInBitcoinAddress() {
         return payInBitcoinAddress;
     }
 
     public Investor setPayInBitcoinAddress(String payInBitcoinAddress) {
         this.payInBitcoinAddress = payInBitcoinAddress;
+        return this;
+    }
+
+    public String getPayInBitcoinPrivateKey() {
+        return payInBitcoinPrivateKey;
+    }
+
+    public Investor setPayInBitcoinPrivateKey(String payInBitcoinPrivateKey) {
+        this.payInBitcoinPrivateKey = payInBitcoinPrivateKey;
         return this;
     }
 

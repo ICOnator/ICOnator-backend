@@ -2,6 +2,7 @@ package io.modum.tokenapp.backend.controller;
 
 import io.modum.tokenapp.backend.controller.exceptions.AddressException;
 import io.modum.tokenapp.backend.dto.AddressRequest;
+import io.modum.tokenapp.backend.dto.AddressResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,8 @@ public class AddressController {
 
     }
 
-    @RequestMapping(value = "/address", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE, produces = APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/address", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
+            produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> address(@Valid @RequestBody AddressRequest addressRequest)
             throws AddressException {
         String walletAddress = addressRequest.getAddress();
@@ -32,7 +34,12 @@ public class AddressController {
         // TODO: save the address to the Investor.walletAddress
         // TODO: generate the ETH and BTC address (e.g., ethereumJ, bitcoinJ)
 
+        //return buildAddressResponse();
         return ResponseEntity.ok().build();
+    }
+
+    private AddressResponse buildAddressResponse(String etherAddress, String bitcoinAddress) {
+        return new AddressResponse().setEther(etherAddress).setBtc(bitcoinAddress);
     }
 
 }

@@ -46,7 +46,8 @@ public class RegisterController {
 
     }
 
-    @RequestMapping(value = "/register", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE, produces = APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/register", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
+            produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest)
             throws RegisterException {
         URI uri = null;
