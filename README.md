@@ -42,7 +42,9 @@ Headers:
 Payload: application/json
 ```json
 {
-  "address": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82" // Ether address
+  "address": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82", // Ether address
+  "refundBTC": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82", // Refund bitcoin address
+  "refundETH": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82" // Refund ethereum address
 }
 ```
 
