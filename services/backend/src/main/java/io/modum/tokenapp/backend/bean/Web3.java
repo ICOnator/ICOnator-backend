@@ -13,7 +13,6 @@ import org.web3j.tx.ManagedTransaction;
 import java.io.IOException;
 import java.math.BigInteger;
 
-
 public class Web3 {
 
     private final static String ACCOUNT = "/home/draft/.ethereum/rinkeby/keystore/UTC--2017-07-08T13-31-28.925675418Z--25d96310cd6694d88b9c6803be09511597c0a630";

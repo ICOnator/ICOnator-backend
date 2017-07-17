@@ -8,6 +8,10 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     jcenter()
+    mavenCentral()
+    maven {
+        url 'https://dl.bintray.com/ethereum/maven/'
+    }
 }
 
 springBoot {
@@ -15,7 +19,6 @@ springBoot {
 }
 
 dependencies {
-    compile project(':commons')
 
     // Spring Boot
     compile 'org.springframework.boot:spring-boot-starter-web'
@@ -26,7 +29,6 @@ dependencies {
     compile 'org.springframework.retry:spring-retry'
     compile 'io.springfox:springfox-swagger-ui:2.6.1'
     compile 'io.springfox:springfox-swagger2:2.6.1'
-    compile 'org.web3j:core:2.2.1'
 
     runtime 'net.logstash.logback:logstash-logback-encoder:4.11'
 
@@ -35,10 +37,12 @@ dependencies {
     runtime 'com.h2database:h2'
 
     // Ethereum and Bitcoin libs
-    compile "org.ethereum:ethereumj-core:1.5.+"
+    compile 'org.ethereum:ethereumj-core:1.5.+'
+    compile 'org.ethereum:solcJ-all:0.4.8'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
+    compile 'org.web3j:core:2.2.2'
 
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
-    compileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
 

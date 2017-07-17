@@ -13,8 +13,9 @@ public class RegisterRequest {
         return email;
     }
 
-    public void setEmail(String email) {
+    public RegisterRequest setEmail(String email) {
         this.email = email;
+        return this;
     }
 
 }

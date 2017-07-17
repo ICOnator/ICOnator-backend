@@ -31,23 +31,23 @@ public class Investor {
     @Column(name = "wallet_address")
     private String walletAddress;
 
-    @Column(name = "pay-in_ether_address")
+    @Column(name = "payIn_ether_address")
     private String payInEtherAddress;
 
-    @Column(name = "pay-in_ether_private-key")
+    @Column(name = "payIn_ether_privateKey")
     private String payInEtherPrivateKey;
 
-    @Column(name = "pay-in_bitcoin_address")
+    @Column(name = "payIn_bitcoin_address")
     private String payInBitcoinAddress;
 
-    @Column(name = "pay-in_bitcoin_private-key")
+    @Column(name = "payIn_bitcoin_privateKey")
     private String payInBitcoinPrivateKey;
 
-    @Column(name = "return_ether_address")
-    private String returnEtherAddress;
+    @Column(name = "refund_ether_address")
+    private String refundEtherAddress;
 
-    @Column(name = "return_bitcoin_address")
-    private String returnBitcoinAddress;
+    @Column(name = "refund_bitcoin_address")
+    private String refundBitcoinAddress;
 
 
     public long getId() {
@@ -139,21 +139,21 @@ public class Investor {
         return this;
     }
 
-    public String getReturnEtherAddress() {
-        return returnEtherAddress;
+    public String getRefundEtherAddress() {
+        return refundEtherAddress;
     }
 
-    public Investor setReturnEtherAddress(String returnEtherAddress) {
-        this.returnEtherAddress = returnEtherAddress;
+    public Investor setRefundEtherAddress(String refundEtherAddress) {
+        this.refundEtherAddress = refundEtherAddress;
         return this;
     }
 
-    public String getReturnBitcoinAddress() {
-        return returnBitcoinAddress;
+    public String getRefundBitcoinAddress() {
+        return refundBitcoinAddress;
     }
 
-    public Investor setReturnBitcoinAddress(String returnBitcoinAddress) {
-        this.returnBitcoinAddress = returnBitcoinAddress;
+    public Investor setRefundBitcoinAddress(String refundBitcoinAddress) {
+        this.refundBitcoinAddress = refundBitcoinAddress;
         return this;
     }
 

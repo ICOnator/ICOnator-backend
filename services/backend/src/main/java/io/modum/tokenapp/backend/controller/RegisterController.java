@@ -37,7 +37,7 @@ public class RegisterController {
     private String frontendUrl;
 
     @Value("${modum.tokenapp.frontendWalletPath}")
-    private String frontendWalletPath;
+    private String frontendWalletUrlPath;
 
     @Autowired
     private InvestorRepository investorRepository;
@@ -91,7 +91,7 @@ public class RegisterController {
     }
 
     private URI buildUri(String randomUUID) throws URISyntaxException {
-        return new URI(frontendUrl + frontendWalletPath + randomUUID);
+        return new URI(frontendUrl + frontendWalletUrlPath + randomUUID);
     }
 
     private Investor createInvestor(String email, String randomUUID) {

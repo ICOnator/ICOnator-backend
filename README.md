@@ -34,6 +34,8 @@ Server sets confirmed to true and returns 200 OK
 
 ### Save the address
 
+The `address` refers to the user's Ethereum wallet.
+
 ``` POST /address ```
 
 Headers:
@@ -43,7 +45,7 @@ Payload: application/json
 ```json
 {
   "address": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82", // Ether address
-  "refundBTC": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82", // Refund bitcoin address
+  "refundBTC": "1BoatSLRHtKNngkdXEeobR76b53LETtpyT", // Refund bitcoin address
   "refundETH": "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd82" // Refund ethereum address
 }
 ```
@@ -52,7 +54,7 @@ Returns: application/json
 
 ```json
 {
-  "ether": "0xcd6f39a8b....", // Pay in address for ether
-  "btc": "1BoatSLRHtKNngkdXEeobR76b53LETtpyT" // Pay in address for btc
+  "eth": "0xcd6f39a8b....", // Pay-in address for ether
+  "btc": "1BoatSLRHtKNngkdXEeobR76b53LETtpyT" // Pay-in address for btc
 }
 ```
