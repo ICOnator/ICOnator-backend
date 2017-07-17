@@ -5,3 +5,4 @@ classes/
 out/
 *.iml
 .asscache
+**/logs/*
