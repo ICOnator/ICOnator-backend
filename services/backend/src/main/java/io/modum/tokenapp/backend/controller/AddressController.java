@@ -3,15 +3,14 @@ package io.modum.tokenapp.backend.controller;
 import io.modum.tokenapp.backend.bean.BitcoinKeyGenerator;
 import io.modum.tokenapp.backend.bean.EthereumKeyGenerator;
 import io.modum.tokenapp.backend.bean.Keys;
-import io.modum.tokenapp.backend.controller.exceptions.AddressException;
-import io.modum.tokenapp.backend.controller.exceptions.AuthorizationHeaderMissingException;
-import io.modum.tokenapp.backend.controller.exceptions.EmailConfirmationTokenNotFoundException;
+import io.modum.tokenapp.backend.controller.exceptions.*;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.AddressResponse;
 import io.modum.tokenapp.backend.model.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,7 +46,7 @@ public class AddressController {
     @RequestMapping(value = "/address", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
     public AddressResponse address(@Valid @RequestBody AddressRequest addressRequest,
-                                     @RequestHeader(value="Authorization") String authorizationHeader)
+                                   @RequestHeader(value="Authorization") String authorizationHeader)
             throws AddressException {
 
         // TODO:
@@ -59,22 +58,31 @@ public class AddressController {
             throw new EmailConfirmationTokenNotFoundException();
         }
 
-        // TODO:
-        // Is the given addresses (walletAddress + refund ones) really valid addresses?
-        // Maybe we could check that. If not valid, we could let the user know about it.
-        String walletAddress = addressRequest.getAddress();
+        // Get the addresses
+        String walletAddress = replacePrefixAddress(addressRequest.getAddress());
+        String refundEthereumAddress = replacePrefixAddress(addressRequest.getRefundETH());
         String refundBitcoinAddress = addressRequest.getRefundBTC();
-        String refundEthereumAddress = addressRequest.getRefundETH();
+
+        // Validate addresses
+        if (!ethereumKeyGenerator.isValidAddress(walletAddress)
+                || !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
+            throw new EthereumAddressInvalidException();
+        }
+        if (!bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
+            throw new BitcoinAddressInvalidException();
+        }
+
+        // Generating the keys
         Keys bitcoinKeys = bitcoinKeyGenerator.getKeys();
         Keys ethereumKeys = ethereumKeyGenerator.getKeys();
 
         try {
             Investor investor = oInvestor.get();
             investor.setWalletAddress(walletAddress)
-                    .setPayInBitcoinAddress(bitcoinKeys.getAddressBase16())
-                    .setPayInBitcoinPrivateKey(bitcoinKeys.getPrivateKeyBase16())
-                    .setPayInEtherAddress(ethereumKeys.getAddressBase16())
-                    .setPayInEtherPrivateKey(ethereumKeys.getPrivateKeyBase16())
+                    .setPayInBitcoinAddress(bitcoinKeys.getAddressAsString())
+                    .setPayInBitcoinPrivateKey(Hex.toHexString(bitcoinKeys.getPrivateKey()))
+                    .setPayInEtherAddress(ethereumKeys.getAddressAsString())
+                    .setPayInEtherPrivateKey(Hex.toHexString(ethereumKeys.getPrivateKey()))
                     .setRefundBitcoinAddress(refundBitcoinAddress)
                     .setRefundEtherAddress(refundEthereumAddress);
             investorRepository.save(investor);
@@ -83,8 +91,8 @@ public class AddressController {
         }
 
         return new AddressResponse()
-                .setBtc(bitcoinKeys.getAddressBase16())
-                .setEther(ethereumKeys.getAddressBase16());
+                .setBtc(bitcoinKeys.getAddressAsString())
+                .setEther(ethereumKeys.getAddressAsString());
     }
 
     private AddressResponse buildAddressResponse(String etherAddress, String bitcoinAddress) {
@@ -104,6 +112,10 @@ public class AddressController {
         }
 
         return emailConfirmationToken;
+    }
+
+    private String replacePrefixAddress(String address) {
+        return address.replaceAll("^0x", "");
     }
 
 }

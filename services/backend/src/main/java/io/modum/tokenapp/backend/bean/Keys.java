@@ -1,18 +1,14 @@
 package io.modum.tokenapp.backend.bean;
 
-import org.spongycastle.util.encoders.Hex;
-
 public class Keys {
 
     private byte[] address;
+    private String addressAsString;
     private byte[] privateKey;
+    private String addressAsStringWithPrivate;
 
     public byte[] getAddress() {
         return address;
-    }
-
-    public String getAddressBase16() {
-        return Hex.toHexString(getAddress());
     }
 
     public Keys setAddress(byte[] address) {
@@ -20,12 +16,17 @@ public class Keys {
         return this;
     }
 
-    public byte[] getPrivateKey() {
-        return privateKey;
+    public String getAddressAsString() {
+        return addressAsString;
     }
 
-    public String getPrivateKeyBase16() {
-        return Hex.toHexString(getPrivateKey());
+    public Keys setAddressAsString(String addressAsString) {
+        this.addressAsString = addressAsString;
+        return this;
+    }
+
+    public byte[] getPrivateKey() {
+        return privateKey;
     }
 
     public Keys setPrivateKey(byte[] privateKey) {
@@ -33,4 +34,12 @@ public class Keys {
         return this;
     }
 
+    public String getAddressAsStringWithPrivate() {
+        return addressAsStringWithPrivate;
+    }
+
+    public Keys setAddressAsStringWithPrivate(String addressAsStringWithPrivate) {
+        this.addressAsStringWithPrivate = addressAsStringWithPrivate;
+        return this;
+    }
 }

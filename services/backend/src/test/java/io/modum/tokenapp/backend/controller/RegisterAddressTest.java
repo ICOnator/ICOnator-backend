@@ -6,9 +6,11 @@ import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@RunWith(SpringRunner.class)
 public class RegisterAddressTest extends TokenAppBaseTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterAddressTest.class);
@@ -80,7 +83,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                         objectMapper.writer().writeValueAsString(
                                 new AddressRequest()
                                         .setAddress("0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f")
-                                        .setRefundBTC("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2")
+                                        .setRefundBTC("17WBW5TsRbhqCq5aeDDWR3zEpydoT3dSRB")
                                         .setRefundETH("0x123f681646d4a755815f9cb19e1acc8565a0c2ac")
                         )
                 ))
@@ -89,11 +92,5 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         LOG.info(mvcResultRegister.getResponse().getContentAsString());
 
     }
-
-//    @Test
-//    public void testKeyExchange_EmptyRequest() throws Exception {
-//        mockMvc.perform(post(URL_KEY_EXCHANGE).contentType(APPLICATION_JSON).content("{}")).andExpect(status()
-//                .is4xxClientError());
-//    }
 
 }
