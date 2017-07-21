@@ -13,16 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
 import java.util.Optional;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
@@ -93,6 +91,24 @@ public class AddressController {
         return new AddressResponse()
                 .setBtc(bitcoinKeys.getAddressAsString())
                 .setEther(ethereumKeys.getAddressAsString());
+    }
+
+    @RequestMapping(value = "/address/btc/{btcAddress}/validate", method = GET)
+    public ResponseEntity<?> isBTCAddressValid(@PathVariable("btcAddress") String btcAddress)
+            throws AddressException {
+        if (bitcoinKeyGenerator.isValidAddress(btcAddress)) {
+            return ResponseEntity.ok().build();
+        }
+        throw new BitcoinAddressInvalidException();
+    }
+
+    @RequestMapping(value = "/address/eth/{ethAddress}/validate", method = GET)
+    public ResponseEntity<?> isETHAddressValid(@PathVariable("ethAddress") String ethAddress)
+            throws AddressException {
+        if (ethereumKeyGenerator.isValidAddress(ethAddress)) {
+            return ResponseEntity.ok().build();
+        }
+        throw new EthereumAddressInvalidException();
     }
 
     private AddressResponse buildAddressResponse(String etherAddress, String bitcoinAddress) {
