@@ -28,4 +28,13 @@ public class AdminController {
         manager.mint();
         return ResponseEntity.ok().build();
     }
+
+    @RequestMapping(value = "/mintfinished", method = GET,
+            produces = APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<?> mintfinished(@Valid @RequestBody RegisterRequest registerRequest)
+            throws RegisterException, ExecutionException, InterruptedException {
+
+        manager.mintFinished();
+        return ResponseEntity.ok().build();
+    }
 }
