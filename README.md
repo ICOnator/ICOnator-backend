@@ -32,6 +32,17 @@ and returns 201 CREATED.
 
 Server sets confirmed to true and returns 200 OK
 
+### Address validation
+
+Ethereum address:
+```GET /address/eth/{address}/validate```
+
+Bitcoin address:
+```GET /address/btc/{address}/validate```
+
+Server returns 200 OK if it's a valid address.
+Otherwise, it returns 5xx.
+
 ### Save the address
 
 The `address` refers to the user's Ethereum wallet.

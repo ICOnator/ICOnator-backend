@@ -4,6 +4,7 @@ import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.params.TestNet2Params;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -31,6 +32,7 @@ public class BitcoinKeyGenerator {
         try {
             // TODO:
             // give network parameters (prod net, unit test net, etc etc)
+            // Address.fromBase58(TestNet2Params.get(), address);
             Address.fromBase58(MainNetParams.get(), address);
             return true;
         } catch(AddressFormatException e) {
