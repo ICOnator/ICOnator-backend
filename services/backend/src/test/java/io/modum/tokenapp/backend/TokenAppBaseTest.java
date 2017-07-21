@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @TestPropertySource(properties = {
         "spring.datasource.url: jdbc:h2:mem:testdb;mv_store=false",
+        "modum.tokenapp.email.enabled: false",
         "bitcoin.net: unittest"
 })
 // ;mv_store=false needed for correct isolation level:

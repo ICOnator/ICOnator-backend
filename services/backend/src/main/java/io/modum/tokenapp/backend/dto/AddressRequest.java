@@ -7,10 +7,8 @@ public class AddressRequest {
     @NotNull
     private String address;
 
-    @NotNull
     private String refundETH;
 
-    @NotNull
     private String refundBTC;
 
     public String getAddress() {

@@ -1,10 +1,13 @@
 package io.modum.tokenapp.backend.controller;
 
+import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenInvalidException;
 import io.modum.tokenapp.backend.controller.exceptions.RegisterConfirmationException;
 import io.modum.tokenapp.backend.controller.exceptions.RegisterException;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.model.Investor;
+import io.modum.tokenapp.backend.service.MailContentBuilder;
+import io.modum.tokenapp.backend.service.MailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +45,9 @@ public class RegisterController {
     @Autowired
     private InvestorRepository investorRepository;
 
+    @Autowired
+    private MailService mailService;
+
     public RegisterController() {
 
     }
@@ -51,14 +57,23 @@ public class RegisterController {
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest)
             throws RegisterException {
         URI uri = null;
-        String randomUUID = generateRandomUUID();
+
         try {
-            uri = buildUri(randomUUID);
-            Investor investor = createInvestor(registerRequest.getEmail(), randomUUID);
-            investorRepository.save(investor);
-            LOG.debug("Investor saved to the database: email="
-                    + investor.getEmail() + "), emailConfirmationToken="
-                    + investor.getEmailConfirmationToken());
+            String emailConfirmationToken = null;
+            Optional<Investor> oInvestor = investorRepository.findOptionalByEmail(registerRequest.getEmail());
+            if (oInvestor.isPresent()) {
+                emailConfirmationToken = oInvestor.get().getEmailConfirmationToken();
+            } else {
+                emailConfirmationToken = generateRandomUUID();
+                oInvestor = Optional.of(createInvestor(registerRequest.getEmail(), emailConfirmationToken));
+                Investor investor = oInvestor.get();
+                investorRepository.save(investor);
+                LOG.debug("Investor saved to the database: email="
+                        + investor.getEmail() + "), emailConfirmationToken="
+                        + investor.getEmailConfirmationToken());
+            }
+            uri = buildUri(emailConfirmationToken);
+            mailService.sendConfirmationEmail(oInvestor.get().getEmail(), uri.toASCIIString());
         } catch (Exception e) {
             throw new RegisterException();
         }
@@ -82,6 +97,21 @@ public class RegisterController {
             }
         } catch (Exception e) {
             throw e;
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
+    public ResponseEntity<?> isConfirmationTokenValid(@PathVariable("emailConfirmationToken") String emailConfirmationToken,
+                                          HttpServletResponse response)
+            throws RegisterException {
+        try {
+            Optional<Investor> oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
+            if (!oInvestor.isPresent()) {
+                throw new ConfirmationTokenInvalidException();
+            }
+        } catch (Exception e) {
+            throw new ConfirmationTokenInvalidException();
         }
         return ResponseEntity.ok().build();
     }
