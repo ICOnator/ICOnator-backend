@@ -61,12 +61,17 @@ public class AddressController {
         String refundEthereumAddress = replacePrefixAddress(addressRequest.getRefundETH());
         String refundBitcoinAddress = addressRequest.getRefundBTC();
 
+        // Check if the wallet is empty
+        if (walletAddress.isEmpty()) {
+            throw new EthereumWalletAddressEmptyException();
+        }
+
         // Validate addresses
         if (!ethereumKeyGenerator.isValidAddress(walletAddress)
-                || !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
+                || (refundEthereumAddress.isEmpty() || !ethereumKeyGenerator.isValidAddress(refundEthereumAddress))) {
             throw new EthereumAddressInvalidException();
         }
-        if (!bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
+        if (refundBitcoinAddress.isEmpty() || !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
             throw new BitcoinAddressInvalidException();
         }
 
