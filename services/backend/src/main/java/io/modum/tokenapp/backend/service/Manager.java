@@ -20,7 +20,8 @@ public class Manager {
 
     public void mint() throws ExecutionException, InterruptedException {
         for(Investor investor : investorRepository.findAll()) {
-            modumToken.mint(new Address(investor.getWalletAddress()), new Uint256(1000000));
+            long value = 10000;
+            modumToken.mint(new Address(investor.getWalletAddress()), new Uint256(value));
         }
     }
 }
