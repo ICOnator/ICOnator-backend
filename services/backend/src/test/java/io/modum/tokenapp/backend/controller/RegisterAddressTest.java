@@ -29,6 +29,13 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
     public static final String REGISTER = "/register";
     public static final String ADDRESS = "/address";
+    public static final String ADDRESS_BTC_VALIDATE = "/address/btc/%s/validate";
+    public static final String ADDRESS_ETH_VALIDATE = "/address/eth/%s/validate";
+
+    public static final String BTC_ADDRESS_VALID = "17WBW5TsRbhqCq5aeDDWR3zEpydoT3dSRB";
+    public static final String BTC_ADDRESS_INVALID = "17WBW5TsRbhqCq5aeDDWR3zEpydoT3dS00"; // different last 2 chars
+    public static final String ETH_ADDRESS_VALID = "0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f";
+    public static final String ETH_ADDRESS_INVALID = "0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9"; // missing the last char
 
     private static MockMvc mockMvc;
 
@@ -91,6 +98,30 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
         LOG.info(mvcResultRegister.getResponse().getContentAsString());
 
+    }
+
+    @Test
+    public void testIsETHAddressValid() throws Exception {
+        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_VALID)))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    public void testIsETHAddressInvalid() throws Exception {
+        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_INVALID)))
+                .andExpect(status().is5xxServerError());
+    }
+
+    @Test
+    public void testIsBTCAddressValid() throws Exception {
+        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, BTC_ADDRESS_VALID)))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    public void testIsBTCAddressInvalid() throws Exception {
+        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, BTC_ADDRESS_INVALID)))
+                .andExpect(status().is5xxServerError());
     }
 
 }
