@@ -31,6 +31,8 @@ dependencies {
     compile 'io.springfox:springfox-swagger-ui:2.6.1'
     compile 'io.springfox:springfox-swagger2:2.6.1'
 
+    compile 'commons-io:commons-io:2.5'
+
     runtime 'net.logstash.logback:logstash-logback-encoder:4.11'
 
     // Database drivers
@@ -49,3 +51,11 @@ dependencies {
 
 // gradle run is alias for bootRun
 task run(dependsOn: bootRun)
+
+task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: bootRun) {
+    doFirst() {
+        main = project.mainClassName
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperty 'spring.profiles.active', 'prod'
+    }
+}

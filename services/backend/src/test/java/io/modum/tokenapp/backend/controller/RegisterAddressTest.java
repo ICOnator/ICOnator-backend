@@ -1,6 +1,7 @@
 package io.modum.tokenapp.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modum.tokenapp.backend.BackendApplication;
 import io.modum.tokenapp.backend.TokenAppBaseTest;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
@@ -13,18 +14,23 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.junit.Assert.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@SpringBootTest(classes = BackendApplication.class)
+@WebAppConfiguration
 @RunWith(SpringRunner.class)
 public class RegisterAddressTest extends TokenAppBaseTest {
 
@@ -49,6 +55,9 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Value("${modum.tokenapp.frontendWalletPath}")
+    private String frontendWalletUrlPath;
+
     @Rule
     public ExpectedException inetAddressExceptionRule = ExpectedException.none();
 
@@ -71,7 +80,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 .andExpect(status().is2xxSuccessful()).andReturn();
 
         String location = mvcResult.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split("/frontend/wallet/");
+        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
         mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken).contentType(APPLICATION_JSON))
@@ -85,12 +94,30 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 .andExpect(status().is2xxSuccessful()).andReturn();
 
         String location = mvcResult.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split("/frontend/wallet/");
+        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
         mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken))
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @Ignore
+    // TODO: need to fix the expected value -- check if the exception is raised
+    public void testConfirmationIsInvalidValid() throws Exception {
+        MvcResult mvcResult = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
+                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
+                .andExpect(status().is2xxSuccessful()).andReturn();
+
+        String location = mvcResult.getResponse().getHeaderValue("Location").toString();
+        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
+        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
+
+
+        mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken + "-error")))
+                .andExpect(status().is2xxSuccessful())
+                .andDo(print());
     }
 
     @Test
@@ -100,7 +127,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 .andExpect(status().is2xxSuccessful()).andReturn();
 
         String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split("/frontend/wallet/");
+        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
         mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))

@@ -2,7 +2,8 @@ package io.modum.tokenapp.backend.service;
 
 public enum MailType {
 
+    WARNING_ADMIN_EMAIL,
     CONFIRMATION_EMAIL,
-    END_PROCESS_EMAIL
+    SUMMARY_SUCCESSFUL_EMAIL
 
 }

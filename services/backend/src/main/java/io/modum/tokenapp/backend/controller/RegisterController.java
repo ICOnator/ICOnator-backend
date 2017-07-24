@@ -1,23 +1,23 @@
 package io.modum.tokenapp.backend.controller;
 
-import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenInvalidException;
-import io.modum.tokenapp.backend.controller.exceptions.RegisterConfirmationException;
-import io.modum.tokenapp.backend.controller.exceptions.RegisterException;
+import io.modum.tokenapp.backend.controller.exceptions.BaseException;
+import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenNotFoundException;
+import io.modum.tokenapp.backend.controller.exceptions.UnexpectedException;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.model.Investor;
-import io.modum.tokenapp.backend.service.MailContentBuilder;
 import io.modum.tokenapp.backend.service.MailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -32,6 +32,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
+@EnableWebMvc
 public class RegisterController {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterController.class);
@@ -55,7 +56,7 @@ public class RegisterController {
     @RequestMapping(value = "/register", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest)
-            throws RegisterException {
+            throws BaseException {
         URI uri = null;
 
         try {
@@ -75,7 +76,7 @@ public class RegisterController {
             uri = buildUri(emailConfirmationToken);
             mailService.sendConfirmationEmail(oInvestor.get().getEmail(), uri.toASCIIString());
         } catch (Exception e) {
-            throw new RegisterException();
+            throw new UnexpectedException();
         }
         return ResponseEntity.created(uri).build();
     }
@@ -83,11 +84,11 @@ public class RegisterController {
     @RequestMapping(value = "/register/{emailConfirmationToken}", method = GET)
     public ResponseEntity<?> confirmation(@PathVariable("emailConfirmationToken") String emailConfirmationToken,
                                           HttpServletResponse response)
-            throws RegisterConfirmationException {
+            throws BaseException {
         try {
             Optional<Investor> oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
             if (!oInvestor.isPresent()) {
-                throw new RegisterConfirmationException();
+                throw new ConfirmationTokenNotFoundException();
             } else {
                 Investor investor = oInvestor.get();
                 investor.setEmailConfirmed(true);
@@ -104,14 +105,15 @@ public class RegisterController {
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
     public ResponseEntity<?> isConfirmationTokenValid(@PathVariable("emailConfirmationToken") String emailConfirmationToken,
                                           HttpServletResponse response)
-            throws RegisterException {
+            throws BaseException {
+        Optional<Investor> oInvestor = Optional.empty();
         try {
-            Optional<Investor> oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
-            if (!oInvestor.isPresent()) {
-                throw new ConfirmationTokenInvalidException();
-            }
+            oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
         } catch (Exception e) {
-            throw new ConfirmationTokenInvalidException();
+            throw new UnexpectedException();
+        }
+        if (!oInvestor.isPresent()) {
+            throw new ConfirmationTokenNotFoundException();
         }
         return ResponseEntity.ok().build();
     }

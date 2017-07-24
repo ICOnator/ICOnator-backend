@@ -13,9 +13,13 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 @Service
 public class MailService {
@@ -61,6 +65,12 @@ public class MailService {
     @Value("${modum.tokenapp.email.admin}")
     private String admin;
 
+    @Value("${modum.tokenapp.email.enableBccToConfirmationEmail}")
+    private boolean enableBccToConfirmationEmail;
+
+    @Value("${modum.tokenapp.email.enableBccToSummaryEmail}")
+    private boolean enableBccToSummaryEmail;
+
     @Value("${modum.tokenapp.email.sendfrom}")
     private String sendfrom;
 
@@ -89,44 +99,63 @@ public class MailService {
         return javaMailSender;
     }
 
-    public void sendConfirmationEmail(String recipient, String url) {
-        final String content = this.mailContentBuilder.buildConfirmationEmail(url);
-        sendMail(recipient, confirmationEmailSubject, MailType.CONFIRMATION_EMAIL, content);
+    public void sendConfirmationEmail(String recipient, String confirmationEmaiLink) {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(recipient);
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, recipient, confirmationEmailSubject, MailType.CONFIRMATION_EMAIL);
+        this.mailContentBuilder.buildConfirmationEmail(oMessage, confirmationEmaiLink);
+        sendMail(oMessage, recipient, MailType.CONFIRMATION_EMAIL);
     }
 
-//    public void sendAdminMail(String subject, String content) {
-//        sendMail(this.admin, subject, content);
-//    }
+    public void sendAdminMail(String content) {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(this.admin);
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, this.admin, "ICO Backend: warning message", MailType.WARNING_ADMIN_EMAIL);
+        this.mailContentBuilder.buildGenericWarningMail(oMessage, content);
+        sendMail(oMessage, this.admin, MailType.WARNING_ADMIN_EMAIL);
+    }
 
-    private void sendMail(String recipient, String subject, MailType emailType, String content) {
-        if (!this.enabled) {
-            LOG.info("Skipping sending email type {} to {} with body: \"{}\"", emailType, recipient, content);
-            return;
-        }
-
-        // Prepare message using a Spring helper
-        final MimeMessage mimeMessage = this.javaMailService.createMimeMessage();
-        final MimeMessageHelper message; // true = multipart
+    private void sendMail(Optional<MimeMessageHelper> oMessage, String recipient, MailType emailType) {
         try {
-            message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            message.setSubject(subject);
-            message.setFrom(this.sendfrom);
-            message.setTo(recipient);
-            message.setText(content, true); // true = isHtml
-        } catch (MessagingException e) {
-            LOG.error("\"Error sending email type {} to {} with body: \"{}\"", emailType, recipient, content);
-        }
-
-        // Add the inline image, referenced from the HTML code as "cid:${imageResourceName}"
-        // final InputStreamSource imageSource = new ByteArrayResource(imageBytes);
-        // message.addInline(imageResourceName, imageSource, imageContentType);
-
-
-        try {
-            LOG.info("Sending email type {} to {}", emailType, recipient);
-            javaMailService.send(mimeMessage);
+            if (oMessage.isPresent()) {
+                if (!this.enabled) {
+                    LOG.info("Skipping sending email type {} to {} with body: {}",
+                            emailType, recipient, oMessage.get().getMimeMessage().getContent());
+                    return;
+                }
+                LOG.info("Sending email type {} to {}", emailType, recipient);
+                this.javaMailService.send(oMessage.get().getMimeMessage());
+            } else {
+                throw new Exception();
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("CRITICAL: error sending email type {} to {}", emailType, recipient);
         }
     }
+
+    private Optional<MimeMessageHelper> prepareMessage(Optional<MimeMessage> oMimeMessage,
+                                                       String recipient, String subject, MailType emailType) {
+        Optional<MimeMessageHelper> oMessage = Optional.empty();
+        try {
+            if (oMimeMessage.isPresent()) {
+                oMessage = Optional.ofNullable(new MimeMessageHelper(oMimeMessage.get(), true, "UTF-8"));
+                if (oMessage.isPresent()) {
+                    MimeMessageHelper message = oMessage.get();
+                    message.setSubject(subject);
+                    message.setFrom(this.sendfrom);
+                    message.setTo(recipient);
+                    if ((this.enableBccToConfirmationEmail && emailType.equals(MailType.CONFIRMATION_EMAIL))
+                            || (this.enableBccToSummaryEmail && emailType.equals(MailType.SUMMARY_SUCCESSFUL_EMAIL))) {
+                        message.setBcc(this.admin);
+                    }
+                }
+            }
+        } catch (MessagingException e) {
+            LOG.error("\"Error building the message of email type {} to {}", emailType, recipient);
+        }
+        return oMessage;
+    }
+
+    private Optional<MimeMessage> createMessageContainer(String recipient) {
+        return Optional.ofNullable(this.javaMailService.createMimeMessage());
+    }
+
 }

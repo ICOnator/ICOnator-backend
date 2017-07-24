@@ -14,9 +14,9 @@ import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.validation.Valid;
-
 import java.util.Optional;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -24,6 +24,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
+@EnableWebMvc
 public class AddressController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AddressController.class);
@@ -45,7 +46,7 @@ public class AddressController {
             produces = APPLICATION_JSON_UTF8_VALUE)
     public AddressResponse address(@Valid @RequestBody AddressRequest addressRequest,
                                    @RequestHeader(value="Authorization") String authorizationHeader)
-            throws AddressException {
+            throws BaseException {
 
         // TODO:
         // Instead of getting the whole raw request header, attach an AuthenticationFilter and
@@ -53,7 +54,7 @@ public class AddressController {
         String emailConfirmationToken = getEmailConfirmationToken(authorizationHeader);
         Optional<Investor> oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
         if (!oInvestor.isPresent()) {
-            throw new EmailConfirmationTokenNotFoundException();
+            throw new ConfirmationTokenNotFoundException();
         }
 
         // Get the addresses
@@ -90,7 +91,7 @@ public class AddressController {
                     .setRefundEtherAddress(refundEthereumAddress);
             investorRepository.save(investor);
         } catch(Exception e) {
-            throw new AddressException();
+            throw new UnexpectedException();
         }
 
         return new AddressResponse()
@@ -100,7 +101,7 @@ public class AddressController {
 
     @RequestMapping(value = "/address/btc/{btcAddress}/validate", method = GET)
     public ResponseEntity<?> isBTCAddressValid(@PathVariable("btcAddress") String btcAddress)
-            throws AddressException {
+            throws BaseException {
         if (bitcoinKeyGenerator.isValidAddress(btcAddress)) {
             return ResponseEntity.ok().build();
         }
@@ -109,7 +110,7 @@ public class AddressController {
 
     @RequestMapping(value = "/address/eth/{ethAddress}/validate", method = GET)
     public ResponseEntity<?> isETHAddressValid(@PathVariable("ethAddress") String ethAddress)
-            throws AddressException {
+            throws BaseException {
         if (ethereumKeyGenerator.isValidAddress(ethAddress)) {
             return ResponseEntity.ok().build();
         }
