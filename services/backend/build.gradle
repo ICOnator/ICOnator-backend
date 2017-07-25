@@ -52,7 +52,7 @@ dependencies {
 // gradle run is alias for bootRun
 task run(dependsOn: bootRun)
 
-task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: bootRun) {
+task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: build) {
     doFirst() {
         main = project.mainClassName
         classpath = sourceSets.main.runtimeClasspath
