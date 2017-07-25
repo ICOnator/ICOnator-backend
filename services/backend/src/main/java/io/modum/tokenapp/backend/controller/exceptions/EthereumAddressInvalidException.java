@@ -4,7 +4,7 @@ import io.modum.tokenapp.backend.controller.exceptions.constants.ExceptionConsta
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(value = HttpStatus.OK, reason = ExceptionConstants.ETHEREUM_ADDRESS_INVALID_REASON)
+@ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = ExceptionConstants.ETHEREUM_ADDRESS_INVALID_REASON)
 public class EthereumAddressInvalidException extends BaseException {
 
     public EthereumAddressInvalidException() {

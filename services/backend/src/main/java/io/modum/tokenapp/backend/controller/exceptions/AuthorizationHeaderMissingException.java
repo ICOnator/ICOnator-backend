@@ -4,7 +4,7 @@ import io.modum.tokenapp.backend.controller.exceptions.constants.ExceptionConsta
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(value = HttpStatus.OK, reason = ExceptionConstants.AUTHORIZATION_HEADER_MISSING_REASON)
+@ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = ExceptionConstants.AUTHORIZATION_HEADER_MISSING_REASON)
 public class AuthorizationHeaderMissingException extends BaseException {
 
     public AuthorizationHeaderMissingException() {
