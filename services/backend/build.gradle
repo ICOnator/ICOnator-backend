@@ -16,6 +16,7 @@ repositories {
 
 springBoot {
     classifier = 'boot'
+    executable = true
 }
 
 dependencies {

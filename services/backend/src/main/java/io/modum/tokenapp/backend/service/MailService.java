@@ -127,7 +127,7 @@ public class MailService {
                 throw new Exception();
             }
         } catch (Exception e) {
-            LOG.error("CRITICAL: error sending email type {} to {}", emailType, recipient);
+            LOG.error("CRITICAL: error sending email type {} to {}. Reason {}", emailType, recipient, e.toString());
         }
     }
 
