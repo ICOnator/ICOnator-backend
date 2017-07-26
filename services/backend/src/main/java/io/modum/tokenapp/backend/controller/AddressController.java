@@ -67,12 +67,17 @@ public class AddressController {
             throw new EthereumWalletAddressEmptyException();
         }
 
-        // Validate addresses
-        if (!ethereumKeyGenerator.isValidAddress(walletAddress)
-                || (refundEthereumAddress.isEmpty() || !ethereumKeyGenerator.isValidAddress(refundEthereumAddress))) {
+        // Validate wallet address
+        if (!ethereumKeyGenerator.isValidAddress(walletAddress)) {
             throw new EthereumAddressInvalidException();
         }
-        if (refundBitcoinAddress.isEmpty() || !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
+
+        // Check if the Ethereum refund addresses are present and valid
+        if (!refundEthereumAddress.isEmpty() && !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
+            throw new EthereumAddressInvalidException();
+        }
+        // Check if the Bitcoin refund addresses are present and valid
+        if (!refundBitcoinAddress.isEmpty() && !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
             throw new BitcoinAddressInvalidException();
         }
 

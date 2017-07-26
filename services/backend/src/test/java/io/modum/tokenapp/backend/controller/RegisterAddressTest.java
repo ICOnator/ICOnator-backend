@@ -1,8 +1,8 @@
 package io.modum.tokenapp.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modum.tokenapp.backend.BackendApplication;
 import io.modum.tokenapp.backend.TokenAppBaseTest;
+import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenNotFoundException;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import org.junit.Before;
@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -27,11 +27,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = BackendApplication.class)
-@WebAppConfiguration
-@RunWith(SpringRunner.class)
 public class RegisterAddressTest extends TokenAppBaseTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterAddressTest.class);
@@ -51,6 +49,9 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
     @Autowired
     private WebApplicationContext webAppContext;
+
+    @Autowired
+    private TestRestTemplate testRestTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -103,8 +104,6 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     }
 
     @Test
-    @Ignore
-    // TODO: need to fix the expected value -- check if the exception is raised
     public void testConfirmationIsInvalidValid() throws Exception {
         MvcResult mvcResult = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
                 .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
@@ -116,7 +115,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
 
         mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken + "-error")))
-                .andExpect(status().is2xxSuccessful())
+                .andExpect(status().isBadRequest())
                 .andDo(print());
     }
 
@@ -150,17 +149,44 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     }
 
     @Test
+    public void testEmptyRefundAddress() throws Exception {
+        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
+                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
+                .andExpect(status().is2xxSuccessful()).andReturn();
+
+        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
+        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
+        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
+
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+                .andExpect(status().is2xxSuccessful());
+
+        MvcResult mvcResultAddress = mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
+                .header("Authorization", "Bearer " + emailConfirmationToken)
+                .content(
+                        objectMapper.writer().writeValueAsString(
+                                new AddressRequest()
+                                        .setAddress("0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f")
+                                        .setRefundBTC("")
+                                        .setRefundETH("")
+                        )
+                ))
+                .andExpect(status().is2xxSuccessful()).andReturn();
+
+        LOG.info(mvcResultRegister.getResponse().getContentAsString());
+
+    }
+
+    @Test
     public void testIsETHAddressValid() throws Exception {
         mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_VALID)))
                 .andExpect(status().is2xxSuccessful());
     }
 
     @Test
-    @Ignore
-    // TODO: need to fix the expected value
     public void testIsETHAddressInvalid() throws Exception {
         mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_INVALID)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -170,11 +196,9 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     }
 
     @Test
-    @Ignore
-    // TODO: need to fix the expected value
     public void testIsBTCAddressInvalid() throws Exception {
         mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, BTC_ADDRESS_INVALID)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
     }
 
 }
