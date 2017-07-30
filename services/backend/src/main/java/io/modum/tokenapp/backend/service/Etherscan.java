@@ -72,6 +72,20 @@ public class Etherscan {
         return result;
     }
 
+    public long getCurrentBlockNr() {
+        String s = "https://"+url+"/api" +
+                "?module=proxy" +
+                "&action=eth_blockNumber" +
+                "&apikey="+apiKey;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "the mighty tokenapp-backend");
+
+        ReturnBlock retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnBlock.class).getBody();
+
+        return Long.parseLong(retVal.result.substring(2), 16);
+    }
+
     /**
      * This may take a while, make sure you obey the limits of the api provider
      */
@@ -107,5 +121,14 @@ public class Etherscan {
             @JsonProperty("balance")
             public String balance;
         }
+    }
+
+    private static class ReturnBlock {
+        @JsonProperty("jsonrpc")
+        public String jsonrpc;
+        @JsonProperty("result")
+        public String result;
+        @JsonProperty("id")
+        public String id;
     }
 }

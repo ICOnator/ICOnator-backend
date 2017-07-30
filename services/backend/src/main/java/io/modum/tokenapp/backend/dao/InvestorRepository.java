@@ -12,6 +12,10 @@ public interface InvestorRepository extends CrudRepository<Investor, Long> {
 
     Investor findByEmail(String email);
 
+    Investor findByPayInBitcoinAddress(String payInBtc);
+
+    Investor findByPayInEtherAddress(String payInEth);
+
     Optional<Investor> findOptionalByEmailConfirmationToken(String emailConfirmationToken);
 
     List<Investor> findAllByOrderByCreationDateAsc();

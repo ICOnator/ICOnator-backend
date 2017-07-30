@@ -2,6 +2,7 @@ package io.modum.tokenapp.backend.service;
 
 import io.modum.tokenapp.backend.BackendApplication;
 import io.modum.tokenapp.backend.TokenAppBaseTest;
+import jdk.nashorn.internal.ir.Block;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class TestEtherscan extends TokenAppBaseTest {
     @Autowired
     private ExchangeRate rate;
 
+    @Autowired
+    private Blockr blockr;
+
     @Test
     public void testConnect1() {
         String balance = etherscan.getBalance("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae").toString();
@@ -40,5 +44,12 @@ public class TestEtherscan extends TokenAppBaseTest {
         String s1 = rate.getBTCUSD().toString();
         String s2 = rate.getETHUSD().toString();
         System.out.println("ret: "+s1+"/"+s2);
+    }
+
+    @Test
+    public void testBlockNr() {
+        long bl1 = blockr.getCurrentBlockNr();
+        long bl2 = etherscan.getCurrentBlockNr();
+         System.out.println("ret: "+bl1 +"/"+bl2);
     }
 }

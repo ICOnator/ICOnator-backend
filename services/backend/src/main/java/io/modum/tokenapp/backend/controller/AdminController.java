@@ -3,7 +3,7 @@ package io.modum.tokenapp.backend.controller;
 
 import io.modum.tokenapp.backend.controller.exceptions.BaseException;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
-import io.modum.tokenapp.backend.service.Manager;
+import io.modum.tokenapp.backend.service.Minting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +17,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 public class AdminController {
 
-    @Autowired private Manager manager;
+    @Autowired private Minting manager;
 
     @RequestMapping(value = "/mint", method = GET,
             produces = APPLICATION_JSON_UTF8_VALUE)
