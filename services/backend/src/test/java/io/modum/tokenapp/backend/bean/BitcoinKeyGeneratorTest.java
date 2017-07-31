@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public class BitcoinKeyGeneratorTest {
 
     @Test
     public void testGenerateAndValidateAddress() throws IOException {
-        BitcoinKeyGenerator bitcoinKeyGenerator = new BitcoinKeyGenerator();
+        BitcoinKeyGenerator bitcoinKeyGenerator = new BitcoinKeyGenerator("testnet");
         Keys keys = bitcoinKeyGenerator.getKeys();
         String jsonKeys = objectMapper.writer().writeValueAsString(keys);
         LOG.info(jsonKeys);

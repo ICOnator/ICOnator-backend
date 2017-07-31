@@ -8,6 +8,7 @@ import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.AddressResponse;
 import io.modum.tokenapp.backend.model.Investor;
+import io.modum.tokenapp.backend.service.MailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -37,6 +38,9 @@ public class AddressController {
 
     @Autowired
     private EthereumKeyGenerator ethereumKeyGenerator;
+
+    @Autowired
+    private MailService mailService;
 
     public AddressController() {
 
@@ -73,11 +77,15 @@ public class AddressController {
         }
 
         // Check if the Ethereum refund addresses are present and valid
-        if (!refundEthereumAddress.isEmpty() && !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
+        if (refundEthereumAddress != null
+                && !refundEthereumAddress.isEmpty()
+                && !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
             throw new EthereumAddressInvalidException();
         }
         // Check if the Bitcoin refund addresses are present and valid
-        if (!refundBitcoinAddress.isEmpty() && !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
+        if (refundBitcoinAddress != null
+                && !refundBitcoinAddress.isEmpty()
+                && !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
             throw new BitcoinAddressInvalidException();
         }
 
@@ -87,14 +95,15 @@ public class AddressController {
 
         try {
             Investor investor = oInvestor.get();
-            investor.setWalletAddress(walletAddress)
+            investor.setWalletAddress(addPrefixEtherIfNotExist(walletAddress))
                     .setPayInBitcoinAddress(bitcoinKeys.getAddressAsString())
                     .setPayInBitcoinPrivateKey(Hex.toHexString(bitcoinKeys.getPrivateKey()))
                     .setPayInEtherAddress(ethereumKeys.getAddressAsString())
                     .setPayInEtherPrivateKey(Hex.toHexString(ethereumKeys.getPrivateKey()))
                     .setRefundBitcoinAddress(refundBitcoinAddress)
-                    .setRefundEtherAddress(refundEthereumAddress);
+                    .setRefundEtherAddress(addPrefixEtherIfNotExist(refundEthereumAddress));
             investorRepository.save(investor);
+            mailService.sendSummaryEmail(investor);
         } catch(Exception e) {
             throw new UnexpectedException();
         }
@@ -142,7 +151,19 @@ public class AddressController {
     }
 
     private String replacePrefixAddress(String address) {
-        return address.replaceAll("^0x", "");
+        if (address == null) {
+            return address;
+        } else {
+            return address.replaceAll("^0x", "");
+        }
+    }
+
+    private String addPrefixEtherIfNotExist(String address) {
+        if (address == null) {
+            return address;
+        } else {
+            return address.startsWith("0x") ? address : ("0x" + address);
+        }
     }
 
 }

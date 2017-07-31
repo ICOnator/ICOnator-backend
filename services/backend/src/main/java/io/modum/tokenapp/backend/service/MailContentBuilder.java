@@ -1,5 +1,6 @@
 package io.modum.tokenapp.backend.service;
 
+import io.modum.tokenapp.backend.model.Investor;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +31,38 @@ public class MailContentBuilder {
 
     public void buildConfirmationEmail(Optional<MimeMessageHelper> oMessage, String confirmationEmaiLink) {
         if (oMessage.isPresent()) {
-            // Add the inline image, referenced from the HTML code as "cid:${imageResourceName}"
             try {
                 Context context = new Context();
                 context.setVariable("confirmationEmaiLink", confirmationEmaiLink);
                 context.setVariable("modumLogo", "modumLogo");
                 String html5Content = templateEngine.process("confirmation_email", context);
+
+                oMessage.get().setText(html5Content, true);
+
+                final InputStreamSource modumLogoImage =
+                        new ByteArrayResource(IOUtils.toByteArray(this.getClass().getResourceAsStream("/static/images/modum_logo.png")));
+                oMessage.get().addInline("modumLogo", modumLogoImage, "image/png");
+
+            } catch (MessagingException e) {
+                LOG.error("Error to add inline images to the message.");
+            } catch (IOException e) {
+                LOG.error("Error on finding the inline image on the resources path.");
+            }
+        }
+    }
+
+    public void buildSummaryEmail(Optional<MimeMessageHelper> oMessage, Optional<Investor> oInvestor) {
+        if (oMessage.isPresent() && oInvestor.isPresent()) {
+            try {
+                Context context = new Context();
+                context.setVariable("walletAddress", oInvestor.get().getWalletAddress());
+                context.setVariable("payInEtherAddress", oInvestor.get().getPayInEtherAddress());
+                context.setVariable("payInBitcoinAddress", oInvestor.get().getPayInBitcoinAddress());
+                context.setVariable("refundEtherAddress", oInvestor.get().getRefundEtherAddress());
+                context.setVariable("refundBitcoinAddress", oInvestor.get().getRefundBitcoinAddress());
+
+                context.setVariable("modumLogo", "modumLogo");
+                String html5Content = templateEngine.process("summary_email", context);
 
                 oMessage.get().setText(html5Content, true);
 

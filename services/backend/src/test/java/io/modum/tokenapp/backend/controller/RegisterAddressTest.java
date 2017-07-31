@@ -2,22 +2,18 @@ package io.modum.tokenapp.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modum.tokenapp.backend.TokenAppBaseTest;
-import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenNotFoundException;
+import io.modum.tokenapp.backend.bean.BitcoinKeyGenerator;
+import io.modum.tokenapp.backend.bean.EthereumKeyGenerator;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -27,7 +23,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class RegisterAddressTest extends TokenAppBaseTest {
@@ -40,18 +35,16 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     public static final String ADDRESS_BTC_VALIDATE = "/address/btc/%s/validate";
     public static final String ADDRESS_ETH_VALIDATE = "/address/eth/%s/validate";
 
-    public static final String BTC_ADDRESS_VALID = "17WBW5TsRbhqCq5aeDDWR3zEpydoT3dSRB";
-    public static final String BTC_ADDRESS_INVALID = "17WBW5TsRbhqCq5aeDDWR3zEpydoT3dS00"; // different last 2 chars
-    public static final String ETH_ADDRESS_VALID = "0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f";
-    public static final String ETH_ADDRESS_INVALID = "0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9"; // missing the last char
-
     private static MockMvc mockMvc;
 
     @Autowired
     private WebApplicationContext webAppContext;
 
     @Autowired
-    private TestRestTemplate testRestTemplate;
+    private EthereumKeyGenerator ethereumKeyGenerator;
+
+    @Autowired
+    private BitcoinKeyGenerator bitcoinKeyGenerator;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -121,6 +114,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
     @Test
     public void testAddress() throws Exception {
+
         MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
                 .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
                 .andExpect(status().is2xxSuccessful()).andReturn();
@@ -137,9 +131,9 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 .content(
                         objectMapper.writer().writeValueAsString(
                                 new AddressRequest()
-                                        .setAddress("0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f")
-                                        .setRefundBTC("17WBW5TsRbhqCq5aeDDWR3zEpydoT3dSRB")
-                                        .setRefundETH("0x123f681646d4a755815f9cb19e1acc8565a0c2ac")
+                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
+                                        .setRefundBTC(bitcoinKeyGenerator.getKeys().getAddressAsString())
+                                        .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString())
                         )
                 ))
                 .andExpect(status().is2xxSuccessful()).andReturn();
@@ -166,7 +160,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 .content(
                         objectMapper.writer().writeValueAsString(
                                 new AddressRequest()
-                                        .setAddress("0x1ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f")
+                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
                                         .setRefundBTC("")
                                         .setRefundETH("")
                         )
@@ -179,25 +173,25 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
     @Test
     public void testIsETHAddressValid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_VALID)))
+        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ethereumKeyGenerator.getKeys().getAddressAsString())))
                 .andExpect(status().is2xxSuccessful());
     }
 
     @Test
     public void testIsETHAddressInvalid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ETH_ADDRESS_INVALID)))
+        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ethereumKeyGenerator.getKeys().getAddressAsString() + "-error")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testIsBTCAddressValid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, BTC_ADDRESS_VALID)))
+        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, bitcoinKeyGenerator.getKeys().getAddressAsString())))
                 .andExpect(status().is2xxSuccessful());
     }
 
     @Test
     public void testIsBTCAddressInvalid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, BTC_ADDRESS_INVALID)))
+        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, bitcoinKeyGenerator.getKeys().getAddressAsString() + "-error")))
                 .andExpect(status().isBadRequest());
     }
 

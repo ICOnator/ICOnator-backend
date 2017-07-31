@@ -1,13 +1,11 @@
 package io.modum.tokenapp.backend.service;
 
+import io.modum.tokenapp.backend.model.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.InputStreamSource;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -16,10 +14,8 @@ import org.springframework.stereotype.Service;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 @Service
 public class MailService {
@@ -31,6 +27,9 @@ public class MailService {
 
     @Value("${modum.tokenapp.email.confirmationEmailSubject}")
     private String confirmationEmailSubject;
+
+    @Value("${modum.tokenapp.email.summaryEmailSubject}")
+    private String summaryEmailSubject;
 
     @Value("${modum.tokenapp.email.enabled}")
     private boolean enabled;
@@ -99,23 +98,33 @@ public class MailService {
         return javaMailSender;
     }
 
-    public void sendConfirmationEmail(String recipient, String confirmationEmaiLink) {
-        Optional<MimeMessage> oMessageContainer = createMessageContainer(recipient);
-        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, recipient, confirmationEmailSubject, MailType.CONFIRMATION_EMAIL);
+    public void sendConfirmationEmail(Investor investor, String confirmationEmaiLink) {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(), confirmationEmailSubject, MailType.CONFIRMATION_EMAIL);
         this.mailContentBuilder.buildConfirmationEmail(oMessage, confirmationEmaiLink);
-        sendMail(oMessage, recipient, MailType.CONFIRMATION_EMAIL);
+        sendMail(oMessage, MailType.CONFIRMATION_EMAIL);
+    }
+
+    public void sendSummaryEmail(Investor investor) {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(), summaryEmailSubject, MailType.SUMMARY_EMAIL);
+        this.mailContentBuilder.buildSummaryEmail(oMessage, Optional.ofNullable(investor));
+        sendMail(oMessage, MailType.SUMMARY_EMAIL);
     }
 
     public void sendAdminMail(String content) {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(this.admin);
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, this.admin, "ICO Backend: warning message", MailType.WARNING_ADMIN_EMAIL);
         this.mailContentBuilder.buildGenericWarningMail(oMessage, content);
-        sendMail(oMessage, this.admin, MailType.WARNING_ADMIN_EMAIL);
+        sendMail(oMessage, MailType.WARNING_ADMIN_EMAIL);
     }
 
-    private void sendMail(Optional<MimeMessageHelper> oMessage, String recipient, MailType emailType) {
+    private void sendMail(Optional<MimeMessageHelper> oMessage, MailType emailType) {
+        String recipient = null;
         try {
             if (oMessage.isPresent()) {
+                // TODO: don't assume that the "to" email field has at least one address
+                recipient = oMessage.get().getMimeMessage().getRecipients(Message.RecipientType.TO)[0].toString();
                 if (!this.enabled) {
                     LOG.info("Skipping sending email type {} to {} with body: {}",
                             emailType, recipient, oMessage.get().getMimeMessage().getContent());
@@ -143,7 +152,7 @@ public class MailService {
                     message.setFrom(this.sendfrom);
                     message.setTo(recipient);
                     if ((this.enableBccToConfirmationEmail && emailType.equals(MailType.CONFIRMATION_EMAIL))
-                            || (this.enableBccToSummaryEmail && emailType.equals(MailType.SUMMARY_SUCCESSFUL_EMAIL))) {
+                            || (this.enableBccToSummaryEmail && emailType.equals(MailType.SUMMARY_EMAIL))) {
                         message.setBcc(this.admin);
                     }
                 }

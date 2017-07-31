@@ -73,12 +73,24 @@ public class RegisterController {
                         + investor.getEmail() + "), emailConfirmationToken="
                         + investor.getEmailConfirmationToken());
             }
-            uri = buildUri(emailConfirmationToken);
-            mailService.sendConfirmationEmail(oInvestor.get().getEmail(), uri.toASCIIString());
+            // If the investor has a wallet, and all the payIn addresses set,
+            // then, send the summary email.
+            // Else, send the confirmation email with the confirmationEmailToken
+            if (oInvestor.isPresent()
+                    && oInvestor.get().getWalletAddress() != null
+                    && oInvestor.get().getPayInBitcoinAddress() != null
+                    && oInvestor.get().getPayInEtherAddress() != null){
+                mailService.sendSummaryEmail(oInvestor.get());
+                return ResponseEntity.ok().build();
+            } else {
+                uri = buildUri(emailConfirmationToken);
+                mailService.sendConfirmationEmail(oInvestor.get(), uri.toASCIIString());
+                return ResponseEntity.created(uri).build();
+            }
+
         } catch (Exception e) {
             throw new UnexpectedException();
         }
-        return ResponseEntity.created(uri).build();
     }
 
     @RequestMapping(value = "/register/{emailConfirmationToken}", method = GET)
