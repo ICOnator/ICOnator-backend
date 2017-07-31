@@ -2,7 +2,7 @@
 
 #servers to deploy to and jumphost for the tunnel
 SERVERS=( "tokenapp1.modum.intern" )
-JUMP_HOST="tokenproxy1.modum.io"
+JUMP_HOST="jump.modum.io"
 
 #if only one key is provided, both servers have the same key
 PRIV_PROXY=$1
