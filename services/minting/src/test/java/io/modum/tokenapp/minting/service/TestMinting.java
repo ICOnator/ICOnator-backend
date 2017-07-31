@@ -1,11 +1,11 @@
-package io.modum.tokenapp.backend.service;
+package io.modum.tokenapp.minting.service;
 
 
-import io.modum.tokenapp.backend.BackendApplication;
-import io.modum.tokenapp.backend.dao.ExchangeRateRepository;
-import io.modum.tokenapp.backend.dao.InvestorRepository;
-import io.modum.tokenapp.backend.dao.TokenRepository;
-import io.modum.tokenapp.backend.model.*;
+import io.modum.tokenapp.minting.MintingApplication;
+import io.modum.tokenapp.minting.dao.ExchangeRateRepository;
+import io.modum.tokenapp.minting.dao.InvestorRepository;
+import io.modum.tokenapp.minting.dao.TokenRepository;
+import io.modum.tokenapp.minting.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -21,8 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = BackendApplication.class)
-@WebAppConfiguration
+@SpringBootTest(classes = MintingApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class TestMinting {
 
@@ -200,14 +198,14 @@ public class TestMinting {
     }
 
     private TestMinting rateBtc(long blockNr, double rate) {
-        io.modum.tokenapp.backend.model.ExchangeRate ex = new io.modum.tokenapp.backend.model.ExchangeRate();
+        io.modum.tokenapp.minting.model.ExchangeRate ex = new io.modum.tokenapp.minting.model.ExchangeRate();
         ex.setCreationDate(new Date()).setBlockNrBtc(blockNr).setRateBtc(BigDecimal.valueOf(rate));
         exchangeRateRepository.save(ex);
         return this;
     }
 
     private TestMinting rateEth(long blockNr, double rate) {
-        io.modum.tokenapp.backend.model.ExchangeRate ex = new io.modum.tokenapp.backend.model.ExchangeRate();
+        io.modum.tokenapp.minting.model.ExchangeRate ex = new io.modum.tokenapp.minting.model.ExchangeRate();
         ex.setCreationDate(new Date()).setBlockNrEth(blockNr).setRateEth(BigDecimal.valueOf(rate));
         exchangeRateRepository.save(ex);
         return this;

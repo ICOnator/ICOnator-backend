@@ -1,4 +1,4 @@
-package io.modum.tokenapp.backend.service;
+package io.modum.tokenapp.minting.service;
 
 import java.math.BigInteger;
 import java.util.ArrayList;

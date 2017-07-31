@@ -1,10 +1,10 @@
-package io.modum.tokenapp.backend.service;
+package io.modum.tokenapp.minting.service;
 
 
-import io.modum.tokenapp.backend.dao.ExchangeRateRepository;
-import io.modum.tokenapp.backend.dao.InvestorRepository;
-import io.modum.tokenapp.backend.dao.TokenRepository;
-import io.modum.tokenapp.backend.model.*;
+import io.modum.tokenapp.minting.dao.ExchangeRateRepository;
+import io.modum.tokenapp.minting.dao.InvestorRepository;
+import io.modum.tokenapp.minting.dao.TokenRepository;
+import io.modum.tokenapp.minting.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +64,11 @@ public class Minting {
         boolean addedETH = false;
 
         if(blockNrBTC > 0 && satoshi > 0 && !payInBTC.isEmpty()) {
-            io.modum.tokenapp.backend.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrBtcGreaterThanEqualOrderByBlockNrBtcAsc(blockNrBTC);
+            io.modum.tokenapp.minting.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrBtcGreaterThanEqualOrderByBlockNrBtcAsc(blockNrBTC);
+            //if(rate == null) {
+            //    rate = exchangeRateRepository.findFirstByOrOrderByBlockNrBtcDesc();
+            //}
+
             BigDecimal satTmp = rate.getRateBtc().multiply(new BigDecimal(satoshi), MathContext.DECIMAL64);
             BigDecimal tokenNoDiscount = satTmp.divide(BigDecimal.TEN.pow(8), MathContext.DECIMAL64);
 
@@ -85,7 +89,11 @@ public class Minting {
         }
 
         if(blockNrETH > 0 && wei > 0 && !payInETH.isEmpty()) {
-            io.modum.tokenapp.backend.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrEthGreaterThanEqualOrderByBlockNrEthAsc(blockNrETH);
+            io.modum.tokenapp.minting.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrEthGreaterThanEqualOrderByBlockNrEthAsc(blockNrETH);
+            //if(rate == null) {
+            //    rate = exchangeRateRepository.findFirstByOrOrderByBlockNrEthDesc();
+            //}
+
             BigDecimal weiTmp = rate.getRateEth().multiply(new BigDecimal(wei), MathContext.DECIMAL64);
             BigDecimal tokenNoDiscount = weiTmp.divide(BigDecimal.TEN.pow(18), MathContext.DECIMAL64);
 

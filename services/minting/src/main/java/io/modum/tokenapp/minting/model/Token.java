@@ -1,7 +1,6 @@
-package io.modum.tokenapp.backend.model;
+package io.modum.tokenapp.minting.model;
 
 import javax.persistence.*;
-import java.math.BigDecimal;
 import java.util.Date;
 
 import static javax.persistence.TemporalType.TIMESTAMP;

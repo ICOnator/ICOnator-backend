@@ -1,6 +1,6 @@
-package io.modum.tokenapp.backend.bean;
+package io.modum.tokenapp.minting.bean;
 
-import io.modum.tokenapp.backend.service.ModumToken;
+import io.modum.tokenapp.minting.service.ModumToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

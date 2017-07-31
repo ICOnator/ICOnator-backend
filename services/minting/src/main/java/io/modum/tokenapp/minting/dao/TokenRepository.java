@@ -1,9 +1,8 @@
-package io.modum.tokenapp.backend.dao;
+package io.modum.tokenapp.minting.dao;
 
-import io.modum.tokenapp.backend.model.Token;
+import io.modum.tokenapp.minting.model.Token;
 import org.springframework.data.repository.CrudRepository;
 
-import java.util.Collection;
 import java.util.Optional;
 
 
