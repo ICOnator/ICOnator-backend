@@ -31,13 +31,13 @@ public class Investor {
     @Column(name = "wallet_address")
     private String walletAddress;
 
-    @Column(name = "payIn_ether_address")
+    @Column(name = "payIn_ether_address", unique = true)
     private String payInEtherAddress;
 
     @Column(name = "payIn_ether_privateKey")
     private String payInEtherPrivateKey;
 
-    @Column(name = "payIn_bitcoin_address")
+    @Column(name = "payIn_bitcoin_address", unique = true)
     private String payInBitcoinAddress;
 
     @Column(name = "payIn_bitcoin_privateKey")
