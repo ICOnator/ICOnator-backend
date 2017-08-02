@@ -7,6 +7,7 @@ import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.backend.service.MailService;
+import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import javax.validation.constraints.Size;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
@@ -94,7 +96,7 @@ public class RegisterController {
     }
 
     @RequestMapping(value = "/register/{emailConfirmationToken}", method = GET)
-    public ResponseEntity<?> confirmation(@PathVariable("emailConfirmationToken") String emailConfirmationToken,
+    public ResponseEntity<?> confirmation(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
                                           HttpServletResponse response)
             throws BaseException {
         try {
@@ -115,7 +117,7 @@ public class RegisterController {
     }
 
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
-    public ResponseEntity<?> isConfirmationTokenValid(@PathVariable("emailConfirmationToken") String emailConfirmationToken,
+    public ResponseEntity<?> isConfirmationTokenValid(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
                                           HttpServletResponse response)
             throws BaseException {
         Optional<Investor> oInvestor = Optional.empty();

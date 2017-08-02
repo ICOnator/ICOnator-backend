@@ -25,7 +25,7 @@ public class Investor {
     @Column(name = "email_confirmed")
     private Boolean emailConfirmed;
 
-    @Column(name = "email_confirmation_token")
+    @Column(name = "email_confirmation_token", unique = true)
     private String emailConfirmationToken;
 
     @Column(name = "wallet_address")

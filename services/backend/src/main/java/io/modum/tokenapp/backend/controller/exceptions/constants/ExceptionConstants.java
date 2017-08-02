@@ -20,4 +20,7 @@ public class ExceptionConstants {
     public final static String  ETHEREUM_ADDRESS_EMPTY_REASON = "Ethereum address is empty.";
     public final static int     ETHEREUM_ADDRESS_EMPTY_CODE = 5;
 
+    public final static String  WALLET_ADDRESS_ALREADY_SET_REASON = "Wallet token address is already set.";
+    public final static int     WALLET_ADDRESS_ALREADY_SET_CODE = 6;
+
 }
