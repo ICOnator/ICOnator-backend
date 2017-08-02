@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Transactional
 @TestPropertySource(properties = {
-        "spring.datasource.url: jdbc:h2:mem:testdb;mv_store=false",
+        "spring.datasource.url: jdbc:h2:mem:testdb;mv_store=false;DB_CLOSE_ON_EXIT=FALSE",
         "modum.tokenapp.email.enabled: false",
         "bitcoin.net: unittest"
 })

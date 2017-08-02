@@ -1,4 +1,4 @@
-package io.modum.tokenapp.minting.model;
+package io.modum.tokenapp.rates.model;
 
 import javax.persistence.*;
 import java.math.BigDecimal;

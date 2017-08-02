@@ -1,6 +1,6 @@
-package io.modum.tokenapp.backend.service;
+package io.modum.tokenapp.rates.service;
 
-import io.modum.tokenapp.backend.dao.ExchangeRateRepository;
+import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.kraken.KrakenExchange;
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -45,6 +46,7 @@ public class ExchangeRate {
     }
 
     @Scheduled(fixedRate=60 * 1000)
+    @Transactional
     public void fetchRates() throws IOException {
         LOG.debug("called fetchRates");
 
@@ -54,7 +56,7 @@ public class ExchangeRate {
         long blockNrETH = etherscan.getCurrentBlockNr();
         long blockNrBTC = blockr.getCurrentBlockNr();
 
-        io.modum.tokenapp.backend.model.ExchangeRate rate = new io.modum.tokenapp.backend.model.ExchangeRate();
+        io.modum.tokenapp.rates.model.ExchangeRate rate = new io.modum.tokenapp.rates.model.ExchangeRate();
 
         rate.setRateBtc(rateBTC);
         rate.setRateEth(rateETH);

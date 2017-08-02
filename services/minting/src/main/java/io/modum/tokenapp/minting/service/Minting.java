@@ -1,10 +1,12 @@
 package io.modum.tokenapp.minting.service;
 
 
-import io.modum.tokenapp.minting.dao.ExchangeRateRepository;
-import io.modum.tokenapp.minting.dao.InvestorRepository;
+import io.modum.tokenapp.backend.dao.InvestorRepository;
+import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.minting.dao.TokenRepository;
 import io.modum.tokenapp.minting.model.*;
+import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
+import io.modum.tokenapp.rates.model.ExchangeRate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +66,7 @@ public class Minting {
         boolean addedETH = false;
 
         if(blockNrBTC > 0 && satoshi > 0 && !payInBTC.isEmpty()) {
-            io.modum.tokenapp.minting.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrBtcGreaterThanEqualOrderByBlockNrBtcAsc(blockNrBTC);
+            ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrBtcGreaterThanEqualOrderByBlockNrBtcAsc(blockNrBTC);
             //if(rate == null) {
             //    rate = exchangeRateRepository.findFirstByOrOrderByBlockNrBtcDesc();
             //}
@@ -89,7 +91,7 @@ public class Minting {
         }
 
         if(blockNrETH > 0 && wei > 0 && !payInETH.isEmpty()) {
-            io.modum.tokenapp.minting.model.ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrEthGreaterThanEqualOrderByBlockNrEthAsc(blockNrETH);
+            ExchangeRate rate = exchangeRateRepository.findFirstByBlockNrEthGreaterThanEqualOrderByBlockNrEthAsc(blockNrETH);
             //if(rate == null) {
             //    rate = exchangeRateRepository.findFirstByOrOrderByBlockNrEthDesc();
             //}

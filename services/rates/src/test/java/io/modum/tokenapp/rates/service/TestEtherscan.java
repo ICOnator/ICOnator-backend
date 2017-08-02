@@ -1,7 +1,7 @@
-package io.modum.tokenapp.minting.service;
+package io.modum.tokenapp.rates.service;
 
-import io.modum.tokenapp.minting.MintingApplication;
-import io.modum.tokenapp.minting.TokenAppBaseTest;
+import io.modum.tokenapp.rates.RatesApplication;
+import io.modum.tokenapp.rates.TokenAppBaseTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 
-@SpringBootTest(classes = MintingApplication.class)
+@SpringBootTest(classes = RatesApplication.class)
 @RunWith(SpringRunner.class)
 public class TestEtherscan extends TokenAppBaseTest {
 

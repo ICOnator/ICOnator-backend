@@ -1,33 +1,25 @@
-package io.modum.tokenapp.minting;
+package io.modum.tokenapp.rates;
 
-import io.modum.tokenapp.minting.service.Minting;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-import static java.lang.System.exit;
-
 @ComponentScan(basePackages={"io.modum.tokenapp"})
 @SpringBootApplication
-public class MintingApplication implements CommandLineRunner {
+public class RatesApplication implements CommandLineRunner {
 
-    @Autowired
-    private Minting minting;
+
 
     public static void main(String[] args) {
-        SpringApplication app = new SpringApplication(MintingApplication.class);
+        SpringApplication app = new SpringApplication(RatesApplication.class);
         app.setBannerMode(Banner.Mode.OFF);
         app.run(args);
     }
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("go minting, go!!");
-        if(args.length > 0) {
-            minting.mint();
-        }
+        System.out.println("fetching rates!!");
     }
 }

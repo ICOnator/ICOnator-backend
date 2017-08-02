@@ -2,8 +2,10 @@ package io.modum.tokenapp.minting.bean;
 
 import io.modum.tokenapp.minting.service.ModumToken;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
@@ -37,10 +39,5 @@ public class Web3 {
         } catch (FileNotFoundException e) {
             return null;
         }
-    }
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
     }
 }

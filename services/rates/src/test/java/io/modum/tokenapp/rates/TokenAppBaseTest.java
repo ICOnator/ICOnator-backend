@@ -1,4 +1,4 @@
-package io.modum.tokenapp.backend;
+package io.modum.tokenapp.rates;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @TestPropertySource(properties = {
         "spring.datasource.url: jdbc:h2:mem:testdb;mv_store=false;DB_CLOSE_ON_EXIT=FALSE",
         "modum.tokenapp.email.enabled: false",
-        "modum.tokenapp.bitcoin.network: testnet"
+        "bitcoin.net: unittest"
 })
 // ;mv_store=false needed for correct isolation level:
 // http://h2-database.66688.n3.nabble.com/Am-I-bananas-or-does-serializable-isolation-not-work-as-it-should-tp4030767p4030768.html

@@ -1,6 +1,6 @@
-package io.modum.tokenapp.backend.dao;
+package io.modum.tokenapp.rates.dao;
 
-import io.modum.tokenapp.backend.model.ExchangeRate;
+import io.modum.tokenapp.rates.model.ExchangeRate;
 import org.springframework.data.repository.CrudRepository;
 
 

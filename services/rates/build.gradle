@@ -50,8 +50,6 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 
-    compile project(':services:backend')
-    compile project(':services:rates')
 }
 
 // gradle run is alias for bootRun

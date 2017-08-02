@@ -1,11 +1,14 @@
 package io.modum.tokenapp.minting.service;
 
 
+import io.modum.tokenapp.backend.dao.InvestorRepository;
+import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.minting.MintingApplication;
-import io.modum.tokenapp.minting.dao.ExchangeRateRepository;
-import io.modum.tokenapp.minting.dao.InvestorRepository;
+import io.modum.tokenapp.minting.TokenAppBaseTest;
 import io.modum.tokenapp.minting.dao.TokenRepository;
 import io.modum.tokenapp.minting.model.*;
+import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
+import io.modum.tokenapp.rates.model.ExchangeRate;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,10 +22,11 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = MintingApplication.class)
+//@RunWith(SpringRunner.class)
+//@SpringBootTest(classes = MintingApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class TestMinting {
+
+public class TestMinting extends TokenAppBaseTest {
 
     @Autowired
     private InvestorRepository investorRepository;
@@ -198,14 +202,14 @@ public class TestMinting {
     }
 
     private TestMinting rateBtc(long blockNr, double rate) {
-        io.modum.tokenapp.minting.model.ExchangeRate ex = new io.modum.tokenapp.minting.model.ExchangeRate();
+        ExchangeRate ex = new ExchangeRate();
         ex.setCreationDate(new Date()).setBlockNrBtc(blockNr).setRateBtc(BigDecimal.valueOf(rate));
         exchangeRateRepository.save(ex);
         return this;
     }
 
     private TestMinting rateEth(long blockNr, double rate) {
-        io.modum.tokenapp.minting.model.ExchangeRate ex = new io.modum.tokenapp.minting.model.ExchangeRate();
+        ExchangeRate ex = new ExchangeRate();
         ex.setCreationDate(new Date()).setBlockNrEth(blockNr).setRateEth(BigDecimal.valueOf(rate));
         exchangeRateRepository.save(ex);
         return this;

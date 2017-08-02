@@ -1,4 +1,4 @@
-package io.modum.tokenapp.minting.service;
+package io.modum.tokenapp.rates.service;
 
 
 import org.codehaus.jackson.annotate.JsonProperty;
