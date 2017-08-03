@@ -38,9 +38,12 @@ do
     ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
     #access the tokenapp server
     #ssh -i priv.key -p 1234 ubuntu@localhost
-    scp -r -i "$PRIV_APP" -P 1234 services/minting/build/libs/minting-*-boot.jar ubuntu@localhost:/var/lib/backend/minting.jar &
-    scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar
+    scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar &&
+    scp -r -i "$PRIV_APP" -P 1234 services/rates/build/libs/rates-*-boot.jar ubuntu@localhost:/var/lib/backend/rates.jar
     sleep 3
     ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
     ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
+    sleep 3
+    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+    ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart rates.service
 done
