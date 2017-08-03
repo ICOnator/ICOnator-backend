@@ -2,6 +2,7 @@ package io.modum.tokenapp.rates.service;
 
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -39,6 +42,29 @@ public class Etherscan {
 
         ReturnSingleValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnSingleValue.class).getBody();
         return new BigInteger(retVal.result);
+    }
+
+    public List<Triple<Date,Long,Long>> getTxEth(String address) {
+        String s = "https://"+url+"/api" +
+                "?module=account" +
+                "&action=txlist" +
+                "&address=" + address +
+                "&tag=latest" +
+                "&apikey="+apiKey;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "the mighty tokenapp-minting");
+
+        TxReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxReturnValue.class).getBody();
+
+        List<Triple<Date,Long,Long>> ret = new ArrayList<>();
+        for(TxReturnValue.Result result:retVal.result) {
+            long time = Long.parseLong(result.timeStamp) * 1000;
+            long value = Long.parseLong(result.value);
+            long blocknr = Long.parseLong(result.blockNumber);
+            ret.add(Triple.of(new Date(time), value, blocknr));
+        }
+        return ret;
     }
 
     /**
@@ -97,6 +123,56 @@ public class Etherscan {
         }
         return result;
         //TODO:caching!
+    }
+
+    public static class TxReturnValue {
+
+        @JsonProperty("status")
+        public String status;
+        @JsonProperty("message")
+        public String message;
+        @JsonProperty("result")
+        public List<Result> result = null;
+
+        public static class Result {
+
+            @JsonProperty("blockNumber")
+            public String blockNumber;
+            @JsonProperty("timeStamp")
+            public String timeStamp;
+            @JsonProperty("hash")
+            public String hash;
+            @JsonProperty("nonce")
+            public String nonce;
+            @JsonProperty("blockHash")
+            public String blockHash;
+            @JsonProperty("transactionIndex")
+            public String transactionIndex;
+            @JsonProperty("from")
+            public String from;
+            @JsonProperty("to")
+            public String to;
+            @JsonProperty("value")
+            public String value;
+            @JsonProperty("gas")
+            public String gas;
+            @JsonProperty("gasPrice")
+            public String gasPrice;
+            @JsonProperty("isError")
+            public String isError;
+            @JsonProperty("input")
+            public String input;
+            @JsonProperty("contractAddress")
+            public String contractAddress;
+            @JsonProperty("cumulativeGasUsed")
+            public String cumulativeGasUsed;
+            @JsonProperty("gasUsed")
+            public String gasUsed;
+            @JsonProperty("confirmations")
+            public String confirmations;
+
+        }
+
     }
 
     private static class ReturnSingleValue {

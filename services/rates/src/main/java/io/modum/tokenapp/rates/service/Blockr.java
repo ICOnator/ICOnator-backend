@@ -1,7 +1,10 @@
 package io.modum.tokenapp.rates.service;
 
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -10,8 +13,18 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 @Service
 public class Blockr {
+
+    private final static Logger LOG = LoggerFactory.getLogger(Blockr.class);
     //https://blockchain.info/q/getblockcount
 
     //http://tbtc.blockr.io/api/v1/block/info/last
@@ -31,6 +44,108 @@ public class Blockr {
 
         ReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnValue.class).getBody();
         return retVal.data.nb;
+    }
+
+    public List<Triple<Date,Long,Long>> getTxBtc(String address) throws ParseException {
+        String s = "https://"+url+"/api/v1/address/txs/"+address+"?amount_format=string";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "the mighty tokenapp-minting");
+
+        TxReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxReturnValue.class).getBody();
+
+        List<Triple<Date,Long,Long>> ret = new ArrayList<>();
+        if(retVal.data.nbTxs != retVal.data.nbTxsDisplayed) {
+            LOG.error("someone payed with over 200 tx, handle manually {}", address);
+        }
+        DateFormat m_ISO8601Local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        for(TxReturnValue.Data.Tx result:retVal.data.txs) {
+            System.err.println("OUT:"+result.timeUtc);
+            Date time = m_ISO8601Local.parse(result.timeUtc);
+            BigDecimal amount = new BigDecimal(result.amount).multiply(new BigDecimal(100_000_000));
+            ret.add(Triple.of(time, amount.longValue(), getBlockNr(result.tx)));
+        }
+        return ret;
+    }
+
+    public long getBlockNr(String tx) {
+        String s = "https://"+url+"/api/v1/tx/info/"+tx;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "the mighty tokenapp-minting");
+
+        TxInfoReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxInfoReturnValue.class).getBody();
+        return retVal.data.block;
+    }
+
+    public static class TxInfoReturnValue {
+
+        @JsonProperty("status")
+        public String status;
+        @JsonProperty("data")
+        public Data data;
+        @JsonProperty("code")
+        public Integer code;
+        @JsonProperty("message")
+        public String message;
+
+        public static class Data {
+
+            @JsonProperty("tx")
+            public String tx;
+            @JsonProperty("block")
+            public Integer block;
+            @JsonProperty("confirmations")
+            public Integer confirmations;
+            @JsonProperty("time_utc")
+            public String timeUtc;
+
+
+        }
+
+    }
+
+    public static class TxReturnValue {
+
+        @JsonProperty("status")
+        public String status;
+        @JsonProperty("data")
+        public Data data;
+        @JsonProperty("code")
+        public Integer code;
+        @JsonProperty("message")
+        public String message;
+
+        public static class Data {
+
+            @JsonProperty("address")
+            public String address;
+            @JsonProperty("limit_txs")
+            public Integer limitTxs;
+            @JsonProperty("nb_txs")
+            public Integer nbTxs;
+            @JsonProperty("nb_txs_displayed")
+            public Integer nbTxsDisplayed;
+            @JsonProperty("txs")
+            public List<Tx> txs = null;
+
+            public static class Tx {
+
+                @JsonProperty("tx")
+                public String tx;
+                @JsonProperty("time_utc")
+                public String timeUtc;
+                @JsonProperty("confirmations")
+                public Integer confirmations;
+                @JsonProperty("amount")
+                public String amount;
+                @JsonProperty("amount_multisig")
+                public String amountMultisig;
+
+            }
+
+        }
+
     }
 
     private static class ReturnValue {

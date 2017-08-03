@@ -52,4 +52,13 @@ public class Token {
         this.amount = amount;
         return this;
     }
+
+    public Token copy() {
+        Token t = new Token();
+        t.amount = amount;
+        t.walletAddress = walletAddress;
+        t.creationDate = creationDate;
+        t.id = id;
+        return t;
+    }
 }

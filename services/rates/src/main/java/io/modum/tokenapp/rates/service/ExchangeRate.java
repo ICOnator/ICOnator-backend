@@ -45,7 +45,6 @@ public class ExchangeRate {
         return ticker.getLast();
     }
 
-    @Scheduled(fixedRate=60 * 1000)
     @Transactional
     public void fetchRates() throws IOException {
         LOG.debug("called fetchRates");
