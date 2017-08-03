@@ -8,9 +8,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-import static java.lang.System.exit;
-
-@ComponentScan(basePackages={"io.modum.tokenapp"})
+@ComponentScan(basePackages={
+        "io.modum.tokenapp.minting",
+        "io.modum.tokenapp.rates",
+        "io.modum.tokenapp.backend"})
 @SpringBootApplication
 public class MintingApplication implements CommandLineRunner {
 
@@ -20,6 +21,7 @@ public class MintingApplication implements CommandLineRunner {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(MintingApplication.class);
         app.setBannerMode(Banner.Mode.OFF);
+        //app.setWebEnvironment(false);
         app.run(args);
     }
 
