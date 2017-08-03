@@ -22,9 +22,6 @@ public class Investor {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "email_confirmed")
-    private Boolean emailConfirmed;
-
     @Column(name = "email_confirmation_token", unique = true)
     private String emailConfirmationToken;
 
@@ -73,15 +70,6 @@ public class Investor {
 
     public Investor setEmail(String email) {
         this.email = email;
-        return this;
-    }
-
-    public Boolean getEmailConfirmed() {
-        return emailConfirmed;
-    }
-
-    public Investor setEmailConfirmed(Boolean emailConfirmed) {
-        this.emailConfirmed = emailConfirmed;
         return this;
     }
 

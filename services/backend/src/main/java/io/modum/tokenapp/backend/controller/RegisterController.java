@@ -95,27 +95,6 @@ public class RegisterController {
         }
     }
 
-    @RequestMapping(value = "/register/{emailConfirmationToken}", method = GET)
-    public ResponseEntity<?> confirmation(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
-                                          HttpServletResponse response)
-            throws BaseException {
-        try {
-            Optional<Investor> oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
-            if (!oInvestor.isPresent()) {
-                throw new ConfirmationTokenNotFoundException();
-            } else {
-                Investor investor = oInvestor.get();
-                investor.setEmailConfirmed(true);
-                investorRepository.save(investor);
-                LOG.debug("Investor confirmed email address: email=" + investor.getEmail()
-                        + ", emailConfirmationToken=" + investor.getEmailConfirmationToken());
-            }
-        } catch (Exception e) {
-            throw e;
-        }
-        return ResponseEntity.ok().build();
-    }
-
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
     public ResponseEntity<?> isConfirmationTokenValid(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
                                           HttpServletResponse response)

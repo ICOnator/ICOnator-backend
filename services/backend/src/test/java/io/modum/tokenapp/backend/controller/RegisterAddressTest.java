@@ -79,7 +79,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken).contentType(APPLICATION_JSON))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate").contentType(APPLICATION_JSON))
                 .andExpect(status().is2xxSuccessful());
     }
 
@@ -125,7 +125,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         MvcResult mvcResultAddress = mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -154,7 +154,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         MvcResult mvcResultAddress = mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -190,7 +190,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "1"))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "1/validate"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -204,7 +204,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -230,7 +230,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -256,7 +256,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -282,7 +282,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
@@ -308,7 +308,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken))
+        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
                 .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
