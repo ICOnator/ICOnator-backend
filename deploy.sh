@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #servers to deploy to and jumphost for the tunnel
 SERVERS=( "tokenapp1.modum.intern" )
@@ -35,12 +35,12 @@ fi
 for i in "${SERVERS[@]}"
 do
     #http://www.g-loaded.eu/2006/11/24/auto-closing-ssh-tunnels/
-    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" ubuntu@"$JUMP_HOST" sleep 3;
+    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
     #access the tokenapp server
     #ssh -i priv.key -p 1234 ubuntu@localhost
     scp -r -i "$PRIV_APP" -P 1234 services/minting/build/libs/minting-*-boot.jar ubuntu@localhost:/var/lib/backend/minting.jar &
     scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar
     sleep 3
-    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" ubuntu@"$JUMP_HOST" sleep 3;
+    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
     ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
 done
