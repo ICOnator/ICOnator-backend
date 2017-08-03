@@ -46,6 +46,7 @@ dependencies {
     compile 'org.bitcoinj:bitcoinj-core:0.14.4'
     compile 'org.web3j:core:2.3.0'
     compile 'org.knowm.xchange:xchange-kraken:4.2.0'
+    compile 'args4j:args4j:2.33'
 
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'

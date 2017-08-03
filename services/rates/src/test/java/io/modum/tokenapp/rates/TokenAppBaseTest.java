@@ -7,7 +7,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.NONE)
 @Transactional
 @TestPropertySource(properties = {
         "spring.datasource.url: jdbc:h2:mem:testdb;mv_store=false;DB_CLOSE_ON_EXIT=FALSE",

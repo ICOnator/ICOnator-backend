@@ -1,8 +1,13 @@
 package io.modum.tokenapp.rates.service;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.lang3.tuple.Triple;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonPropertyOrder;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -36,31 +43,36 @@ public class Blockr {
     @Autowired
     private RestTemplate restTemplate;
 
-    public long getCurrentBlockNr() {
-        String s = "https://"+url+"/api/v1/block/info/last";
+    public long getCurrentBlockNr() throws IOException {
+        String s = "https://" + url + "/api/v1/block/info/last";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        ReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnValue.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReturnValue retVal = objectMapper.readValue(res.getBody(), ReturnValue.class);
+
         return retVal.data.nb;
     }
 
-    public List<Triple<Date,Long,Long>> getTxBtc(String address) throws ParseException {
-        String s = "https://"+url+"/api/v1/address/txs/"+address+"?amount_format=string";
+    public List<Triple<Date, Long, Long>> getTxBtc(String address) throws ParseException, IOException {
+        String s = "https://" + url + "/api/v1/address/txs/" + address + "?amount_format=string";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        TxReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxReturnValue.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        TxReturnValue retVal = objectMapper.readValue(res.getBody(), TxReturnValue.class);
 
-        List<Triple<Date,Long,Long>> ret = new ArrayList<>();
-        if(retVal.data.nbTxs != retVal.data.nbTxsDisplayed) {
+
+        List<Triple<Date, Long, Long>> ret = new ArrayList<>();
+        if (retVal.data.nbTxs != retVal.data.nbTxsDisplayed) {
             LOG.error("someone payed with over 200 tx, handle manually {}", address);
         }
         DateFormat m_ISO8601Local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        for(TxReturnValue.Data.Tx result:retVal.data.txs) {
-            System.err.println("OUT:"+result.timeUtc);
+        for (TxReturnValue.Data.Tx result : retVal.data.txs) {
             Date time = m_ISO8601Local.parse(result.timeUtc);
             BigDecimal amount = new BigDecimal(result.amount).multiply(new BigDecimal(100_000_000));
             ret.add(Triple.of(time, amount.longValue(), getBlockNr(result.tx)));
@@ -68,13 +80,16 @@ public class Blockr {
         return ret;
     }
 
-    public long getBlockNr(String tx) {
-        String s = "https://"+url+"/api/v1/tx/info/"+tx;
+    public long getBlockNr(String tx) throws IOException {
+        String s = "https://" + url + "/api/v1/tx/info/" + tx;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        TxInfoReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxInfoReturnValue.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        TxInfoReturnValue retVal = objectMapper.readValue(res.getBody(), TxInfoReturnValue.class);
+
         return retVal.data.block;
     }
 
@@ -89,6 +104,7 @@ public class Blockr {
         @JsonProperty("message")
         public String message;
 
+        @JsonIgnoreProperties(ignoreUnknown = true)
         public static class Data {
 
             @JsonProperty("tx")
@@ -106,7 +122,6 @@ public class Blockr {
     }
 
     public static class TxReturnValue {
-
         @JsonProperty("status")
         public String status;
         @JsonProperty("data")
@@ -117,7 +132,6 @@ public class Blockr {
         public String message;
 
         public static class Data {
-
             @JsonProperty("address")
             public String address;
             @JsonProperty("limit_txs")
@@ -130,7 +144,6 @@ public class Blockr {
             public List<Tx> txs = null;
 
             public static class Tx {
-
                 @JsonProperty("tx")
                 public String tx;
                 @JsonProperty("time_utc")
@@ -141,14 +154,12 @@ public class Blockr {
                 public String amount;
                 @JsonProperty("amount_multisig")
                 public String amountMultisig;
-
             }
-
         }
-
     }
 
-    private static class ReturnValue {
+
+    public static class ReturnValue {
         @JsonProperty("status")
         public String status;
         @JsonProperty("data")
@@ -157,6 +168,7 @@ public class Blockr {
         public Integer code;
         @JsonProperty("message")
         public String message;
+
         public static class Data {
             @JsonProperty("nb")
             public Integer nb;
@@ -195,3 +207,7 @@ public class Blockr {
         }
     }
 }
+
+
+
+

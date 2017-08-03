@@ -3,6 +3,7 @@ package io.modum.tokenapp.minting;
 import io.modum.tokenapp.minting.model.Payin;
 import io.modum.tokenapp.minting.model.Token;
 import io.modum.tokenapp.minting.service.Minting;
+import io.modum.tokenapp.rates.RatesApplication;
 import org.kohsuke.args4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
@@ -10,6 +11,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 
 import java.io.*;
@@ -50,7 +53,8 @@ public class MintingApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         CmdLineParser parser = new CmdLineParser(this);
-
+        payin = null;
+        tokenDistribution = null;
         try {
             parser.parseArgument(args);
         } catch( CmdLineException e ) {
@@ -73,14 +77,14 @@ public class MintingApplication implements CommandLineRunner {
                 printWriter.print(p.getTime().getTime());
                 printWriter.print(",");
                 //
-                printWriter.print(p.getBlockNrBtc());
+                printWriter.print(p.getBlockNrBtc() == null? 0 : p.getBlockNrBtc());
                 printWriter.print(",");
-                printWriter.print(p.getBlockNrEth());
+                printWriter.print(p.getBlockNrEth() == null? 0 : p.getBlockNrEth());
                 printWriter.print(",");
                 //
-                printWriter.print(p.getWei());
+                printWriter.print(p.getSatoshi() == null? 0 : p.getSatoshi());
                 printWriter.print(",");
-                printWriter.print(p.getSatoshi());
+                printWriter.print(p.getWei() == null? 0 : p.getWei());
                 printWriter.print(",");
                 //
                 printWriter.print(p.getWalletAddress());
@@ -91,15 +95,15 @@ public class MintingApplication implements CommandLineRunner {
             String line=null;
             List<Payin> list = new ArrayList<>();
             while((line=buffer.readLine())!=null) {
-                StringTokenizer st = new StringTokenizer(line,",");
+                String[] array = line.split(",");
                 Payin p=new Payin();
-                p.setCreationDate(new Date(Long.parseLong(st.nextToken())));
-                p.setTime(new Date(Long.parseLong(st.nextToken())));
-                p.setBlockNrBtc(Long.parseLong(st.nextToken()));
-                p.setBlockNrEth(Long.parseLong(st.nextToken()));
-                p.setWei(Long.parseLong(st.nextToken()));
-                p.setSatoshi(Long.parseLong(st.nextToken()));
-                p.setWalletAddress(st.nextToken());
+                p.setCreationDate(new Date(Long.parseLong(array[0])));
+                p.setTime(new Date(Long.parseLong(array[1])));
+                p.setBlockNrBtc(Long.parseLong(array[2]));
+                p.setBlockNrEth(Long.parseLong(array[3]));
+                p.setSatoshi(Long.parseLong(array[4]));
+                p.setWei(Long.parseLong(array[5]));
+                p.setWalletAddress(array[6]);
                 list.add(p);
             }
             buffer.close();
@@ -124,17 +128,15 @@ public class MintingApplication implements CommandLineRunner {
             String line=null;
             List<Token> list = new ArrayList<>();
             while((line=buffer.readLine())!=null) {
-                StringTokenizer st = new StringTokenizer(line,",");
+                String[] array = line.split(",");
                 Token t=new Token();
-                t.setCreationDate(new Date(Long.parseLong(st.nextToken())));
-                t.setAmount(Integer.parseInt(st.nextToken()));
-                t.setWalletAddress(st.nextToken());
+                t.setCreationDate(new Date(Long.parseLong(array[0])));
+                t.setAmount(Integer.parseInt(array[1]));
+                t.setWalletAddress(array[2]);
                 list.add(t);
             }
             buffer.close();
             minting.mint(list);
-        } else {
-            System.err.println("parse error");
         }
     }
 }

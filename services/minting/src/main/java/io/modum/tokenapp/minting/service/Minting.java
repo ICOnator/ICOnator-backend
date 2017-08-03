@@ -17,8 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.text.ParseException;
@@ -27,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Service
 public class Minting {
@@ -62,7 +65,7 @@ public class Minting {
     private PayinRepository payinRepository;
 
     @Transactional
-    public List<Payin> payin() throws ParseException {
+    public List<Payin> payin() throws ParseException, IOException {
         for(Investor investor:investorRepository.findAll()) {
             //BTC
             String payInBTC = investor.getPayInBitcoinAddress();
@@ -109,10 +112,15 @@ public class Minting {
         return retVal;
     }
 
-    public void mint(List<Token> tokens) {
+    public void mint(List<Token> tokens) throws ExecutionException, InterruptedException {
         for(Token token:tokens) {
-            modumToken.mint(new Address(token.getWalletAddress()), new Uint256(token.getAmount()));
-            LOG.debug("minting: {}:{}", token.getWalletAddress(), token.getAmount());
+            if(modumToken == null) {
+                LOG.error("no modum token bean created");
+            } else {
+                Future<TransactionReceipt> receipt = modumToken.mint(new Address(token.getWalletAddress()), new Uint256(token.getAmount()));
+                receipt.get();
+                LOG.debug("minting: {}:{}", token.getWalletAddress(), token.getAmount());
+            }
         }
     }
 

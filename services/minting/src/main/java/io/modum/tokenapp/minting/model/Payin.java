@@ -10,7 +10,7 @@ import static javax.persistence.TemporalType.TIMESTAMP;
  */
 
 @Entity
-@Table(name = "token", indexes = {
+@Table(name = "payin", indexes = {
         @Index(columnList = "wallet_address", name = "wallet_address2_idx"),
         @Index(columnList = "time", name = "time_idx")})
 public class Payin {

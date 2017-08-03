@@ -4,14 +4,17 @@ package io.modum.tokenapp.rates.service;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +32,7 @@ public class Etherscan {
     @Autowired
     private RestTemplate restTemplate;
 
-    public BigInteger getBalance(String address) {
+    public BigInteger getBalance(String address) throws IOException {
         String s = "https://"+url+"/api" +
                 "?module=account" +
                 "&action=balance" +
@@ -40,11 +43,13 @@ public class Etherscan {
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        ReturnSingleValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnSingleValue.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReturnSingleValue retVal = objectMapper.readValue(res.getBody(), ReturnSingleValue.class);
         return new BigInteger(retVal.result);
     }
 
-    public List<Triple<Date,Long,Long>> getTxEth(String address) {
+    public List<Triple<Date,Long,Long>> getTxEth(String address) throws IOException {
         String s = "https://"+url+"/api" +
                 "?module=account" +
                 "&action=txlist" +
@@ -55,7 +60,9 @@ public class Etherscan {
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        TxReturnValue retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), TxReturnValue.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        TxReturnValue retVal = objectMapper.readValue(res.getBody(), TxReturnValue.class);
 
         List<Triple<Date,Long,Long>> ret = new ArrayList<>();
         for(TxReturnValue.Result result:retVal.result) {
@@ -70,14 +77,14 @@ public class Etherscan {
     /**
      * Can process up to 20 contracts
      */
-    public BigInteger get20Balances(String... contract) {
+    public BigInteger get20Balances(String... contract) throws IOException {
         return get20Balances(Arrays.asList(contract));
     }
 
     /**
      * Can process up to 20 contracts
      */
-    public BigInteger get20Balances(List<String> contract) {
+    public BigInteger get20Balances(List<String> contract) throws IOException {
 
         String addresses = String.join(",", contract);
         String s = "https://"+url+"/api" +
@@ -90,15 +97,18 @@ public class Etherscan {
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        ReturnValues retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnValues.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReturnValues retVal = objectMapper.readValue(res.getBody(), ReturnValues.class);
+
         BigInteger result = BigInteger.ZERO;
-        for(ReturnValues.Result res: retVal.result) {
-            result = result.add(new BigInteger(res.balance));
+        for(ReturnValues.Result res1: retVal.result) {
+            result = result.add(new BigInteger(res1.balance));
         }
         return result;
     }
 
-    public long getCurrentBlockNr() {
+    public long getCurrentBlockNr() throws IOException {
         String s = "https://"+url+"/api" +
                 "?module=proxy" +
                 "&action=eth_blockNumber" +
@@ -107,7 +117,9 @@ public class Etherscan {
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "the mighty tokenapp-minting");
 
-        ReturnBlock retVal = restTemplate.exchange(s, HttpMethod.GET,new HttpEntity<>(null, headers), ReturnBlock.class).getBody();
+        ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReturnBlock retVal = objectMapper.readValue(res.getBody(), ReturnBlock.class);
 
         return Long.parseLong(retVal.result.substring(2), 16);
     }
@@ -115,7 +127,7 @@ public class Etherscan {
     /**
      * This may take a while, make sure you obey the limits of the api provider
      */
-    public BigInteger getBalances(List<String> contract) {
+    public BigInteger getBalances(List<String> contract) throws IOException {
         BigInteger result = BigInteger.ZERO;
         List<List<String>> part = Lists.partition(contract, 20);
         for(List<String> p:part) {

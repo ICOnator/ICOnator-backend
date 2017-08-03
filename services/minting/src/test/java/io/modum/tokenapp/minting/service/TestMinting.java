@@ -21,9 +21,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
-@Ignore
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-
 public class TestMinting extends TokenAppBaseTest {
 
     @Autowired
