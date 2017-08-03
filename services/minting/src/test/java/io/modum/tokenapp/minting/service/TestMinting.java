@@ -10,22 +10,23 @@ import io.modum.tokenapp.minting.model.*;
 import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
 import io.modum.tokenapp.rates.model.ExchangeRate;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
+import javax.persistence.Index;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
-//@RunWith(SpringRunner.class)
-//@SpringBootTest(classes = MintingApplication.class)
+@Ignore
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 
 public class TestMinting extends TokenAppBaseTest {
 
-    /*@Autowired
+    @Autowired
     private InvestorRepository investorRepository;
 
     @Autowired
@@ -210,5 +211,5 @@ public class TestMinting extends TokenAppBaseTest {
         ex.setCreationDate(new Date()).setBlockNrEth(blockNr).setRateEth(BigDecimal.valueOf(rate));
         exchangeRateRepository.save(ex);
         return this;
-    }*/
+    }
 }
