@@ -102,7 +102,11 @@ public class MailService {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(), confirmationEmailSubject, MailType.CONFIRMATION_EMAIL);
         this.mailContentBuilder.buildConfirmationEmail(oMessage, confirmationEmaiLink);
-        sendMail(oMessage, MailType.CONFIRMATION_EMAIL);
+        if (this.enabled) {
+            sendMail(oMessage, MailType.CONFIRMATION_EMAIL);
+        } else {
+            LOG.info("Skip sending mail to {}, link: {}", investor.getEmail(), confirmationEmaiLink);
+        }
     }
 
     public void sendSummaryEmail(Investor investor) {
