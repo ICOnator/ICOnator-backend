@@ -11,7 +11,7 @@ import static javax.persistence.TemporalType.TIMESTAMP;
 public class Investor {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     private long id;
 
