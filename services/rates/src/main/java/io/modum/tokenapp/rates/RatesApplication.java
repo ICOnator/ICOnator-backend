@@ -9,7 +9,6 @@ import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.TaskScheduler;
@@ -51,17 +50,23 @@ public class RatesApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        CmdLineParser parser = new CmdLineParser(this);
-        rate = 0;
-        try {
-            parser.parseArgument(args);
-        } catch( CmdLineException e ) {
-            System.err.println(e.getMessage());
-            System.err.println("java RatesApplication [options...] arguments...");
-            parser.printUsage(System.err);
-            System.err.println();
-            System.err.println("  Example: java RatesApplication"+parser.printExample(OptionHandlerFilter.ALL));
-            return;
+        if (args.length == 0) {
+            LOG.warn("No arguments provided. Defaulting to 30 second interval.");
+            rate = 30;
+        } else {
+            CmdLineParser parser = new CmdLineParser(this);
+            rate = 0;
+            try {
+                parser.parseArgument(args);
+            } catch (CmdLineException e) {
+                System.err.println(e.getMessage());
+                System.err.println("java RatesApplication [options...] arguments...");
+                parser.printUsage(System.err);
+                System.err.println();
+                System.err.println("  Example: java RatesApplication" + parser
+                    .printExample(OptionHandlerFilter.ALL));
+                return;
+            }
         }
         if(rate > 0) {
             scheduler.scheduleAtFixedRate(new Runnable() {
