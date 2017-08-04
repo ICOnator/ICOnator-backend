@@ -8,7 +8,7 @@ import javax.validation.constraints.Size;
 public class AddressRequest {
 
     @NotNull
-    @Size(max = Constants.BTC_ADDRESS_CHAR_MAX_SIZE)
+    @Size(max = Constants.ETH_ADDRESS_CHAR_MAX_SIZE)
     private String address;
 
     @Size(max = Constants.ETH_ADDRESS_CHAR_MAX_SIZE)
