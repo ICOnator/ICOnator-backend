@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
@@ -23,7 +22,6 @@ import javax.validation.constraints.Size;
 import java.util.Optional;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
@@ -90,28 +88,6 @@ public class AddressController {
         return new AddressResponse()
                 .setBtc(bitcoinKeys.getAddressAsString())
                 .setEther(ethereumKeys.getAddressAsString());
-    }
-
-    @RequestMapping(value = "/address/btc/{btcAddress}/validate", method = GET)
-    public ResponseEntity<?> isBTCAddressValid(@Valid @Size(max = Constants.BTC_ADDRESS_CHAR_MAX_SIZE) @PathVariable("btcAddress") String btcAddress)
-            throws BaseException {
-        if (bitcoinKeyGenerator.isValidAddress(btcAddress)) {
-            return ResponseEntity.ok().build();
-        }
-        throw new BitcoinAddressInvalidException();
-    }
-
-    @RequestMapping(value = "/address/eth/{ethAddress}/validate", method = GET)
-    public ResponseEntity<?> isETHAddressValid(@Valid @Size(max = Constants.ETH_ADDRESS_CHAR_MAX_SIZE) @PathVariable("ethAddress") String ethAddress)
-            throws BaseException {
-        if (ethereumKeyGenerator.isValidAddress(ethAddress)) {
-            return ResponseEntity.ok().build();
-        }
-        throw new EthereumAddressInvalidException();
-    }
-
-    private AddressResponse buildAddressResponse(String etherAddress, String bitcoinAddress) {
-        return new AddressResponse().setEther(etherAddress).setBtc(bitcoinAddress);
     }
 
     private String getEmailConfirmationToken(String authorizationHeader) throws AuthorizationHeaderMissingException {
