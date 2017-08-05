@@ -22,7 +22,7 @@ public class Investor {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "email_confirmation_token", unique = true)
+    @Column(name = "email_confirmation_token", unique = true, nullable = false)
     private String emailConfirmationToken;
 
     @Column(name = "wallet_address")
