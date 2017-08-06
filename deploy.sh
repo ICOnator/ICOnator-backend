@@ -29,21 +29,26 @@ if ! ./gradlew clean build; then
 fi
 
 # Deployment
-#
 # Make sure to have a systemd init script as found in: https://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
 
 for i in "${SERVERS[@]}"
 do
-    #http://www.g-loaded.eu/2006/11/24/auto-closing-ssh-tunnels/
-    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
-    #access the tokenapp server
-    #ssh -i priv.key -p 1234 ubuntu@localhost
-    scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar &&
+  # Open ssh tunnel (http://www.g-loaded.eu/2006/11/24/auto-closing-ssh-tunnels/)
+  echo "Opening SSH tunnel to proxy server..."
+  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+  echo "Uploading jar files"
+  scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar &&
     scp -r -i "$PRIV_APP" -P 1234 services/rates/build/libs/rates-*-boot.jar ubuntu@localhost:/var/lib/backend/rates.jar
-    sleep 3
-    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
-    ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
-    sleep 3
-    ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
-    ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart rates.service
+  sleep 3
+
+  echo "Opening SSH tunnel to proxy server..."
+  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+  echo "Restarting backend service"
+  ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
+  sleep 3
+
+  echo "Opening SSH tunnel to proxy server..."
+  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+  echo "Restarting rates service"
+  ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart rates.service
 done
