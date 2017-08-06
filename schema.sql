@@ -68,8 +68,8 @@ CREATE INDEX wallet_address2_idx
 --- TABLE: KEYPAIRS
 CREATE TABLE keypairs (
   id         BIGINT NOT NULL,
-  public_btc CHARACTER(66),
-  public_eth CHARACTER(130)
+  public_btc CHARACTER VARYING(255) NOT NULL,
+  public_eth CHARACTER VARYING(255) NOT NULL
 );
 CREATE SEQUENCE keypairs_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
 ALTER SEQUENCE keypairs_id_seq OWNED BY keypairs.id;
@@ -77,6 +77,10 @@ ALTER TABLE ONLY keypairs
   ALTER COLUMN id SET DEFAULT nextval('keypairs_id_seq' :: REGCLASS);
 ALTER TABLE ONLY keypairs
   ADD CONSTRAINT keypairs_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY keypairs
+  ADD CONSTRAINT uk_a3qdthqcbj3yndxp7t7p7pjm8 UNIQUE (public_btc);
+ALTER TABLE ONLY keypairs
+  ADD CONSTRAINT uk_hqy3luubfa88n459a0y2ur08y UNIQUE (public_eth);
 
 --- MONITOR TRIGGER
 CREATE FUNCTION notify_new_payin_address()
