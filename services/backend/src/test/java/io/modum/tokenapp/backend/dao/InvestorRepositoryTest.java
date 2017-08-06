@@ -1,12 +1,11 @@
 package io.modum.tokenapp.backend.dao;
 
 import io.modum.tokenapp.backend.model.Investor;
-import javax.persistence.PersistenceException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Date;
@@ -22,9 +21,6 @@ public class InvestorRepositoryTest {
 
     @Autowired
     private InvestorRepository investorRepository;
-
-    @Autowired
-    private TestEntityManager entityManager;
 
     @Test
     public void testInsert() {
@@ -42,7 +38,7 @@ public class InvestorRepositoryTest {
         assertTrue(oInvestor.isPresent() && oInvestor.get().getEmailConfirmationToken().equals(randomUUID));
     }
 
-    @Test(expected = PersistenceException.class)
+    @Test(expected = DataIntegrityViolationException.class)
     public void testEmailConfirmationTokenUniqueConstraint() {
         String randomUUID = UUID.randomUUID().toString();
         Investor i1 = new Investor().setCreationDate(new Date())
@@ -53,10 +49,9 @@ public class InvestorRepositoryTest {
                                     .setEmail("test2@test2.com")
                                     .setEmailConfirmationToken(randomUUID);
         investorRepository.save(i2);
-        entityManager.flush();
     }
 
-    @Test(expected = PersistenceException.class)
+    @Test(expected = DataIntegrityViolationException.class)
     public void testEmailUniqueConstraint() {
         Investor i1 = new Investor().setCreationDate(new Date())
                                     .setEmail("test@test.com")
@@ -66,7 +61,6 @@ public class InvestorRepositoryTest {
                                     .setEmail("test@test.com")
                                     .setEmailConfirmationToken(UUID.randomUUID().toString());
         investorRepository.save(i2);
-        entityManager.flush();
     }
 
 
