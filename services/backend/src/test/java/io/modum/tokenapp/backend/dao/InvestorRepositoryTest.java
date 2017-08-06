@@ -24,7 +24,9 @@ public class InvestorRepositoryTest {
 
     @Test
     public void testInsert() {
-        Investor i = new Investor().setCreationDate(new Date()).setEmail("test@test.com");
+        Investor i = new Investor()
+            .setCreationDate(new Date()).setEmail("test@test.com")
+            .setEmailConfirmationToken("somelongtoken");
         investorRepository.save(i);
     }
 
