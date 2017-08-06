@@ -24,28 +24,30 @@ CREATE INDEX block_nr_eth_idx
 
 -- TABLE: INVESTOR
 CREATE TABLE investor (
-  id                         BIGINT                      NOT NULL,
-  creation_date              TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-  email                      CHARACTER VARYING(255)      NOT NULL,
-  email_confirmation_token   CHARACTER VARYING(255)      NOT NULL,
-  pay_in_bitcoin_address     CHARACTER VARYING(255),
-  pay_in_bitcoin_private_key CHARACTER VARYING(255),
-  pay_in_ether_address       CHARACTER VARYING(255),
-  pay_in_ether_private_key   CHARACTER VARYING(255),
-  refund_bitcoin_address     CHARACTER VARYING(255),
-  refund_ether_address       CHARACTER VARYING(255),
-  wallet_address             CHARACTER VARYING(255)
+  id                        BIGINT                      NOT NULL,
+  creation_date             TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  email                     CHARACTER VARYING(255)      NOT NULL,
+  email_confirmation_token  CHARACTER VARYING(255)      NOT NULL,
+  pay_in_bitcoin_public_key CHARACTER VARYING(255),
+  pay_in_ether_public_key   CHARACTER VARYING(255),
+  refund_bitcoin_address    CHARACTER VARYING(255),
+  refund_ether_address      CHARACTER VARYING(255),
+  wallet_address            CHARACTER VARYING(255)
 );
 ALTER TABLE ONLY investor
   ADD CONSTRAINT investor_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY investor
-  ADD CONSTRAINT uk_4k053milr6lu0imylnf3y50cd UNIQUE (pay_in_bitcoin_address);
+  ADD CONSTRAINT uk_pq634155ri1eyk0jda0dy7pe0 UNIQUE (pay_in_bitcoin_public_key);
+ALTER TABLE ONLY investor
+  ADD CONSTRAINT uk_2ewhqslx5pmaq4nso6ghssamn UNIQUE (pay_in_ether_public_key);
 ALTER TABLE ONLY investor
   ADD CONSTRAINT uk_4teiyank4csqihvfqn3gc7rkl UNIQUE (email);
 ALTER TABLE ONLY investor
-  ADD CONSTRAINT uk_bqjd9xfku41d55g7pf8te674l UNIQUE (pay_in_ether_address);
-ALTER TABLE ONLY investor
   ADD CONSTRAINT uk_ghpff4u8022blk2vlgcug68es UNIQUE (email_confirmation_token);
+CREATE INDEX pay_in_bitcoin_public_key_idx
+  ON investor USING BTREE (pay_in_bitcoin_public_key);
+CREATE INDEX pay_in_ether_public_key_idx
+  ON investor USING BTREE (pay_in_ether_public_key);
 
 --- TABLE: PAYIN
 CREATE TABLE payin (
@@ -68,8 +70,8 @@ CREATE INDEX wallet_address2_idx
 --- TABLE: KEYPAIRS
 CREATE TABLE keypairs (
   id         BIGINT NOT NULL,
-  public_btc CHARACTER(66),
-  public_eth CHARACTER(130)
+  public_btc CHARACTER VARYING(255) NOT NULL,
+  public_eth CHARACTER VARYING(255) NOT NULL
 );
 CREATE SEQUENCE keypairs_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
 ALTER SEQUENCE keypairs_id_seq OWNED BY keypairs.id;
@@ -77,6 +79,10 @@ ALTER TABLE ONLY keypairs
   ALTER COLUMN id SET DEFAULT nextval('keypairs_id_seq' :: REGCLASS);
 ALTER TABLE ONLY keypairs
   ADD CONSTRAINT keypairs_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY keypairs
+  ADD CONSTRAINT uk_a3qdthqcbj3yndxp7t7p7pjm8 UNIQUE (public_btc);
+ALTER TABLE ONLY keypairs
+  ADD CONSTRAINT uk_hqy3luubfa88n459a0y2ur08y UNIQUE (public_eth);
 
 --- MONITOR TRIGGER
 CREATE FUNCTION notify_new_payin_address()
@@ -84,8 +90,8 @@ CREATE FUNCTION notify_new_payin_address()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  PERFORM pg_notify(CAST('bitcoin' AS TEXT), NEW.pay_in_bitcoin_address);
-  PERFORM pg_notify(CAST('ether' AS TEXT), NEW.pay_in_ether_address);
+  PERFORM pg_notify(CAST('bitcoin' AS TEXT), NEW.pay_in_bitcoin_public_key);
+  PERFORM pg_notify(CAST('ether' AS TEXT), NEW.pay_in_ether_public_key);
   RETURN NEW;
 END;
 $$;

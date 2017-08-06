@@ -7,7 +7,10 @@ import java.util.Objects;
 
 import static javax.persistence.TemporalType.TIMESTAMP;
 
-@Entity(name = "investor")
+@Entity
+@Table(name = "investor", indexes = {
+        @Index(columnList = "pay_in_bitcoin_public_key", name = "pay_in_bitcoin_public_key_idx"),
+        @Index(columnList = "pay_in_ether_public_key", name = "pay_in_ether_public_key_idx")})
 public class Investor {
 
     @Id
@@ -28,17 +31,11 @@ public class Investor {
     @Column(name = "wallet_address")
     private String walletAddress;
 
-    @Column(name = "payIn_ether_address", unique = true)
-    private String payInEtherAddress;
+    @Column(name = "pay_in_ether_public_key", unique = true)
+    private String payInEtherPublicKey;
 
-    @Column(name = "payIn_ether_privateKey")
-    private String payInEtherPrivateKey;
-
-    @Column(name = "payIn_bitcoin_address", unique = true)
-    private String payInBitcoinAddress;
-
-    @Column(name = "payIn_bitcoin_privateKey")
-    private String payInBitcoinPrivateKey;
+    @Column(name = "pay_in_bitcoin_public_key", unique = true)
+    private String payInBitcoinPublicKey;
 
     @Column(name = "refund_ether_address")
     private String refundEtherAddress;
@@ -91,39 +88,21 @@ public class Investor {
         return this;
     }
 
-    public String getPayInEtherAddress() {
-        return payInEtherAddress;
+    public String getPayInEtherPublicKey() {
+        return payInEtherPublicKey;
     }
 
-    public Investor setPayInEtherAddress(String payInEtherAddress) {
-        this.payInEtherAddress = payInEtherAddress;
+    public Investor setPayInEtherPublicKey(String payInEtherPublicKey) {
+        this.payInEtherPublicKey = payInEtherPublicKey;
         return this;
     }
 
-    public String getPayInEtherPrivateKey() {
-        return payInEtherPrivateKey;
+    public String getPayInBitcoinPublicKey() {
+        return payInBitcoinPublicKey;
     }
 
-    public Investor setPayInEtherPrivateKey(String payInEtherPrivateKey) {
-        this.payInEtherPrivateKey = payInEtherPrivateKey;
-        return this;
-    }
-
-    public String getPayInBitcoinAddress() {
-        return payInBitcoinAddress;
-    }
-
-    public Investor setPayInBitcoinAddress(String payInBitcoinAddress) {
-        this.payInBitcoinAddress = payInBitcoinAddress;
-        return this;
-    }
-
-    public String getPayInBitcoinPrivateKey() {
-        return payInBitcoinPrivateKey;
-    }
-
-    public Investor setPayInBitcoinPrivateKey(String payInBitcoinPrivateKey) {
-        this.payInBitcoinPrivateKey = payInBitcoinPrivateKey;
+    public Investor setPayInBitcoinPublicKey(String payInBitcoinPublicKey) {
+        this.payInBitcoinPublicKey = payInBitcoinPublicKey;
         return this;
     }
 

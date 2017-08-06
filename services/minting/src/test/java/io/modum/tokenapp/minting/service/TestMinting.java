@@ -182,7 +182,7 @@ public class TestMinting extends TokenAppBaseTest {
     private TestMinting dataBtc(int nr) {
         Investor i = new Investor()
                 .setCreationDate(new Date())
-                .setPayInBitcoinAddress("BTC"+nr)
+                .setPayInBitcoinPublicKey("BTC"+nr)
                 .setWalletAddress("w"+nr)
                 .setEmailConfirmationToken(UUID.randomUUID().toString())
                 .setEmail("email"+nr);
@@ -191,7 +191,7 @@ public class TestMinting extends TokenAppBaseTest {
     }
 
     private TestMinting dataEth(int nr) {
-        Investor i = new Investor().setCreationDate(new Date()).setPayInBitcoinAddress("ETH"+nr).setWalletAddress("w"+nr);
+        Investor i = new Investor().setCreationDate(new Date()).setPayInEtherPublicKey("ETH"+nr).setWalletAddress("w"+nr);
         investorRepository.save(i);
         return this;
     }

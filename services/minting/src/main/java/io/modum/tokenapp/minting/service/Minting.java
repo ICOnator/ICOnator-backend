@@ -1,6 +1,7 @@
 package io.modum.tokenapp.minting.service;
 
 
+import io.modum.tokenapp.backend.service.AddressService;
 import io.modum.tokenapp.minting.dao.InvestorRepository;
 import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.minting.dao.PayinRepository;
@@ -64,11 +65,14 @@ public class Minting {
     @Autowired
     private PayinRepository payinRepository;
 
+    @Autowired
+    private AddressService addressService;
+
     @Transactional
     public List<Payin> payin() throws ParseException, IOException {
         for(Investor investor:investorRepository.findAll()) {
             //BTC
-            String payInBTC = investor.getPayInBitcoinAddress();
+            String payInBTC = addressService.getBitcoinAddressFromPublicKey(investor.getPayInBitcoinPublicKey());
             List<Triple<Date,Long,Long>> list =  blockr.getTxBtc(payInBTC);
             for(Triple<Date,Long,Long> t:list) {
                 Payin p = new Payin();
@@ -80,7 +84,7 @@ public class Minting {
                 payinRepository.save(p);
             }
             //ETH
-            String payInETH = investor.getPayInEtherAddress();
+            String payInETH = addressService.getEthereumAddressFromPublicKey(investor.getPayInEtherPublicKey());
             list =  etherscan.getTxEth(payInETH);
             for(Triple<Date,Long,Long> t:list) {
                 Payin p = new Payin();

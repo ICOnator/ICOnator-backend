@@ -1,19 +1,19 @@
 package io.modum.tokenapp.backend.controller;
 
-import io.modum.tokenapp.backend.bean.BitcoinKeyGenerator;
-import io.modum.tokenapp.backend.bean.EthereumKeyGenerator;
-import io.modum.tokenapp.backend.bean.Keys;
 import io.modum.tokenapp.backend.controller.exceptions.*;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
+import io.modum.tokenapp.backend.dao.KeyPairsRepository;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.AddressResponse;
 import io.modum.tokenapp.backend.model.Investor;
+import io.modum.tokenapp.backend.model.KeyPairs;
+import io.modum.tokenapp.backend.service.AddressService;
 import io.modum.tokenapp.backend.service.MailService;
 import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
@@ -34,10 +34,10 @@ public class AddressController {
     private InvestorRepository investorRepository;
 
     @Autowired
-    private BitcoinKeyGenerator bitcoinKeyGenerator;
+    private KeyPairsRepository keyPairsRepository;
 
     @Autowired
-    private EthereumKeyGenerator ethereumKeyGenerator;
+    private AddressService addressService;
 
     @Autowired
     private MailService mailService;
@@ -51,32 +51,39 @@ public class AddressController {
     public AddressResponse address(@Valid @RequestBody AddressRequest addressRequest,
                                    @Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @RequestHeader(value="Authorization") String authorizationHeader)
             throws BaseException {
-
-        // TODO:
-        // Instead of getting the whole raw request header, attach an AuthenticationFilter and
-        // an AuthenticationProvider
         String emailConfirmationToken = getEmailConfirmationToken(authorizationHeader);
-        Optional<Investor> oInvestor = findInvestorOrThrowException(emailConfirmationToken);
+        return setWalletAddress(addressRequest, emailConfirmationToken);
+    }
+
+    @Transactional
+    public AddressResponse setWalletAddress(AddressRequest addressRequest, String emailToken)
+            throws ConfirmationTokenNotFoundException, WalletAddressAlreadySetException,
+            EthereumWalletAddressEmptyException, BitcoinAddressInvalidException, EthereumAddressInvalidException,
+            UnexpectedException {
+        // Get the user that belongs to the token
+        Optional<Investor> oInvestor = findInvestorOrThrowException(emailToken);
+
+        // Throw if the WalletAddress is already set
         checkIfWalletAddressIsAlreadySet(oInvestor);
 
-        // Get the addresses
+        // Get the addresses from the given payload
         String walletAddress = replacePrefixAddress(addressRequest.getAddress());
         String refundEthereumAddress = replacePrefixAddress(addressRequest.getRefundETH());
         String refundBitcoinAddress = addressRequest.getRefundBTC();
 
+        // Make sure all addresses are valid and wallet address sis non-empty
         checkWalletAndRefundAddressesOrThrowException(walletAddress, refundEthereumAddress, refundBitcoinAddress);
 
         // Generating the keys
-        Keys bitcoinKeys = bitcoinKeyGenerator.getKeys();
-        Keys ethereumKeys = ethereumKeyGenerator.getKeys();
+        long freshKeyId = keyPairsRepository.getFreshKeyID();
+        KeyPairs keyPairs = keyPairsRepository.findOne(freshKeyId);
 
+        // Persist the updated investor
         try {
             Investor investor = oInvestor.get();
             investor.setWalletAddress(addPrefixEtherIfNotExist(walletAddress))
-                    .setPayInBitcoinAddress(bitcoinKeys.getAddressAsString())
-                    .setPayInBitcoinPrivateKey(Hex.toHexString(bitcoinKeys.getPrivateKey()))
-                    .setPayInEtherAddress(ethereumKeys.getAddressAsString())
-                    .setPayInEtherPrivateKey(Hex.toHexString(ethereumKeys.getPrivateKey()))
+                    .setPayInBitcoinPublicKey(keyPairs.getPublicBtc())
+                    .setPayInEtherPublicKey(keyPairs.getPublicEth())
                     .setRefundBitcoinAddress(refundBitcoinAddress)
                     .setRefundEtherAddress(addPrefixEtherIfNotExist(refundEthereumAddress));
             investorRepository.save(investor);
@@ -85,9 +92,10 @@ public class AddressController {
             throw new UnexpectedException();
         }
 
+        // Return DTO
         return new AddressResponse()
-                .setBtc(bitcoinKeys.getAddressAsString())
-                .setEther(ethereumKeys.getAddressAsString());
+                .setBtc(addressService.getBitcoinAddressFromPublicKey(keyPairs.getPublicBtc()))
+                .setEther(addressService.getEthereumAddressFromPublicKey(keyPairs.getPublicEth()));
     }
 
     private String getEmailConfirmationToken(String authorizationHeader) throws AuthorizationHeaderMissingException {
@@ -149,20 +157,20 @@ public class AddressController {
         }
 
         // Validate wallet address
-        if (!ethereumKeyGenerator.isValidAddress(walletAddress)) {
+        if (!addressService.isValidEthereumAddress(walletAddress)) {
             throw new EthereumAddressInvalidException();
         }
 
         // Check if the Ethereum refund addresses are present and valid
         if (refundEthereumAddress != null
                 && !refundEthereumAddress.isEmpty()
-                && !ethereumKeyGenerator.isValidAddress(refundEthereumAddress)) {
+                && !addressService.isValidEthereumAddress(refundEthereumAddress)) {
             throw new EthereumAddressInvalidException();
         }
         // Check if the Bitcoin refund addresses are present and valid
         if (refundBitcoinAddress != null
                 && !refundBitcoinAddress.isEmpty()
-                && !bitcoinKeyGenerator.isValidAddress(refundBitcoinAddress)) {
+                && !addressService.isValidBitcoinAddress(refundBitcoinAddress)) {
             throw new BitcoinAddressInvalidException();
         }
 

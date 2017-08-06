@@ -80,8 +80,8 @@ public class RegisterController {
             // Else, send the confirmation email with the confirmationEmailToken
             if (oInvestor.isPresent()
                     && oInvestor.get().getWalletAddress() != null
-                    && oInvestor.get().getPayInBitcoinAddress() != null
-                    && oInvestor.get().getPayInEtherAddress() != null){
+                    && oInvestor.get().getPayInBitcoinPublicKey() != null
+                    && oInvestor.get().getPayInEtherPublicKey() != null){
                 mailService.sendSummaryEmail(oInvestor.get());
                 return ResponseEntity.ok().build();
             } else {

@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -22,11 +21,14 @@ public class MailContentBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(MailContentBuilder.class);
 
-    private TemplateEngine templateEngine;
+    private final TemplateEngine templateEngine;
+
+    private final AddressService addressService;
 
     @Autowired
-    public MailContentBuilder(TemplateEngine templateEngine) {
+    public MailContentBuilder(TemplateEngine templateEngine, AddressService addressService) {
         this.templateEngine = templateEngine;
+        this.addressService = addressService;
     }
 
     public void buildConfirmationEmail(Optional<MimeMessageHelper> oMessage, String confirmationEmaiLink) {
@@ -56,8 +58,8 @@ public class MailContentBuilder {
             try {
                 Context context = new Context();
                 context.setVariable("walletAddress", oInvestor.get().getWalletAddress());
-                context.setVariable("payInEtherAddress", oInvestor.get().getPayInEtherAddress());
-                context.setVariable("payInBitcoinAddress", oInvestor.get().getPayInBitcoinAddress());
+                context.setVariable("payInEtherAddress", addressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
+                context.setVariable("payInBitcoinAddress", addressService.getBitcoinAddressFromPublicKey(oInvestor.get().getPayInBitcoinPublicKey()));
                 context.setVariable("refundEtherAddress", oInvestor.get().getRefundEtherAddress());
                 context.setVariable("refundBitcoinAddress", oInvestor.get().getRefundBitcoinAddress());
 
