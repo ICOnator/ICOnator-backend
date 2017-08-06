@@ -4,12 +4,10 @@ import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.minting.MintingApplication;
 import io.modum.tokenapp.minting.TokenAppBaseTest;
 import io.modum.tokenapp.minting.dao.InvestorRepository;
-import io.modum.tokenapp.minting.dao.TokenRepository;
 import io.modum.tokenapp.rates.RatesApplication;
-import org.junit.Ignore;
+import java.util.UUID;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -43,6 +41,7 @@ public class TestAPI extends TokenAppBaseTest {
                 .setCreationDate(new Date())
                 .setPayInBitcoinAddress(btc)
                 .setWalletAddress(""+nr)
+                .setEmailConfirmationToken(UUID.randomUUID().toString())
                 .setEmail("email"+nr);
         investorRepository.save(i);
         return this;

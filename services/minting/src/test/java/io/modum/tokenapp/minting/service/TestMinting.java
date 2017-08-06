@@ -3,19 +3,17 @@ package io.modum.tokenapp.minting.service;
 
 import io.modum.tokenapp.minting.dao.InvestorRepository;
 import io.modum.tokenapp.backend.model.Investor;
-import io.modum.tokenapp.minting.MintingApplication;
 import io.modum.tokenapp.minting.TokenAppBaseTest;
 import io.modum.tokenapp.minting.dao.TokenRepository;
 import io.modum.tokenapp.minting.model.*;
 import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
 import io.modum.tokenapp.rates.model.ExchangeRate;
+import java.util.UUID;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
-import javax.persistence.Index;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Iterator;
@@ -186,6 +184,7 @@ public class TestMinting extends TokenAppBaseTest {
                 .setCreationDate(new Date())
                 .setPayInBitcoinAddress("BTC"+nr)
                 .setWalletAddress("w"+nr)
+                .setEmailConfirmationToken(UUID.randomUUID().toString())
                 .setEmail("email"+nr);
         investorRepository.save(i);
         return this;
