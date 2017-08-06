@@ -34,8 +34,6 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     public static final String REGISTER = "/register";
     public static final String REGISTER_CONFIRMATION_TOKEN_VALIDATE = "/register/%s/validate";
     public static final String ADDRESS = "/address";
-    public static final String ADDRESS_BTC_VALIDATE = "/address/btc/%s/validate";
-    public static final String ADDRESS_ETH_VALIDATE = "/address/eth/%s/validate";
 
     private static MockMvc mockMvc;
 
@@ -335,30 +333,6 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                 ))
                 .andExpect(status().isBadRequest());
 
-    }
-
-    @Test
-    public void testIsETHAddressValid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ethereumKeyGenerator.getKeys().getAddressAsString())))
-                .andExpect(status().is2xxSuccessful());
-    }
-
-    @Test
-    public void testIsETHAddressInvalid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_ETH_VALIDATE, ethereumKeyGenerator.getKeys().getAddressAsString() + "-error")))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    public void testIsBTCAddressValid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, bitcoinKeyGenerator.getKeys().getAddressAsString())))
-                .andExpect(status().is2xxSuccessful());
-    }
-
-    @Test
-    public void testIsBTCAddressInvalid() throws Exception {
-        mockMvc.perform(get(String.format(ADDRESS_BTC_VALIDATE, bitcoinKeyGenerator.getKeys().getAddressAsString() + "-error")))
-                .andExpect(status().isBadRequest());
     }
 
 }
