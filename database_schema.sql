@@ -49,22 +49,6 @@ CREATE INDEX pay_in_bitcoin_public_key_idx
 CREATE INDEX pay_in_ether_public_key_idx
   ON investor USING BTREE (pay_in_ether_public_key);
 
---- TABLE: PAYIN
-CREATE TABLE payin (
-  id             SERIAL PRIMARY KEY,
-  block_nr_btc   BIGINT,
-  block_nr_eth   BIGINT,
-  creation_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-  satoshi        BIGINT,
-  "time"         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-  wallet_address CHARACTER VARYING(255),
-  wei            BIGINT
-);
-CREATE INDEX time_idx
-  ON payin USING BTREE ("time");
-CREATE INDEX wallet_address2_idx
-  ON payin USING BTREE (wallet_address);
-
 --- TABLE: PAYMENT_LOG
 CREATE TABLE payment_log (
   tx_identifier  CHARACTER VARYING(255) PRIMARY KEY,
