@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #servers to deploy to and jumphost for the tunnel
-SERVERS=( "tokenapp1.modum.intern" )
+SERVERS=( "tokenapp1.modum.intern" "tokenapp2.modum.intern" )
 JUMP_HOST="jump.modum.io"
 
 #if only one key is provided, both servers have the same key
@@ -22,8 +22,8 @@ if [ ! -f "$PRIV_APP" ]; then
     exit 1
 fi
 
-#Build and install of the frontend
-if ! ./gradlew clean build; then
+# Build the backend
+if ! ./gradlew clean assemble; then
     echo "gradle build failed"
     exit 1
 fi
@@ -31,24 +31,19 @@ fi
 # Deployment
 # Make sure to have a systemd init script as found in: https://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
 
+# Deploy backend service on both servers
 for i in "${SERVERS[@]}"
 do
   # Open ssh tunnel (http://www.g-loaded.eu/2006/11/24/auto-closing-ssh-tunnels/)
   echo "Opening SSH tunnel to proxy server..."
-  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
-  echo "Uploading jar files"
-  scp -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar &&
-    scp -r -i "$PRIV_APP" -P 1234 services/rates/build/libs/rates-*-boot.jar ubuntu@localhost:/var/lib/backend/rates.jar
+  ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+  echo "Uploading jar file"
+  scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no  -r -i "$PRIV_APP" -P 1234 services/backend/build/libs/backend-*-boot.jar ubuntu@localhost:/var/lib/backend/backend.jar
   sleep 3
 
   echo "Opening SSH tunnel to proxy server..."
-  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
+  ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
   echo "Restarting backend service"
-  ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
+  ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no  -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart backend.service
   sleep 3
-
-  echo "Opening SSH tunnel to proxy server..."
-  ssh -f -L 1234:"$i":22 -i "$PRIV_PROXY" -p 2202 ubuntu@"$JUMP_HOST" sleep 3;
-  echo "Restarting rates service"
-  ssh -i "$PRIV_APP" -p 1234 ubuntu@localhost sudo systemctl restart rates.service
 done
