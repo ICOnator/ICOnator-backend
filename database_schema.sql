@@ -71,9 +71,9 @@ CREATE TABLE payment_log (
   creation_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
   currency       CHARACTER VARYING(255) NOT NULL,
   paymentvalue   BIGINT NOT NULL,
-  fx_rate        NUMERIC(19, 2) NOT NULL,
+  fx_rate        NUMERIC(19, 2),
   usd            NUMERIC(19, 2),
-  blocktime      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  blocktime      TIMESTAMP WITHOUT TIME ZONE,
   email          CHARACTER VARYING(255)
 );
 CREATE INDEX email_payment_idx
