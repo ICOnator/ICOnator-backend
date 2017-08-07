@@ -51,7 +51,7 @@ CREATE INDEX pay_in_ether_public_key_idx
 
 --- TABLE: PAYIN
 CREATE TABLE payin (
-  id             BIGINT                      NOT NULL,
+  id             SERIAL PRIMARY KEY,
   block_nr_btc   BIGINT,
   block_nr_eth   BIGINT,
   creation_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
@@ -60,8 +60,6 @@ CREATE TABLE payin (
   wallet_address CHARACTER VARYING(255),
   wei            BIGINT
 );
-ALTER TABLE ONLY payin
-  ADD CONSTRAINT payin_pkey PRIMARY KEY (id);
 CREATE INDEX time_idx
   ON payin USING BTREE ("time");
 CREATE INDEX wallet_address2_idx

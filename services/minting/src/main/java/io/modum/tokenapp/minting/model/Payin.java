@@ -16,7 +16,7 @@ import static javax.persistence.TemporalType.TIMESTAMP;
 public class Payin {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private long id;
 
