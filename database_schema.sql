@@ -93,6 +93,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+CREATE TRIGGER notify_new_payin_address
+AFTER UPDATE OF pay_in_ether_public_key, pay_in_bitcoin_public_key ON investor
+FOR EACH ROW
+EXECUTE PROCEDURE notify_new_payin_address();
 
 --- SEQUENCE: FRESH KEY
 CREATE SEQUENCE fresh_key
