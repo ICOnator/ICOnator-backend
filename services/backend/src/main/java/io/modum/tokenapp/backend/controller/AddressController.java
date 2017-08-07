@@ -56,12 +56,12 @@ public class AddressController {
     }
 
     @Transactional
-    public AddressResponse setWalletAddress(AddressRequest addressRequest, String emailToken)
+    public AddressResponse setWalletAddress(AddressRequest addressRequest, String emailConfirmationToken)
             throws ConfirmationTokenNotFoundException, WalletAddressAlreadySetException,
             EthereumWalletAddressEmptyException, BitcoinAddressInvalidException, EthereumAddressInvalidException,
             UnexpectedException {
         // Get the user that belongs to the token
-        Optional<Investor> oInvestor = findInvestorOrThrowException(emailToken);
+        Optional<Investor> oInvestor = findInvestorOrThrowException(emailConfirmationToken);
 
         // Throw if the WalletAddress is already set
         checkIfWalletAddressIsAlreadySet(oInvestor);
