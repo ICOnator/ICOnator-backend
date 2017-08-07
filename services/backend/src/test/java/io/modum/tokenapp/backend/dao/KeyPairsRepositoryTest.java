@@ -32,7 +32,6 @@ public class KeyPairsRepositoryTest {
     private KeyPairsRepository keyPairsRepository;
 
     @Test
-    @Ignore
     public void testGetFresh() {
         long freshKeyID = keyPairsRepository.getFreshKeyID();
         KeyPairs kp = keyPairsRepository.findOne(freshKeyID);
