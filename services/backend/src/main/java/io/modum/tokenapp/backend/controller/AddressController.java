@@ -89,6 +89,7 @@ public class AddressController {
             investorRepository.save(investor);
             mailService.sendSummaryEmail(investor);
         } catch(Exception e) {
+            LOG.error("Unexpected exception in AddressController: {} {}", e.getMessage(), e.getCause());
             throw new UnexpectedException();
         }
 
