@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
+import javax.ws.rs.core.Context;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
@@ -56,10 +58,15 @@ public class RegisterController {
 
     @RequestMapping(value = "/register", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest)
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest,
+                                      @Context HttpServletRequest httpServletRequest)
             throws BaseException {
-        URI uri = null;
+        // Get IP address from request
+        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
+        if (ipAddress == null)
+            ipAddress = httpServletRequest.getRemoteAddr();
 
+        URI uri = null;
         try {
             String emailConfirmationToken = null;
             Optional<Investor> oInvestor = investorRepository.findOptionalByEmail(registerRequest.getEmail());
@@ -67,7 +74,7 @@ public class RegisterController {
                 emailConfirmationToken = oInvestor.get().getEmailConfirmationToken();
             } else {
                 emailConfirmationToken = generateRandomUUID();
-                oInvestor = Optional.of(createInvestor(registerRequest.getEmail(), emailConfirmationToken));
+                oInvestor = Optional.of(createInvestor(registerRequest.getEmail(), emailConfirmationToken, ipAddress));
                 Investor investor = oInvestor.get();
                 investorRepository.save(investor);
                 LOG.debug("Investor saved to the database: email="
@@ -119,8 +126,11 @@ public class RegisterController {
         return new URI(frontendUrl + frontendWalletUrlPath + randomUUID);
     }
 
-    private Investor createInvestor(String email, String randomUUID) {
-        return new Investor().setCreationDate(new Date()).setEmail(email).setEmailConfirmationToken(randomUUID);
+    private Investor createInvestor(String email, String randomUUID, String ipAddress) {
+        return new Investor()
+                .setCreationDate(new Date())
+                .setEmail(email).setEmailConfirmationToken(randomUUID)
+                .setIpAddress(ipAddress);
     }
 
 }

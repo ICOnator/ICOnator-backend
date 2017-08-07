@@ -32,7 +32,8 @@ CREATE TABLE investor (
   pay_in_ether_public_key   CHARACTER VARYING(255),
   refund_bitcoin_address    CHARACTER VARYING(255),
   refund_ether_address      CHARACTER VARYING(255),
-  wallet_address            CHARACTER VARYING(255)
+  wallet_address            CHARACTER VARYING(255),
+  ip_address                CHARACTER VARYING(255)
 );
 ALTER TABLE ONLY investor
   ADD CONSTRAINT investor_pkey PRIMARY KEY (id);
