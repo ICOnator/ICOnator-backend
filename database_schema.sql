@@ -13,7 +13,9 @@ CREATE TABLE exchange_rate (
   block_nr_eth  BIGINT,
   creation_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
   rate_btc      NUMERIC(19, 2),
-  rate_eth      NUMERIC(19, 2)
+  rate_eth      NUMERIC(19, 2),
+  rate_eth_bitfinex NUMERIC(19, 2),
+  rate_btc_bitfinex NUMERIC(19, 2)
 );
 ALTER TABLE ONLY exchange_rate
   ADD CONSTRAINT exchange_rate_pkey PRIMARY KEY (id);
