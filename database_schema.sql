@@ -65,6 +65,20 @@ CREATE INDEX time_idx
 CREATE INDEX wallet_address2_idx
   ON payin USING BTREE (wallet_address);
 
+--- TABLE: PAYMENT_LOG
+CREATE TABLE payment_log (
+  tx_identifier  CHARACTER VARYING(255) PRIMARY KEY,
+  creation_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  currency       CHARACTER VARYING(255) NOT NULL,
+  paymentvalue   BIGINT NOT NULL,
+  fx_rate        NUMERIC(19, 2) NOT NULL,
+  usd            NUMERIC(19, 2),
+  blocktime      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  email          CHARACTER VARYING(255)
+);
+CREATE INDEX email_payment_idx
+  ON payment_log USING BTREE ("email");
+
 --- TABLE: KEYPAIRS
 CREATE TABLE keypairs (
   id         BIGINT NOT NULL,
