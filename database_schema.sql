@@ -8,7 +8,7 @@ CACHE 1;
 
 -- TABLE: EXCHANGE RATE
 CREATE TABLE exchange_rate (
-  id            BIGINT                      NOT NULL,
+  id            SERIAL PRIMARY KEY,
   block_nr_btc  BIGINT,
   block_nr_eth  BIGINT,
   creation_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
@@ -17,8 +17,6 @@ CREATE TABLE exchange_rate (
   rate_eth_bitfinex NUMERIC(19, 2),
   rate_btc_bitfinex NUMERIC(19, 2)
 );
-ALTER TABLE ONLY exchange_rate
-  ADD CONSTRAINT exchange_rate_pkey PRIMARY KEY (id);
 CREATE INDEX block_nr_btc_idx
   ON exchange_rate USING BTREE (block_nr_btc);
 CREATE INDEX block_nr_eth_idx
