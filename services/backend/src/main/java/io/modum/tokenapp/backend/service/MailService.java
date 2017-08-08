@@ -1,6 +1,8 @@
 package io.modum.tokenapp.backend.service;
 
 import io.modum.tokenapp.backend.model.Investor;
+import io.modum.tokenapp.backend.service.exceptions.EmailNotPreparedException;
+import io.modum.tokenapp.backend.service.exceptions.EmailNotSentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +100,7 @@ public class MailService {
         return javaMailSender;
     }
 
-    public void sendConfirmationEmail(Investor investor, String confirmationEmaiLink) {
+    public void sendConfirmationEmail(Investor investor, String confirmationEmaiLink) throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(), confirmationEmailSubject, MailType.CONFIRMATION_EMAIL);
         this.mailContentBuilder.buildConfirmationEmail(oMessage, confirmationEmaiLink);
@@ -109,21 +111,21 @@ public class MailService {
         }
     }
 
-    public void sendSummaryEmail(Investor investor) {
+    public void sendSummaryEmail(Investor investor) throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(), summaryEmailSubject, MailType.SUMMARY_EMAIL);
         this.mailContentBuilder.buildSummaryEmail(oMessage, Optional.ofNullable(investor));
         sendMail(oMessage, MailType.SUMMARY_EMAIL);
     }
 
-    public void sendAdminMail(String content) {
+    public void sendAdminMail(String content) throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(this.admin);
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, this.admin, "ICO Backend: warning message", MailType.WARNING_ADMIN_EMAIL);
         this.mailContentBuilder.buildGenericWarningMail(oMessage, content);
         sendMail(oMessage, MailType.WARNING_ADMIN_EMAIL);
     }
 
-    private void sendMail(Optional<MimeMessageHelper> oMessage, MailType emailType) {
+    private void sendMail(Optional<MimeMessageHelper> oMessage, MailType emailType) throws EmailNotSentException {
         String recipient = null;
         try {
             if (oMessage.isPresent()) {
@@ -141,11 +143,13 @@ public class MailService {
             }
         } catch (Exception e) {
             LOG.error("CRITICAL: error sending email type {} to {}. Reason {}", emailType, recipient, e.toString());
+            throw new EmailNotSentException(e);
         }
     }
 
     private Optional<MimeMessageHelper> prepareMessage(Optional<MimeMessage> oMimeMessage,
-                                                       String recipient, String subject, MailType emailType) {
+                                                       String recipient, String subject, MailType emailType)
+            throws EmailNotPreparedException {
         Optional<MimeMessageHelper> oMessage = Optional.empty();
         try {
             if (oMimeMessage.isPresent()) {
@@ -162,7 +166,8 @@ public class MailService {
                 }
             }
         } catch (MessagingException e) {
-            LOG.error("\"Error building the message of email type {} to {}", emailType, recipient);
+            LOG.error("Error building the message of email type {} to {}", emailType, recipient);
+            throw new EmailNotPreparedException(e);
         }
         return oMessage;
     }

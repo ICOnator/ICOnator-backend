@@ -12,6 +12,7 @@ public class Email {
     private Investor investor;
     private URI confirmationEmaiLink;
     private Date timestamp;
+    private int reQueued;
 
     public Email(MailType mailType, Investor investor, URI confirmationEmaiLink) {
         this.mailType = mailType;
@@ -41,6 +42,14 @@ public class Email {
 
     public Date getTimestamp() {
         return timestamp;
+    }
+
+    public int getReQueued() {
+        return reQueued;
+    }
+
+    public void setReQueued(int reQueued) {
+        this.reQueued = reQueued;
     }
 
 }
