@@ -6,7 +6,7 @@ import io.modum.tokenapp.backend.controller.exceptions.UnexpectedException;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.model.Investor;
-import io.modum.tokenapp.backend.service.MailService;
+import io.modum.tokenapp.backend.service.FileQueueService;
 import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class RegisterController {
     private InvestorRepository investorRepository;
 
     @Autowired
-    private MailService mailService;
+    private FileQueueService fileQueueService;
 
     public RegisterController() {
 
@@ -81,11 +81,11 @@ public class RegisterController {
                     && oInvestor.get().getWalletAddress() != null
                     && oInvestor.get().getPayInBitcoinPublicKey() != null
                     && oInvestor.get().getPayInEtherPublicKey() != null){
-                mailService.sendSummaryEmail(oInvestor.get());
+                fileQueueService.addSummaryEmail(oInvestor.get());
                 return ResponseEntity.ok().build();
             } else {
                 uri = buildUri(emailConfirmationToken);
-                mailService.sendConfirmationEmail(oInvestor.get(), uri.toASCIIString());
+                fileQueueService.addConfirmationEmail(oInvestor.get(), uri);
                 return ResponseEntity.created(uri).build();
             }
 

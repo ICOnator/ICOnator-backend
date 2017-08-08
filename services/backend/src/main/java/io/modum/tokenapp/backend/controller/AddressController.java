@@ -8,13 +8,16 @@ import io.modum.tokenapp.backend.dto.AddressResponse;
 import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.backend.model.KeyPairs;
 import io.modum.tokenapp.backend.service.AddressService;
-import io.modum.tokenapp.backend.service.MailService;
+import io.modum.tokenapp.backend.service.FileQueueService;
 import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.validation.Valid;
@@ -40,7 +43,7 @@ public class AddressController {
     private AddressService addressService;
 
     @Autowired
-    private MailService mailService;
+    private FileQueueService fileQueueService;
 
     public AddressController() {
 
@@ -87,7 +90,7 @@ public class AddressController {
                     .setRefundBitcoinAddress(refundBitcoinAddress)
                     .setRefundEtherAddress(addPrefixEtherIfNotExist(refundEthereumAddress));
             investorRepository.save(investor);
-            mailService.sendSummaryEmail(investor);
+            fileQueueService.addSummaryEmail(investor);
         } catch(Exception e) {
             LOG.error("Unexpected exception in AddressController: {} {}", e.getMessage(), e.getCause());
             throw new UnexpectedException();
