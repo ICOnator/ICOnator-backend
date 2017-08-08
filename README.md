@@ -1,13 +1,10 @@
+![Modum Logo](https://assets.modum.io/wp-content/uploads/2017/03/modum_logo_white_space-cropped.png)
+
 # Modum.io TokenApp Backend
 
 ## Description
-TODO
 
-## Development
-TODO
-
-## Deployment
-TODO
+This is the code for the modum token sale app backend, found under https://token.modum.io. For more information, visit https://modum.io/tokensale
 
 ## API
 
