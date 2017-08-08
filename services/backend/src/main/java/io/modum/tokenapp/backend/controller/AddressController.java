@@ -13,6 +13,8 @@ import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -48,7 +50,7 @@ public class AddressController {
 
     @RequestMapping(value = "/address", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
-    public AddressResponse address(@Valid @RequestBody AddressRequest addressRequest,
+    public ResponseEntity<AddressResponse> address(@Valid @RequestBody AddressRequest addressRequest,
                                    @Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @RequestHeader(value="Authorization") String authorizationHeader)
             throws BaseException {
         String emailConfirmationToken = getEmailConfirmationToken(authorizationHeader);
@@ -56,15 +58,17 @@ public class AddressController {
     }
 
     @Transactional
-    public AddressResponse setWalletAddress(AddressRequest addressRequest, String emailConfirmationToken)
+    public ResponseEntity<AddressResponse> setWalletAddress(AddressRequest addressRequest, String emailConfirmationToken)
             throws ConfirmationTokenNotFoundException, WalletAddressAlreadySetException,
             EthereumWalletAddressEmptyException, BitcoinAddressInvalidException, EthereumAddressInvalidException,
             UnexpectedException {
         // Get the user that belongs to the token
         Optional<Investor> oInvestor = findInvestorOrThrowException(emailConfirmationToken);
 
-        // Throw if the WalletAddress is already set
-        checkIfWalletAddressIsAlreadySet(oInvestor);
+        // Return 409 if the WalletAddress is already set
+        if (oInvestor.get().getWalletAddress() != null) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
 
         // Get the addresses from the given payload
         String walletAddress = replacePrefixAddress(addressRequest.getAddress());
@@ -94,9 +98,9 @@ public class AddressController {
         }
 
         // Return DTO
-        return new AddressResponse()
+        return new ResponseEntity<>(new AddressResponse()
                 .setBtc(addressService.getBitcoinAddressFromPublicKey(keyPairs.getPublicBtc()))
-                .setEther(addressService.getEthereumAddressFromPublicKey(keyPairs.getPublicEth()));
+                .setEther(addressService.getEthereumAddressFromPublicKey(keyPairs.getPublicEth())), HttpStatus.OK);
     }
 
     private String getEmailConfirmationToken(String authorizationHeader) throws AuthorizationHeaderMissingException {
@@ -127,13 +131,6 @@ public class AddressController {
             return address;
         } else {
             return address.startsWith("0x") ? address : ("0x" + address);
-        }
-    }
-
-    private void checkIfWalletAddressIsAlreadySet(Optional<Investor> oInvestor)
-            throws WalletAddressAlreadySetException {
-        if (oInvestor.isPresent() && oInvestor.get().getWalletAddress() != null) {
-            throw new WalletAddressAlreadySetException();
         }
     }
 
