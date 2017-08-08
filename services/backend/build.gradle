@@ -9,9 +9,8 @@ targetCompatibility = JavaVersion.VERSION_1_8
 repositories {
     jcenter()
     mavenCentral()
-    maven {
-        url 'https://dl.bintray.com/ethereum/maven/'
-    }
+    maven { url "https://dl.bintray.com/ethereum/maven/" }
+    maven { url "https://jitpack.io" }
 }
 
 springBoot {
@@ -36,6 +35,8 @@ dependencies {
 
     // file-based queue
     compile 'com.squareup:tape:1.2.3'
+    // qr-code library
+    compile 'com.github.kenglxn.QRGen:javase:2.3.0'
 
     runtime 'net.logstash.logback:logstash-logback-encoder:4.11'
 

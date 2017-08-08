@@ -165,7 +165,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                                 <td align="center" width="340">
                                   <table border="0" align="center" cellpadding="0" cellspacing="0">
                                     <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://blockchain.info/qr(data=${payInBitcoinAddress}, size=200)}" alt="Pay-In: Bitcoin Address" /></td>
+                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" src="payInBitcoinAddressQRCode.png" th:src="|cid:${payInBitcoinAddressQRCode}|" alt="Pay-In: Bitcoin Address" /></td>
                                     </tr>
                                     <tr>
                                       <td height="10"></td>
@@ -238,7 +238,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                                 <td align="center" width="340">
                                   <table border="0" align="center" cellpadding="0" cellspacing="0">
                                     <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://chart.googleapis.com/chart(cht='qr', chl=${payInEtherAddress}, chs='265x200', choe='UTF-8', chld='L|2')}" alt="Pay-In: Ether Address" /></td>
+                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" src="payInEtherAddressQRCode.png" th:src="|cid:${payInEtherAddressQRCode}|" alt="Pay-In: Ether Address" /></td>
                                     </tr>
                                     <tr>
                                       <td height="10"></td>
