@@ -23,7 +23,7 @@ if [ ! -f "$PRIV_APP" ]; then
 fi
 
 # Build the backend
-if ! ./gradlew clean assemble; then
+if ! ./gradlew clean services:backend:build; then
     echo "gradle build failed"
     exit 1
 fi

@@ -43,6 +43,8 @@ public class Investor {
     @Column(name = "refund_bitcoin_address")
     private String refundBitcoinAddress;
 
+    @Column(name = "ip_address")
+    private String ipAddress;
 
     public long getId() {
         return id;
@@ -121,6 +123,15 @@ public class Investor {
 
     public Investor setRefundBitcoinAddress(String refundBitcoinAddress) {
         this.refundBitcoinAddress = refundBitcoinAddress;
+        return this;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public Investor setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
         return this;
     }
 

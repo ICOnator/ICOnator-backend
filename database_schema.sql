@@ -32,7 +32,8 @@ CREATE TABLE investor (
   pay_in_ether_public_key   CHARACTER VARYING(255),
   refund_bitcoin_address    CHARACTER VARYING(255),
   refund_ether_address      CHARACTER VARYING(255),
-  wallet_address            CHARACTER VARYING(255)
+  wallet_address            CHARACTER VARYING(255),
+  ip_address                CHARACTER VARYING(255)
 );
 ALTER TABLE ONLY investor
   ADD CONSTRAINT investor_pkey PRIMARY KEY (id);
@@ -54,7 +55,7 @@ CREATE TABLE payment_log (
   tx_identifier  CHARACTER VARYING(255) PRIMARY KEY,
   creation_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
   currency       CHARACTER VARYING(255) NOT NULL,
-  paymentvalue   BIGINT NOT NULL,
+  paymentvalue   NUMERIC(30, 0) NOT NULL,
   fx_rate        NUMERIC(19, 2),
   usd            NUMERIC(19, 2),
   email          CHARACTER VARYING(255)
