@@ -39,7 +39,7 @@ public class SendEmailTask {
                 Email email = oEmail.get();
                 switch (email.getMailType()) {
                     case CONFIRMATION_EMAIL:
-                        this.mailService.sendConfirmationEmail(email.getInvestor(), email.getInvestor().getEmail());
+                        this.mailService.sendConfirmationEmail(email.getInvestor(), email.getConfirmationEmaiLink().toString());
                         break;
                     case SUMMARY_EMAIL:
                         this.mailService.sendSummaryEmail(email.getInvestor());
