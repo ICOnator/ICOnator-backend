@@ -6,6 +6,10 @@ plugins {
 allprojects {
     group 'io.modum.tokenapp'
     version '0.0.1-SNAPSHOT'
+
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
 }
 
 subprojects {
