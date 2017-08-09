@@ -1,6 +1,6 @@
-![Modum Logo](https://assets.modum.io/wp-content/uploads/2017/03/modum_logo_white_space-cropped.png)
+![modum.io Logo](https://assets.modum.io/wp-content/uploads/2017/03/modum_logo_white_space-cropped.png)
 
-# Modum.io TokenApp Backend
+# modum.io TokenApp Backend
 
 ## Description
 
