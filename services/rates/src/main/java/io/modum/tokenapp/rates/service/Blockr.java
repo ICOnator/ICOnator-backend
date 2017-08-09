@@ -3,6 +3,7 @@ package io.modum.tokenapp.rates.service;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.modum.tokenapp.rates.bean.Options;
 import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -43,11 +44,14 @@ public class Blockr {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private Options options;
+
     public long getCurrentBlockNr() throws IOException {
         String s = "https://" + url + "/api/v1/block/info/last";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -60,7 +64,7 @@ public class Blockr {
         String s = "https://" + url + "/api/v1/address/txs/" + address + "?amount_format=string";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -84,7 +88,7 @@ public class Blockr {
         String s = "https://" + url + "/api/v1/tx/info/" + tx;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();

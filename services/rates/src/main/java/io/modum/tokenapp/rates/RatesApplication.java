@@ -1,5 +1,7 @@
 package io.modum.tokenapp.rates;
 
+import io.modum.tokenapp.rates.bean.Options;
+import io.modum.tokenapp.rates.dao.ExchangeRateRepository;
 import io.modum.tokenapp.rates.service.ExchangeRate;
 import org.kohsuke.args4j.*;
 import org.slf4j.Logger;
@@ -14,7 +16,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,11 +35,14 @@ public class RatesApplication implements CommandLineRunner {
     @Autowired
     private ExchangeRate exchangeRate;
 
-    @Option(name="-r",usage="rate to query APIs")
-    private int rate;
+    @Autowired
+    private Options options;
 
     @Argument
     private List<String> arguments = new ArrayList<>();
+
+    @Autowired
+    private ExchangeRateRepository repository;
 
     @Bean
     ThreadPoolTaskScheduler taskScheduler() {
@@ -52,10 +60,10 @@ public class RatesApplication implements CommandLineRunner {
     public void run(String... args) throws Exception {
         if (args.length == 0) {
             LOG.warn("No arguments provided. Defaulting to 30 second interval.");
-            rate = 30;
+            options.setRate(30);
         } else {
-            CmdLineParser parser = new CmdLineParser(this);
-            rate = 0;
+            CmdLineParser parser = new CmdLineParser(options);
+            options.setRate(0);
             try {
                 parser.parseArgument(args);
             } catch (CmdLineException e) {
@@ -68,7 +76,7 @@ public class RatesApplication implements CommandLineRunner {
                 return;
             }
         }
-        if(rate > 0) {
+        if(options.getRate() > 0) {
             scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -78,7 +86,28 @@ public class RatesApplication implements CommandLineRunner {
                         LOG.error("cannot fetch", e);
                     }
                 }
-            }, rate * 1000);
+            }, options.getRate() * 1000);
+        }
+        if(options.getExportFile() != null) {
+            File file = new File(options.getExportFile());
+            FileWriter fileWriter = new FileWriter(file);
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            for(io.modum.tokenapp.rates.model.ExchangeRate p:repository.findAllByOrderByCreationDate()) {
+                printWriter.print(p.getCreationDate().getTime());
+                printWriter.print(",");
+                printWriter.print(p.getBlockNrBtc());
+                printWriter.print(",");
+                printWriter.print(p.getBlockNrEth());
+                printWriter.print(",");
+                printWriter.print(p.getRateBtc());
+                printWriter.print(",");
+                printWriter.print(p.getRateBtcBitfinex());
+                printWriter.print(",");
+                printWriter.print(p.getRateEth());
+                printWriter.print(",");
+                printWriter.print(p.getRateEthBitfinex());
+            }
+            fileWriter.close();
         }
     }
 }
