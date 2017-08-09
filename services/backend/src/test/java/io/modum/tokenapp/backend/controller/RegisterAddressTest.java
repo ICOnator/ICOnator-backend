@@ -331,7 +331,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                                         .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString())
                         )
                 ))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
 
     }
 
