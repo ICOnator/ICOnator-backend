@@ -13,6 +13,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import javax.mail.MessagingException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -64,10 +65,16 @@ public class MailContentBuilder {
                 context.setVariable("refundBitcoinAddress", oInvestor.get().getRefundBitcoinAddress());
 
                 context.setVariable("modumLogo", "modumLogo");
+                context.setVariable("payInEtherAddressQRCode", "payInEtherAddressQRCode");
+                context.setVariable("payInBitcoinAddressQRCode", "payInBitcoinAddressQRCode");
+                context.setVariable("refundEtherAddressQRCode", "refundEtherAddressQRCode");
+                context.setVariable("refundBitcoinAddressQRCode", "refundBitcoinAddressQRCode");
+
                 String html5Content = templateEngine.process("summary_email", context);
 
                 oMessage.get().setText(html5Content, true);
 
+                // modumLogo:
                 final InputStreamSource modumLogoImage =
                         new ByteArrayResource(IOUtils.toByteArray(this.getClass().getResourceAsStream("/static/images/modum_logo.png")));
                 oMessage.get().addInline("modumLogo", modumLogoImage, "image/png");

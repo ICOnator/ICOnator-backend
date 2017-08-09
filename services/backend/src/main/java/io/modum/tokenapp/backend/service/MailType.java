@@ -4,6 +4,6 @@ public enum MailType {
 
     WARNING_ADMIN_EMAIL,
     CONFIRMATION_EMAIL,
-    SUMMARY_EMAIL
+    SUMMARY_EMAIL;
 
 }

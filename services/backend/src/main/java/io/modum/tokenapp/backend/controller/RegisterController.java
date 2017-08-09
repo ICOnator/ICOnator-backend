@@ -1,26 +1,28 @@
 package io.modum.tokenapp.backend.controller;
 
 import io.modum.tokenapp.backend.controller.exceptions.BaseException;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import io.modum.tokenapp.backend.controller.exceptions.ConfirmationTokenNotFoundException;
 import io.modum.tokenapp.backend.controller.exceptions.UnexpectedException;
 import io.modum.tokenapp.backend.dao.InvestorRepository;
+import io.modum.tokenapp.backend.dto.AddressResponse;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.model.Investor;
-import io.modum.tokenapp.backend.service.MailService;
+import io.modum.tokenapp.backend.service.FileQueueService;
+import io.modum.tokenapp.backend.service.AddressService;
 import io.modum.tokenapp.backend.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import javax.ws.rs.core.Context;
@@ -50,7 +52,10 @@ public class RegisterController {
     private InvestorRepository investorRepository;
 
     @Autowired
-    private MailService mailService;
+    private FileQueueService fileQueueService;
+
+    @Autowired
+    private AddressService addressService;
 
     public RegisterController() {
 
@@ -65,6 +70,7 @@ public class RegisterController {
         String ipAddress = httpServletRequest.getHeader("X-Real-IP");
         if (ipAddress == null)
             ipAddress = httpServletRequest.getRemoteAddr();
+        LOG.info("/register called from {} with email: {}", ipAddress, registerRequest.getEmail());
 
         URI uri = null;
         try {
@@ -88,11 +94,11 @@ public class RegisterController {
                     && oInvestor.get().getWalletAddress() != null
                     && oInvestor.get().getPayInBitcoinPublicKey() != null
                     && oInvestor.get().getPayInEtherPublicKey() != null){
-                mailService.sendSummaryEmail(oInvestor.get());
+                fileQueueService.addSummaryEmail(oInvestor.get());
                 return ResponseEntity.ok().build();
             } else {
                 uri = buildUri(emailConfirmationToken);
-                mailService.sendConfirmationEmail(oInvestor.get(), uri.toASCIIString());
+                fileQueueService.addConfirmationEmail(oInvestor.get(), uri);
                 return ResponseEntity.created(uri).build();
             }
 
@@ -104,8 +110,14 @@ public class RegisterController {
 
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
     public ResponseEntity<?> isConfirmationTokenValid(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
-                                          HttpServletResponse response)
+                                                      @Context HttpServletRequest httpServletRequest)
             throws BaseException {
+        // Get IP address from request
+        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
+        if (ipAddress == null)
+            ipAddress = httpServletRequest.getRemoteAddr();
+        LOG.info("/validate called from {} with token {}", ipAddress, emailConfirmationToken);
+
         Optional<Investor> oInvestor = Optional.empty();
         try {
             oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
@@ -115,7 +127,14 @@ public class RegisterController {
         if (!oInvestor.isPresent()) {
             throw new ConfirmationTokenNotFoundException();
         }
-        return ResponseEntity.ok().build();
+        if (oInvestor.get().getWalletAddress() == null) {
+            return ResponseEntity.ok().build();
+        } else {
+            AddressResponse addressResponse = new AddressResponse()
+                    .setBtc(addressService.getBitcoinAddressFromPublicKey(oInvestor.get().getPayInBitcoinPublicKey()))
+                    .setEther(addressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
+            return new ResponseEntity<>(addressResponse, HttpStatus.OK);
+        }
     }
 
     private String generateRandomUUID() {

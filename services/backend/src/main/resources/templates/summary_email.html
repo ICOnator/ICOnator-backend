@@ -79,7 +79,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                             </tr>
                             <!--content-->
                             <tr align="center">
-                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">Below you find the summary of your modum.io ICO account.</td>
+                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">Below you find the summary of your modum.io token sale account.</td>
                               </tr>
                             <tr align="center">
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">You can send your Ether and Bitcoin to the Pay-In addresses from any source, including wallets from any Exchange.</td>
@@ -159,22 +159,6 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${payInBitcoinAddress}" th:href="@{https://blockchain.info/address/{payInBitcoinAddress}(payInBitcoinAddress=${payInBitcoinAddress})}"></a></td>
                             </tr>
                             <!--end content-->
-                            <!--img-->
-                            <table align="center" border="0" cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td align="center" width="340">
-                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://blockchain.info/qr(data=${payInBitcoinAddress}, size=200)}" alt="Pay-In: Bitcoin Address" /></td>
-                                    </tr>
-                                    <tr>
-                                      <td height="10"></td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            <!--end img-->
                           </table>
                         </td>
                       </tr>
@@ -232,22 +216,6 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${payInEtherAddress}" th:href="@{https://etherscan.io/address/{payInEtherAddress}(payInEtherAddress=${payInEtherAddress})}"></a></td>
                             </tr>
                             <!--end content-->
-                            <!--img-->
-                            <table align="center" border="0" cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td align="center" width="340">
-                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://chart.googleapis.com/chart(cht='qr', chl=${payInEtherAddress}, chs='265x200', choe='UTF-8', chld='L|2')}" alt="Pay-In: Ether Address" /></td>
-                                    </tr>
-                                    <tr>
-                                      <td height="10"></td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            <!--end img-->
                           </table>
                         </td>
                       </tr>
@@ -305,24 +273,6 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${refundBitcoinAddress}" th:href="@{https://blockchain.info/address/{refundBitcoinAddress}(refundBitcoinAddress=${refundBitcoinAddress})}"></a></td>
                             </tr>
                             <!--end content-->
-                            <!--img-->
-                            <!-- Not sure yet if the QR code is necessary here
-                            <table align="center" border="0" cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td align="center" width="340">
-                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://blockchain.info/qr(data=${refundBitcoinAddress}, size=200)}" alt="Refund: Bitcoin Address" /></td>
-                                    </tr>
-                                    <tr>
-                                      <td height="10"></td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            -->
-                            <!--end img-->
                           </table>
                         </td>
                       </tr>
@@ -380,24 +330,6 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${refundEtherAddress}" th:href="@{https://etherscan.io/address/{refundEtherAddress}(refundEtherAddress=${refundEtherAddress})}"></a></td>
                             </tr>
                             <!--end content-->
-                            <!--img-->
-                            <!-- Not sure yet if the QR code is necessary here
-                            <table align="center" border="0" cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td align="center" width="340">
-                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://chart.googleapis.com/chart(cht='qr', chl=${refundEtherAddress}, chs='265x200', choe='UTF-8', chld='L|2')}" alt="Refund: Ether Address" /></td>
-                                    </tr>
-                                    <tr>
-                                      <td height="10"></td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            -->
-                            <!--end img-->
                           </table>
                         </td>
                       </tr>
@@ -449,30 +381,12 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                             </tr>
                             <!--content-->
                             <tr align="center">
-                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">This is the wallet address that <strong style="text-decoration: underline">you</strong> specified to receive modum.io tokens.</td>
+                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">This is the wallet address that you specified to receive modum.io tokens.</td>
                             </tr>
                             <tr align="center">
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${walletAddress}" th:href="@{https://etherscan.io/address/{walletAddress}(walletAddress=${walletAddress})}"></a></td>
                             </tr>
                             <!--end content-->
-                            <!--img-->
-                            <!-- Not sure yet if the QR code is necessary here
-                            <table align="center" border="0" cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td align="center" width="340">
-                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" th:src="@{https://chart.googleapis.com/chart(cht='qr', chl=${walletAddress}, chs='265x200', choe='UTF-8', chld='L|2')}" alt="Token Wallet Address" /></td>
-                                    </tr>
-                                    <tr>
-                                      <td height="10"></td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            -->
-                            <!--end img-->
                           </table>
                         </td>
                       </tr>

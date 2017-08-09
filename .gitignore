@@ -6,3 +6,4 @@ out/
 *.iml
 .asscache
 **/logs/*
+**/email-file-queue.bin
