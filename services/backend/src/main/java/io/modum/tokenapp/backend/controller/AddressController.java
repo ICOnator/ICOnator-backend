@@ -73,10 +73,16 @@ public class AddressController {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        // Get the addresses from the given payload
-        String walletAddress = replacePrefixAddress(addressRequest.getAddress());
-        String refundEthereumAddress = replacePrefixAddress(addressRequest.getRefundETH());
+        // Get refund addresses and if set check for validity
         String refundBitcoinAddress = addressRequest.getRefundBTC();
+        String refundEthereumAddress = replacePrefixAddress(addressRequest.getRefundETH());
+        if (refundBitcoinAddress != null && !addressService.isValidBitcoinAddress(refundBitcoinAddress))
+            throw new BitcoinAddressInvalidException();
+
+        if (refundEthereumAddress != null && !addressService.isValidEthereumAddress(refundEthereumAddress))
+            throw new EthereumAddressInvalidException();
+
+        String walletAddress = replacePrefixAddress(addressRequest.getAddress());
 
         // Make sure all addresses are valid and wallet address sis non-empty
         checkWalletAndRefundAddressesOrThrowException(walletAddress, refundEthereumAddress, refundBitcoinAddress);
@@ -123,7 +129,7 @@ public class AddressController {
 
     private String replacePrefixAddress(String address) {
         if (address == null) {
-            return address;
+            return null;
         } else {
             return address.replaceAll("^0x", "");
         }
@@ -131,7 +137,7 @@ public class AddressController {
 
     private String addPrefixEtherIfNotExist(String address) {
         if (address == null) {
-            return address;
+            return null;
         } else {
             return address.startsWith("0x") ? address : ("0x" + address);
         }
