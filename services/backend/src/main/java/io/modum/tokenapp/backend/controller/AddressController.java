@@ -22,8 +22,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
+import javax.ws.rs.core.Context;
 import java.util.Optional;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -54,9 +56,23 @@ public class AddressController {
     @RequestMapping(value = "/address", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<AddressResponse> address(@Valid @RequestBody AddressRequest addressRequest,
-                                   @Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @RequestHeader(value="Authorization") String authorizationHeader)
+                                                   @Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @RequestHeader(value="Authorization") String authorizationHeader,
+                                                   @Context HttpServletRequest httpServletRequest)
             throws BaseException {
+        // Get token
         String emailConfirmationToken = getEmailConfirmationToken(authorizationHeader);
+
+        // Get IP address from request
+        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
+        if (ipAddress == null)
+            ipAddress = httpServletRequest.getRemoteAddr();
+        LOG.info("/address called from {} with token {}, address {}, refundBTC {} refundETH {}",
+                ipAddress,
+                emailConfirmationToken,
+                addressRequest.getAddress(),
+                addressRequest.getRefundBTC(),
+                addressRequest.getRefundETH());
+
         return setWalletAddress(addressRequest, emailConfirmationToken);
     }
 

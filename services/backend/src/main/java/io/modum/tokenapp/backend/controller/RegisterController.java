@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import javax.ws.rs.core.Context;
@@ -71,6 +70,7 @@ public class RegisterController {
         String ipAddress = httpServletRequest.getHeader("X-Real-IP");
         if (ipAddress == null)
             ipAddress = httpServletRequest.getRemoteAddr();
+        LOG.info("/register called from {} with email: {}", ipAddress, registerRequest.getEmail());
 
         URI uri = null;
         try {
@@ -110,8 +110,14 @@ public class RegisterController {
 
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
     public ResponseEntity<?> isConfirmationTokenValid(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
-                                          HttpServletResponse response)
+                                                      @Context HttpServletRequest httpServletRequest)
             throws BaseException {
+        // Get IP address from request
+        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
+        if (ipAddress == null)
+            ipAddress = httpServletRequest.getRemoteAddr();
+        LOG.info("/validate called from {} with token {}", ipAddress, emailConfirmationToken);
+
         Optional<Investor> oInvestor = Optional.empty();
         try {
             oInvestor = investorRepository.findOptionalByEmailConfirmationToken(emailConfirmationToken);
