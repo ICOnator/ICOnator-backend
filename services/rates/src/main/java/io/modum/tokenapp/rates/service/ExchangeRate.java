@@ -64,28 +64,29 @@ public class ExchangeRate {
     public void fetchRates() throws IOException {
         LOG.info("Fetching rates...");
 
-        BigDecimal rateETH = BigDecimal.ZERO;
+        BigDecimal rateETH = null;
         try {
             rateETH = getETHUSD();
         } catch (Throwable t) {
             LOG.error("could not fetch ETH from Kraken", t);
         }
 
-        BigDecimal rateBTC = BigDecimal.ZERO;
+        BigDecimal rateBTC = null;
         try {
             rateBTC = getBTCUSD();
         }
         catch (Throwable t) {
             LOG.error("could not fetch BTC from Kraken", t);
         }
-        BigDecimal rateETHBitfinex = BigDecimal.ZERO;
+
+        BigDecimal rateETHBitfinex = null;
         try {
             rateETHBitfinex = getETHUSDBitfinex();
         } catch (Throwable t) {
             LOG.error("could not fetch ETH from Bitstamp", t);
         }
 
-        BigDecimal rateBTCBitfinex = BigDecimal.ZERO;
+        BigDecimal rateBTCBitfinex = null;
         try {
             rateBTCBitfinex = getBTCUSDBitfinex();
         }
@@ -93,7 +94,7 @@ public class ExchangeRate {
             LOG.error("could not fetch BTC from Bitstamp", t);
         }
 
-        long blockNrETH = 0;
+        Long blockNrETH = null;
         try {
             blockNrETH = etherscan.getCurrentBlockNr();
         }
@@ -101,7 +102,7 @@ public class ExchangeRate {
             LOG.error("could not fetch current ETH blocknr", t);
         }
 
-        long blockNrBTC = 0;
+        Long blockNrBTC = null;
         try {
             blockNrBTC = blockr.getCurrentBlockNr();
         }
