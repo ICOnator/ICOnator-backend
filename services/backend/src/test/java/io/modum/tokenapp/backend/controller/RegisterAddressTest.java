@@ -108,7 +108,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
 
 
         mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken + "-error")))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isUnauthorized())
                 .andDo(print());
     }
 
@@ -165,7 +165,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                                         .setRefundETH("")
                         )
                 ))
-                .andExpect(status().is2xxSuccessful()).andReturn();
+                .andExpect(status().isBadRequest()).andReturn();
 
         LOG.info(mvcResultRegister.getResponse().getContentAsString());
 
@@ -189,7 +189,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
         String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
 
         mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "1/validate"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -215,7 +215,7 @@ public class RegisterAddressTest extends TokenAppBaseTest {
                                         .setRefundETH("")
                         )
                 ))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
