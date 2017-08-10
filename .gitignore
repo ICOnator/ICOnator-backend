@@ -7,3 +7,4 @@ out/
 .asscache
 **/logs/*
 **/email-file-queue.bin
+reports/
