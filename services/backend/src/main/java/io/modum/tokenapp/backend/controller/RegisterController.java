@@ -72,7 +72,6 @@ public class RegisterController {
             ipAddress = httpServletRequest.getRemoteAddr();
         LOG.info("/register called from {} with email: {}", ipAddress, registerRequest.getEmail());
 
-        URI uri = null;
         try {
             String emailConfirmationToken = null;
             Optional<Investor> oInvestor = investorRepository.findOptionalByEmail(registerRequest.getEmail());
@@ -97,7 +96,7 @@ public class RegisterController {
                 fileQueueService.addSummaryEmail(oInvestor.get());
                 return ResponseEntity.ok().build();
             } else {
-                uri = buildUri(emailConfirmationToken);
+                URI uri = new URI(frontendUrl);
                 fileQueueService.addConfirmationEmail(oInvestor.get(), uri);
                 return ResponseEntity.created(uri).build();
             }
@@ -139,10 +138,6 @@ public class RegisterController {
 
     private String generateRandomUUID() {
         return UUID.randomUUID().toString();
-    }
-
-    private URI buildUri(String randomUUID) throws URISyntaxException {
-        return new URI(frontendUrl + frontendWalletUrlPath + randomUUID);
     }
 
     private Investor createInvestor(String email, String randomUUID, String ipAddress) {
