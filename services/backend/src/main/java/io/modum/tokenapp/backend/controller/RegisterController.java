@@ -96,9 +96,9 @@ public class RegisterController {
                 fileQueueService.addSummaryEmail(oInvestor.get());
                 return ResponseEntity.ok().build();
             } else {
-                URI uri = new URI(frontendUrl);
-                fileQueueService.addConfirmationEmail(oInvestor.get(), uri);
-                return ResponseEntity.created(uri).build();
+                URI emailLinkUri = new URI(frontendUrl + frontendWalletUrlPath + emailConfirmationToken);
+                fileQueueService.addConfirmationEmail(oInvestor.get(), emailLinkUri);
+                return ResponseEntity.created(new URI(frontendUrl)).build();
             }
 
         } catch (Exception e) {
