@@ -1,6 +1,6 @@
 #!/bin/bash
 RATES_SERVER="monitorapp1.modum.intern"
-JUMP_HOST="jump.modum.io"
+JUMP_HOST="jump1.modum.io"
 
 #if only one key is provided, both servers have the same key
 PRIV_PROXY=$1
