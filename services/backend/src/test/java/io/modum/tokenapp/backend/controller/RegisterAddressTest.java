@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modum.tokenapp.backend.TokenAppBaseTest;
 import io.modum.tokenapp.backend.bean.BitcoinKeyGenerator;
 import io.modum.tokenapp.backend.bean.EthereumKeyGenerator;
+import io.modum.tokenapp.backend.dao.InvestorRepository;
 import io.modum.tokenapp.backend.dto.AddressRequest;
 import io.modum.tokenapp.backend.dto.RegisterRequest;
 import io.modum.tokenapp.backend.utils.Constants;
@@ -16,26 +17,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static io.modum.tokenapp.backend.controller.RegisterAddressTestImpl.generateBitcoinKey;
+import static io.modum.tokenapp.backend.controller.RegisterAddressTestImpl.generateEthereumKey;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class RegisterAddressTest extends TokenAppBaseTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterAddressTest.class);
-
-    public static final String REGISTER = "/register";
-    public static final String REGISTER_CONFIRMATION_TOKEN_VALIDATE = "/register/%s/validate";
-    public static final String ADDRESS = "/address";
-
-    private static MockMvc mockMvc;
 
     @Autowired
     private WebApplicationContext webAppContext;
@@ -47,6 +37,9 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     private BitcoinKeyGenerator bitcoinKeyGenerator;
 
     @Autowired
+    private InvestorRepository investorRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Value("${modum.tokenapp.frontendWalletPath}")
@@ -55,284 +48,177 @@ public class RegisterAddressTest extends TokenAppBaseTest {
     @Rule
     public ExpectedException inetAddressExceptionRule = ExpectedException.none();
 
+    private RegisterAddressTestImpl testImpl;
+
+    public static final String TEST_EMAIL = "tokentest@modum.io";
+    public static final String INVALID_CONFIRMATION_EMAIL_TOKEN = "621cb1d2-7e0c-450c-a4fd-22d0e26fdc5e";
+
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext).build();
+        testImpl = new RegisterAddressTestImpl()
+                .setWebApplicationContext(webAppContext)
+                .setEthereumKeyGenerator(ethereumKeyGenerator)
+                .setBitcoinKeyGenerator(bitcoinKeyGenerator)
+                .setInvestorRepository(investorRepository)
+                .setObjectMapper(objectMapper)
+                .initializeMockMvc();
     }
 
     @Test
     public void testRegisterEmail() throws Exception {
-        mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful());
-    }
-
-    @Test
-    public void testConfirmationEmail() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResult.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate").contentType(APPLICATION_JSON))
-                .andExpect(status().is2xxSuccessful());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful());
     }
 
     @Test
     public void testConfirmationIsValid() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResult.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken))
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().is2xxSuccessful());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful());
     }
 
     @Test
     public void testConfirmationIsInvalidValid() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResult.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-
-        mockMvc.perform(get(String.format(REGISTER_CONFIRMATION_TOKEN_VALIDATE, emailConfirmationToken + "-error")))
-                .andExpect(status().isUnauthorized())
-                .andDo(print());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .setConfirmationEmailToken(INVALID_CONFIRMATION_EMAIL_TOKEN)
+                .getRegister()
+                .expectStatus(status().isUnauthorized());
     }
 
     @Test
     public void testAddress() throws Exception {
-
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        MvcResult mvcResultAddress = mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC(bitcoinKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString())
-                        )
-                ))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        LOG.info(mvcResultRegister.getResponse().getContentAsString());
-
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC(generateBitcoinKey())
+                                .setRefundETH(generateEthereumKey())
+                )
+                .expectStatus(status().is2xxSuccessful());
     }
 
     @Test
     public void testEmptyRefundAddress() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        MvcResult mvcResultAddress = mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC("")
-                                        .setRefundETH("")
-                        )
-                ))
-                .andExpect(status().isBadRequest()).andReturn();
-
-        LOG.info(mvcResultRegister.getResponse().getContentAsString());
-
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC("")
+                                .setRefundETH("")
+                )
+                .expectStatus(status().isBadRequest());
     }
 
     @Test
     public void testLargeEmailAddress() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail(RandomStringUtils.randomAlphanumeric(Constants.EMAIL_CHAR_MAX_SIZE + 1)))))
-                .andExpect(status().isBadRequest()).andReturn();
+        testImpl.postRegister(
+                    new RegisterRequest()
+                        .setEmail(RandomStringUtils.randomAlphanumeric(Constants.EMAIL_CHAR_MAX_SIZE + 1)))
+                .expectStatus(status().isBadRequest());
     }
 
     @Test
     public void testLargeEmailConfirmationTokenInURLPath() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "1/validate"))
-                .andExpect(status().isUnauthorized());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .setConfirmationEmailToken(INVALID_CONFIRMATION_EMAIL_TOKEN + "1")
+                .getRegister()
+                .expectStatus(status().isUnauthorized());
     }
 
     @Test
     public void testLargeEmailConfirmationTokenInAuthorizationHeader() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken + "1")
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC("")
-                                        .setRefundETH("")
-                        )
-                ))
-                .andExpect(status().isUnauthorized());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful())
+                .setConfirmationEmailToken(INVALID_CONFIRMATION_EMAIL_TOKEN + "1")
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC("")
+                                .setRefundETH("")
+                )
+                .expectStatus(status().isUnauthorized());
     }
 
     @Test
     public void testLargeWalletAddress() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString() + "1")
-                                        .setRefundBTC("")
-                                        .setRefundETH("")
-                        )
-                ))
-                .andExpect(status().isBadRequest());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful())
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey() + "1")
+                                .setRefundBTC("")
+                                .setRefundETH("")
+                )
+                .expectStatus(status().isBadRequest());
     }
 
     @Test
     public void testLargeRefundBTCAddress() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC(bitcoinKeyGenerator.getKeys().getAddressAsString() + "1")
-                                        .setRefundETH("")
-                        )
-                ))
-                .andExpect(status().isBadRequest());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful())
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC(generateBitcoinKey() + "1")
+                                .setRefundETH("")
+                )
+                .expectStatus(status().isBadRequest());
     }
 
     @Test
     public void testLargeRefundETHAddress() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC("")
-                                        .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString() + "1")
-                        )
-                ))
-                .andExpect(status().isBadRequest());
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful())
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC("")
+                                .setRefundETH(generateEthereumKey() + "1")
+                )
+                .expectStatus(status().isBadRequest());
     }
 
     @Test
     public void testOverwritingWalletAddressWithEmailConfirmationToken() throws Exception {
-        MvcResult mvcResultRegister = mockMvc.perform(post(REGISTER).contentType(APPLICATION_JSON)
-                .content(objectMapper.writer().writeValueAsString(new RegisterRequest().setEmail("blah@blah.org"))))
-                .andExpect(status().is2xxSuccessful()).andReturn();
-
-        String location = mvcResultRegister.getResponse().getHeaderValue("Location").toString();
-        String emailConfirmationTokenSplit[] = location.split(frontendWalletUrlPath);
-        String emailConfirmationToken = emailConfirmationTokenSplit[emailConfirmationTokenSplit.length - 1];
-
-        mockMvc.perform(get(REGISTER + "/" + emailConfirmationToken + "/validate"))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC(bitcoinKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString())
-                        )
-                ))
-                .andExpect(status().is2xxSuccessful());
-
-        mockMvc.perform(post(ADDRESS).contentType(APPLICATION_JSON)
-                .header("Authorization", "Bearer " + emailConfirmationToken)
-                .content(
-                        objectMapper.writer().writeValueAsString(
-                                new AddressRequest()
-                                        .setAddress(ethereumKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundBTC(bitcoinKeyGenerator.getKeys().getAddressAsString())
-                                        .setRefundETH(ethereumKeyGenerator.getKeys().getAddressAsString())
-                        )
-                ))
-                .andExpect(status().isConflict());
-
+        testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
+                .expectStatus(status().is2xxSuccessful())
+                .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
+                .getRegister()
+                .expectStatus(status().is2xxSuccessful())
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC(generateBitcoinKey())
+                                .setRefundETH(generateEthereumKey())
+                )
+                .expectStatus(status().is2xxSuccessful())
+                .postAddress(
+                        new AddressRequest()
+                                .setAddress(generateEthereumKey())
+                                .setRefundBTC(generateBitcoinKey())
+                                .setRefundETH(generateEthereumKey())
+                )
+                .expectStatus(status().isConflict());
     }
 
 }
