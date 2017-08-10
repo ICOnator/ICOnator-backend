@@ -2,6 +2,7 @@ package io.modum.tokenapp.rates.service;
 
 
 import com.google.common.collect.Lists;
+import io.modum.tokenapp.rates.bean.Options;
 import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -32,6 +33,9 @@ public class Etherscan {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private Options options;
+
     public BigInteger getBalance(String address) throws IOException {
         String s = "https://"+url+"/api" +
                 "?module=account" +
@@ -41,7 +45,7 @@ public class Etherscan {
                 "&apikey="+apiKey;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -58,7 +62,7 @@ public class Etherscan {
                 "&apikey="+apiKey;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -95,7 +99,7 @@ public class Etherscan {
                 "&apikey="+apiKey;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -115,7 +119,7 @@ public class Etherscan {
                 "&apikey="+apiKey;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "the mighty tokenapp-minting");
+        headers.set("User-Agent", options.getUserAgent());
 
         ResponseEntity<String> res = restTemplate.exchange(s, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         ObjectMapper objectMapper = new ObjectMapper();

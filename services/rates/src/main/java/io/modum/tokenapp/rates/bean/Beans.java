@@ -11,4 +11,7 @@ public class Beans {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
+
+    @Bean
+    public Options options() {return new Options();}
 }

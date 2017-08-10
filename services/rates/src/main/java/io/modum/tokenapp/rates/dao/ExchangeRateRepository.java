@@ -10,4 +10,6 @@ public interface ExchangeRateRepository extends CrudRepository<ExchangeRate, Lon
 
     ExchangeRate findFirstByOrderByBlockNrBtcDesc();
     ExchangeRate findFirstByOrderByBlockNrEthDesc();
+
+    Iterable<ExchangeRate> findAllByOrderByCreationDate();
 }

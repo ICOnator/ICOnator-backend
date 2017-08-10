@@ -4,5 +4,3 @@ rootProject.name = 'tokenapp-backend'
         include "${dir}:${module.name}"
     }
 }
-
-include "commons"

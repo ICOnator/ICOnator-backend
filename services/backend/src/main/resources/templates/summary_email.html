@@ -159,6 +159,22 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${payInBitcoinAddress}" th:href="@{https://blockchain.info/address/{payInBitcoinAddress}(payInBitcoinAddress=${payInBitcoinAddress})}"></a></td>
                             </tr>
                             <!--end content-->
+                            <!--img-->
+                            <table align="center" border="0" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td align="center" width="340">
+                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" src="payInBitcoinAddressQRCode.png" th:src="|cid:${payInBitcoinAddressQRCode}|" alt="Pay-In: Bitcoin Address" /></td>
+                                    </tr>
+                                    <tr>
+                                      <td height="10"></td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                            <!--end img-->
                           </table>
                         </td>
                       </tr>
@@ -216,6 +232,22 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${payInEtherAddress}" th:href="@{https://etherscan.io/address/{payInEtherAddress}(payInEtherAddress=${payInEtherAddress})}"></a></td>
                             </tr>
                             <!--end content-->
+                            <!--img-->
+                            <table align="center" border="0" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td align="center" width="340">
+                                  <table border="0" align="center" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                      <td align="center" style="line-height:0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px;" class="img1" src="payInEtherAddressQRCode.png" th:src="|cid:${payInEtherAddressQRCode}|" alt="Pay-In: Ether Address" /></td>
+                                    </tr>
+                                    <tr>
+                                      <td height="10"></td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                            <!--end img-->
                           </table>
                         </td>
                       </tr>
