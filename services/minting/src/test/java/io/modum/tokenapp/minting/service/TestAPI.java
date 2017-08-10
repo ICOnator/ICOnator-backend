@@ -29,17 +29,20 @@ public class TestAPI extends TokenAppBaseTest {
         runner1.run("-r", "60");
         Thread.sleep(2000);
 
-        dataBtc(1, "031983465869e6cdd10899fd76240a2b105a816f26165addc597ab7e4b53ec293b");
+        dataBtc(1, "031983465869e6cdd10899fd76240a2b105a816f26165addc597ab7e4b53ec293b",
+                "031983465869e6cdd10899fd76240a2b105a816f26165addc597ab7e4b53ec293b");
+
         MintingApplication runner = ctx.getBean(MintingApplication.class);
         runner.run("-p", "/tmp/test.csv");
         runner.run("-p", "/tmp/test.csv", "-t", "/tmp/test-token.csv");
         runner.run("-t", "/tmp/test-token.csv");
     }
 
-    private TestAPI dataBtc(int nr, String btc) {
+    private TestAPI dataBtc(int nr, String btc, String eth) {
         Investor i = new Investor()
                 .setCreationDate(new Date())
                 .setPayInBitcoinPublicKey(btc)
+                .setPayInEtherPublicKey(eth)
                 .setWalletAddress(""+nr)
                 .setEmailConfirmationToken(UUID.randomUUID().toString())
                 .setEmail("email"+nr);

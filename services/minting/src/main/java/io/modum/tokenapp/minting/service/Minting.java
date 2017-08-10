@@ -1,7 +1,5 @@
 package io.modum.tokenapp.minting.service;
 
-
-import io.modum.tokenapp.backend.service.AddressService;
 import io.modum.tokenapp.minting.dao.InvestorRepository;
 import io.modum.tokenapp.backend.model.Investor;
 import io.modum.tokenapp.minting.dao.PayinRepository;
