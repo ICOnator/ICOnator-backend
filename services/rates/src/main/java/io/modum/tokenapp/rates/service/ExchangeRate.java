@@ -23,6 +23,8 @@ import java.util.Date;
 @Service
 public class ExchangeRate {
 
+    public static final CurrencyPair IOTA_USD = new CurrencyPair("IOT", "USD");
+
     @Autowired
     private Etherscan etherscan;
 
@@ -52,6 +54,11 @@ public class ExchangeRate {
 
     public BigDecimal getBTCUSDBitfinex() throws IOException {
         Ticker ticker = marketDataServiceBitfinex.getTicker(CurrencyPair.BTC_USD);
+        return ticker.getLast();
+    }
+
+    public BigDecimal getIOTAUSDBitfinex() throws IOException {
+        Ticker ticker = marketDataServiceBitfinex.getTicker(IOTA_USD);
         return ticker.getLast();
     }
 
@@ -94,6 +101,14 @@ public class ExchangeRate {
             LOG.error("could not fetch BTC from Bitstamp", t);
         }
 
+        BigDecimal rateIotaBitfinex = null;
+        try {
+            rateIotaBitfinex = getIOTAUSDBitfinex();
+        }
+        catch (Throwable t) {
+            LOG.error("could not fetch IOTA from Bitstamp", t);
+        }
+
         Long blockNrETH = null;
         try {
             blockNrETH = etherscan.getCurrentBlockNr();
@@ -116,6 +131,7 @@ public class ExchangeRate {
         rate.setRateEth(rateETH);
         rate.setRateBtcBitfinex(rateBTCBitfinex);
         rate.setRateEthBitfinex(rateETHBitfinex);
+        rate.setRateIotaBitfinex(rateIotaBitfinex);
         rate.setBlockNrBtc(blockNrBTC);
         rate.setBlockNrEth(blockNrETH);
         rate.setCreationDate(new Date());

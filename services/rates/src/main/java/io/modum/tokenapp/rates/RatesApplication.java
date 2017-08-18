@@ -103,6 +103,8 @@ public class RatesApplication implements CommandLineRunner {
                 printWriter.print(",");
                 printWriter.print(p.getRateBtcBitfinex());
                 printWriter.print(",");
+                printWriter.print(p.getRateIotaBitfinex());
+                printWriter.print(",");
                 printWriter.print(p.getRateEth());
                 printWriter.print(",");
                 printWriter.print(p.getRateEthBitfinex());

@@ -34,6 +34,9 @@ public class ExchangeRate {
     @Column(name = "rate_btc_bitfinex")
     private BigDecimal rateBtcBitfinex;
 
+    @Column(name = "rate_iota_bitfinex")
+    private BigDecimal rateIotaBitfinex;
+
     @Column(name = "block_nr_eth")
     private Long blockNrEth;
 
@@ -63,6 +66,15 @@ public class ExchangeRate {
 
     public ExchangeRate setRateBtcBitfinex(BigDecimal rateBtcBitfinex) {
         this.rateBtcBitfinex = rateBtcBitfinex;
+        return this;
+    }
+
+    public BigDecimal getRateIotaBitfinex() {
+        return rateIotaBitfinex;
+    }
+
+    public ExchangeRate setRateIotaBitfinex(BigDecimal rateIotaBitfinex) {
+        this.rateIotaBitfinex = rateIotaBitfinex;
         return this;
     }
 

@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 
 @SpringBootTest(classes = RatesApplication.class)
@@ -17,6 +18,9 @@ public class TestEtherscan extends TokenAppBaseTest {
 
     @Autowired
     private Etherscan etherscan;
+
+    @Autowired
+    private ExchangeRate exchangeRate;
 
 
     @Autowired
@@ -40,4 +44,11 @@ public class TestEtherscan extends TokenAppBaseTest {
         long bl2 = etherscan.getCurrentBlockNr();
         System.out.println("ret: "+bl1 +"/"+bl2);
     }
+
+    @Test
+    public void testIota() throws IOException {
+        BigDecimal d = exchangeRate.getIOTAUSDBitfinex();
+        System.out.println("IOTA:"+d);
+    }
+
 }
