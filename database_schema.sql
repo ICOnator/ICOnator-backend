@@ -103,3 +103,6 @@ INCREMENT BY 1
 NO MINVALUE
 NO MAXVALUE
 CACHE 1;
+
+-- Thomas Bocek: Update TABLE EXCHANGE RATE for IOTA rates
+ALTER TABLE exchange_rate add rate_iota_bitfinex NUMERIC(19, 2);
