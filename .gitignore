@@ -8,3 +8,4 @@ out/
 **/logs/*
 **/email-file-queue.bin
 reports/
+**/.DS_Store

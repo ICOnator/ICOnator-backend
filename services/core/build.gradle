@@ -1,0 +1,75 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '1.5.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
+    id 'org.unbroken-dome.test-sets' version '1.4.2'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/ethereum/maven/' }
+    // Required due to "com.sleepycat" dependency:
+    maven { url 'http://download.oracle.com/maven' }
+}
+
+testSets {
+    integrationTest { dirName = 'test-integration' }
+}
+
+springBoot {
+    classifier = 'boot'
+    executable = true
+}
+
+dependencies {
+
+    compile project(':commons:bitcoin')
+    compile project(':commons:ethereum')
+    compile project(':commons:amqp-service')
+    compile project(':commons:sql-repository')
+
+    // Spring Boot
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-devtools'
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compile 'org.springframework.boot:spring-boot-starter-mail'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // Swagger
+    compile 'io.springfox:springfox-swagger-ui:2.6.1'
+    compile 'io.springfox:springfox-swagger2:2.6.1'
+
+    compile 'commons-io:commons-io:2.5'
+
+    // qr-code library
+    compile 'com.github.kenglxn.QRGen:javase:2.3.0'
+
+    // Database drivers
+    runtime 'org.postgresql:postgresql'
+    runtime 'com.h2database:h2'
+
+    // Ethereum and Bitcoin libs
+    compile 'org.ethereum:ethereumj-core:1.5.+'
+    compile 'org.ethereum:solcJ-all:0.4.8'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
+    compile 'org.web3j:core:2.3.0'
+
+    testCompile project(':commons:test-utils')
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+// gradle run is alias for bootRun
+task run(dependsOn: bootRun)
+
+task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: build) {
+    doFirst() {
+        main = project.mainClassName
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperty 'spring.profiles.active', 'prod'
+    }
+}

@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '1.5.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/ethereum/maven/' }
+    // Required due to "com.sleepycat" dependency:
+    maven { url 'http://download.oracle.com/maven' }
+}
+
+dependencies {
+
+    compile 'org.springframework.boot:spring-boot-starter-amqp'
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    compile 'org.apache.qpid:qpid-broker:7.0.1'
+    compile 'junit:junit'
+
+}
+

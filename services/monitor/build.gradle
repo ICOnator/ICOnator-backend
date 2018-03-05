@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '1.5.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
+    id 'org.unbroken-dome.test-sets' version '1.4.2'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven {
+        url 'https://dl.bintray.com/ethereum/maven/'
+    }
+}
+
+testSets {
+    integrationTest { dirName = 'test-integration' }
+}
+
+springBoot {
+    classifier = 'boot'
+    executable = true
+}
+
+dependencies {
+
+    compile project(':commons:bitcoin')
+    compile project(':commons:ethereum')
+    compile project(':commons:mail-service')
+    compile project(':commons:amqp-service')
+    compile project(':commons:sql-repository')
+
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.1.3'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task debug(dependsOn:bootRun) {
+    gradle.taskGraph.whenReady { graph ->
+        if (graph.hasTask(debug)) {
+            bootRun {
+                debug = true
+            }
+        }
+    }
+}
+// gradle run is alias for bootRun
+task run(dependsOn: bootRun)

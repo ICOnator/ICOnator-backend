@@ -1,5 +1,5 @@
-rootProject.name = 'tokenapp-backend'
-['services'].each { String dir ->
+rootProject.name = 'iconator-backend'
+['services', 'commons'].each { String dir ->
     file(dir).listFiles().each { File module ->
         include "${dir}:${module.name}"
     }

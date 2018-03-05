@@ -4,7 +4,7 @@ plugins {
 }
 
 allprojects {
-    group 'io.modum.tokenapp'
+    group 'io.iconator.backend'
     version '0.0.1-SNAPSHOT'
 
     repositories {

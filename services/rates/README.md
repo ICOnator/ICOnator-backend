@@ -1,4 +1,5 @@
-# Backend Proxy
+# ICOnator: Rates Application
 
 ## Description
-Proxies requests to either legacy and new backend servers.
+
+To be described.

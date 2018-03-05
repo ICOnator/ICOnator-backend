@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  io.iconator.commons.mailservice.MailService,\
+  io.iconator.commons.mailservice.MailContentBuilder
