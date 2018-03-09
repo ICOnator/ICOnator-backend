@@ -9,3 +9,4 @@ out/
 **/email-file-queue.bin
 reports/
 **/.DS_Store
+*.class
