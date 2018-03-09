@@ -121,7 +121,8 @@ public class AddressController {
 
         // Generating the keys
         long freshKeyId = keyPairsRepository.getFreshKeyID();
-        KeyPairs keyPairs = keyPairsRepository.findOne(freshKeyId);
+        //TOOD make this fool proof
+        KeyPairs keyPairs = keyPairsRepository.findById(freshKeyId).get();
 
         if (!ofNullable(keyPairs).isPresent()) {
             LOG.error("Pool of addresses not initialized!");
