@@ -1,23 +1,15 @@
 plugins {
-    id 'java-library'
-    id 'org.springframework.boot' version '1.5.6.RELEASE'
-    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
+    id "java-library"
+    id "org.springframework.boot" version "2.0.0.RELEASE"
+    id "io.spring.dependency-management" version "1.0.4.RELEASE"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-repositories {
-    jcenter()
-    mavenCentral()
-    maven { url 'https://dl.bintray.com/ethereum/maven/' }
-}
+bootJar.enabled = false
 
 dependencies {
-
     compile project(':commons:model')
-
     compile 'org.springframework.boot:spring-boot-starter-web'
-
 }
-bootRepackage { enabled = false }

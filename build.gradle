@@ -1,13 +1,9 @@
 allprojects {
-    apply plugin:"java"
-
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-
     repositories {
         mavenLocal()
         mavenCentral()
         //used for https://github.com/kenglxn/QRGen, they publish on github
         maven { url "https://jitpack.io" }
+        maven { url 'https://dl.bintray.com/ethereum/maven/' }
     }
 }

@@ -1,32 +1,24 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '1.5.6.RELEASE'
-    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
+    id "java"
     id 'org.unbroken-dome.test-sets' version '1.4.2'
+    id "org.springframework.boot" version "2.0.0.RELEASE"
+    id "io.spring.dependency-management" version "1.0.4.RELEASE"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+bootJar {
+    mainClassName = 'io.iconator.rates.RatesApplication'
+}
+
 repositories {
-    jcenter()
-    mavenCentral()
-    maven {
-        url 'https://dl.bintray.com/ethereum/maven/'
-    }
     maven {
         url 'https://raw.githubusercontent.com/blockchain/api-v1-client-java/mvn-repo/'
     }
 }
 
-testSets {
-    integrationTest { dirName = 'test-integration' }
-}
 
-springBoot {
-    classifier = 'boot'
-    executable = true
-}
 
 dependencies {
 
@@ -67,15 +59,4 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 
-}
-
-// gradle run is alias for bootRun
-task run(dependsOn: bootRun)
-
-task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: build) {
-    doFirst() {
-        main = project.mainClassName
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperty 'spring.profiles.active', 'prod'
-    }
 }

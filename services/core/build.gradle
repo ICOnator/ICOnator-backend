@@ -1,17 +1,23 @@
 plugins {
+    id "java"
+    id 'org.unbroken-dome.test-sets' version '1.4.2'
     id "org.springframework.boot" version "2.0.0.RELEASE"
     id "io.spring.dependency-management" version "1.0.4.RELEASE"
 }
 
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
 repositories {
-    maven { url 'https://dl.bintray.com/ethereum/maven/' }
     // Required due to "com.sleepycat" dependency:
     maven { url 'http://download.oracle.com/maven' }
 }
 
 bootJar {
-    launchScript()
+    //launchScript()
+    mainClassName = 'io.iconator.core.CoreApplication'
 }
+
 
 dependencies {
 
