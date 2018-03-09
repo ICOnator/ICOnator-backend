@@ -1,5 +1,6 @@
 package io.iconator.commons.mailservice;
 
+import io.iconator.commons.mailservice.config.MailServiceConfig;
 import io.iconator.commons.mailservice.config.MailServiceConfigHolder;
 import io.iconator.commons.mailservice.exceptions.EmailNotPreparedException;
 import io.iconator.commons.mailservice.exceptions.EmailNotSentException;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 @Service
-@Import(MailServiceConfigHolder.class)
+@Import({MailServiceConfigHolder.class, MailServiceConfig.class})
 public class MailService {
 
     private final static Logger LOG = LoggerFactory.getLogger(MailService.class);
