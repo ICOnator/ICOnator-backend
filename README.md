@@ -33,7 +33,7 @@ All the applications interact with AMQP protocol and require a message broker ru
 The easiest way to bootstrap a message broker is to use RabbitMQ using docker. Execute the following:
 
 ```
-docker run -d --hostname test-rabbitmq --name rabbitmq-for-tests -e RABBITMQ_DEFAULT_VHOST=vhost1 rabbitmq:3-management
+docker run -d --hostname test-rabbitmq --name rabbitmq-for-tests -e RABBITMQ_DEFAULT_VHOST=vhost1 -p 5672:5672 -p 5671:5671 -p 127.0.0.1:15671:15671 -p 127.0.0.1:15672:15672 rabbitmq:3-management
 ```
 
 ### SMTP server
