@@ -10,3 +10,4 @@ out/
 reports/
 **/.DS_Store
 *.class
+*.project
