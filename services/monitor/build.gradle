@@ -9,8 +9,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 bootJar {
-    //launchScript()
-    mainClassName = 'io.iconator.monitor.MonitorApplication'
+    launchScript()
 }
 
 dependencies {

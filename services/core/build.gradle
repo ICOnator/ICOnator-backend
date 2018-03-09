@@ -14,8 +14,7 @@ repositories {
 }
 
 bootJar {
-    //launchScript()
-    mainClassName = 'io.iconator.core.CoreApplication'
+    launchScript()
 }
 
 
@@ -24,6 +23,7 @@ dependencies {
     compile project(':commons:bitcoin')
     compile project(':commons:ethereum')
     compile project(':commons:amqp-service')
+    compile project(':commons:sql-repository')
     compile project(':commons:sql-repository')
 
     // Spring Boot

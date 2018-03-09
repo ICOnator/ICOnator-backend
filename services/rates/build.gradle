@@ -9,7 +9,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 bootJar {
-    mainClassName = 'io.iconator.rates.RatesApplication'
+    launchScript()
 }
 
 repositories {
