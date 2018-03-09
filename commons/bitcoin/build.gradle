@@ -51,3 +51,4 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
+bootRepackage { enabled = false }

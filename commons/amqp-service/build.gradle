@@ -19,3 +19,4 @@ dependencies {
 
     compile 'org.springframework.boot:spring-boot-starter-amqp'
 }
+bootRepackage { enabled = false }

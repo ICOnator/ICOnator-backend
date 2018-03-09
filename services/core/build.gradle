@@ -1,28 +1,16 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '1.5.6.RELEASE'
-    id 'io.spring.dependency-management' version '1.0.4.RELEASE'
-    id 'org.unbroken-dome.test-sets' version '1.4.2'
+    id "org.springframework.boot" version "2.0.0.RELEASE"
+    id "io.spring.dependency-management" version "1.0.4.RELEASE"
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
 repositories {
-    jcenter()
-    mavenCentral()
     maven { url 'https://dl.bintray.com/ethereum/maven/' }
     // Required due to "com.sleepycat" dependency:
     maven { url 'http://download.oracle.com/maven' }
 }
 
-testSets {
-    integrationTest { dirName = 'test-integration' }
-}
-
-springBoot {
-    classifier = 'boot'
-    executable = true
+bootJar {
+    launchScript()
 }
 
 dependencies {
@@ -61,15 +49,4 @@ dependencies {
 
     testCompile project(':commons:test-utils')
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-}
-
-// gradle run is alias for bootRun
-task run(dependsOn: bootRun)
-
-task bootRunProd(type: org.springframework.boot.gradle.run.BootRunTask, dependsOn: build) {
-    doFirst() {
-        main = project.mainClassName
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperty 'spring.profiles.active', 'prod'
-    }
 }

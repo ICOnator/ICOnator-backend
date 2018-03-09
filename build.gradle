@@ -1,17 +1,13 @@
-plugins {
-    id 'base'
-    id 'idea'
-}
-
 allprojects {
-    group 'io.iconator.backend'
-    version '0.0.1-SNAPSHOT'
+    apply plugin:"java"
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     repositories {
-        maven { url 'https://jitpack.io' }
+        mavenLocal()
+        mavenCentral()
+        //used for https://github.com/kenglxn/QRGen, they publish on github
+        maven { url "https://jitpack.io" }
     }
-}
-
-subprojects {
-
 }

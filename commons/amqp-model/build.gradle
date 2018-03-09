@@ -20,4 +20,4 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
 
 }
-
+bootRepackage { enabled = false }
