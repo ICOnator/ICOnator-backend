@@ -14,8 +14,7 @@ repositories {
 }
 
 bootJar {
-    //launchScript()
-    mainClassName = 'io.iconator.core.CoreApplication'
+    launchScript()
 }
 
 
