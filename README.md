@@ -45,7 +45,7 @@ The easiest way to have a private SMTP server running is to setup a Gmail Relay 
 Once you have a Gmail test account to send emails from, execute the following:
 
 ```
-docker run -d --name smtp-server -e GMAIL_USER='<USER>' -e GMAIL_PASSWORD='<PASSWORD>' -p 25:25 namshi/smtp
+docker run -d --name smtp-server -e GMAIL_USER='<USER>' -e GMAIL_PASSWORD='<PASSWORD>' -p 2525:25 namshi/smtp
 ```
 
 where the `<USER>` and `<PASSWORD>` are, respectively, the username and password of your Gmail test account. 
