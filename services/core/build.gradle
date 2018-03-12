@@ -24,6 +24,7 @@ dependencies {
     compile project(':commons:ethereum')
     compile project(':commons:amqp-service')
     compile project(':commons:sql-repository')
+    compile project(':commons:sql-repository')
 
     // Spring Boot
     compile 'org.springframework.boot:spring-boot-starter-web'

@@ -10,6 +10,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
@@ -24,9 +26,10 @@ public class KeyPairsRepositoryTest {
     @Test
     public void testGetFresh() {
         long freshKeyID = keyPairsRepository.getFreshKeyID();
-        KeyPairs kp = keyPairsRepository.findOne(freshKeyID);
-        assertTrue(kp.getPublicBtc() != null);
-        assertTrue(kp.getPublicEth() != null);
+        Optional<KeyPairs> kp = keyPairsRepository.findById(freshKeyID);
+        assertTrue(kp.isPresent());
+        assertTrue(kp.get().getPublicBtc() != null);
+        assertTrue(kp.get().getPublicEth() != null);
     }
 
 }

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/ICOnator/ICOnator-backend.svg?token=eUVyeGxidafMUjk8JWFo&branch=master)](https://travis-ci.com/ICOnator/ICOnator-backend.svg?token=eUVyeGxidafMUjk8JWFo&branch=master)
+
 # ICOnator
 
 ICOnator has the aim to make the tokenization of assets a popular and easy process.
