@@ -1,5 +1,7 @@
 package io.iconator.rates;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -15,9 +17,14 @@ import static org.springframework.boot.SpringApplication.run;
 @EnableAutoConfiguration
 @ComponentScan(basePackages = {"io.iconator.commons.sql.dao"})
 public class RatesApplication {
+    private static final Logger LOG = LoggerFactory.getLogger(RatesApplication.class);
 
     public static void main(String[] args) {
-        run(RatesApplication.class, args);
+        try {
+            run(RatesApplication.class, args);
+        } catch (Throwable t) {
+            LOG.error("cannot execute rates", t);
+        }
     }
 
 //    public void run(String... args) throws Exception {
