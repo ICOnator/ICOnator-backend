@@ -7,7 +7,6 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -23,9 +22,11 @@ import static java.util.Optional.ofNullable;
 public final class RabbitMQMessageServiceFactory {
 
     private final ObjectMapper objectMapper;
+    private final RabbitTemplate rabbitTemplate;
     private URI amqpConnectionURI;
 
-    public RabbitMQMessageServiceFactory(ObjectMapper objectMapper) {
+    public RabbitMQMessageServiceFactory(RabbitTemplate rabbitTemplate, ObjectMapper objectMapper) {
+        this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
     }
 
@@ -35,16 +36,10 @@ public final class RabbitMQMessageServiceFactory {
     }
 
     public AMQPMessageService createService(AMQPConfig amqpConfig) {
-        final RabbitTemplate rabbitTemplate = new RabbitTemplate();
         this.amqpConnectionURI = amqpConfig.getURI();
-        configureConnectionFactory(rabbitTemplate, this.amqpConnectionURI);
         configureExchangeName(rabbitTemplate);
         configureMessageConverter(rabbitTemplate);
         return new SpringAMQPMessageService(rabbitTemplate);
-    }
-
-    private void configureConnectionFactory(RabbitTemplate rabbitTemplate, URI rabbitMQConnectionURI) {
-        rabbitTemplate.setConnectionFactory(new CachingConnectionFactory(rabbitMQConnectionURI));
     }
 
     private void configureMessageConverter(RabbitTemplate rabbitTemplate) {
