@@ -35,7 +35,7 @@ All the applications interact with AMQP protocol and require a message broker ru
 The easiest way to bootstrap a message broker is to use RabbitMQ using docker. Execute the following:
 
 ```
-docker run -d --hostname test-rabbitmq --name rabbitmq-for-tests -e RABBITMQ_DEFAULT_VHOST=vhost1 -p 5672:5672 -p 5671:5671 -p 127.0.0.1:15671:15671 -p 127.0.0.1:15672:15672 rabbitmq:3-management
+docker run --rm -d --hostname test-rabbitmq --name rabbitmq-for-tests -e RABBITMQ_DEFAULT_VHOST=vhost1 -p 127.0.0.1:5672:5672 -p 127.0.0.1:5671:5671 -p 127.0.0.1:15671:15671 -p 127.0.0.1:15672:15672 rabbitmq:3-management
 ```
 
 ### SMTP server
@@ -47,7 +47,16 @@ The easiest way to have a private SMTP server running is to setup a Gmail Relay 
 Once you have a Gmail test account to send emails from, execute the following:
 
 ```
-docker run -d --name smtp-server -e GMAIL_USER='<USER>' -e GMAIL_PASSWORD='<PASSWORD>' -p 2525:25 namshi/smtp
+docker run --rm -d --name smtp-server -e GMAIL_USER='<USER>' -e GMAIL_PASSWORD='<PASSWORD>' -p 127.0.0.1:2525:25 namshi/smtp
 ```
 
 where the `<USER>` and `<PASSWORD>` are, respectively, the username and password of your Gmail test account. 
+
+### Parity node
+
+Run parity in the Kovan (testnet) chain:
+
+```
+docker run --rm -ti -p 8180:8180 -p 127.0.0.1:8180:8180 -p 127.0.0.1:8545:8545 -p 127.0.0.1:8546:8546 -p 127.0.0.1:30303:30303 -p 127.0.0.1:30303:30303/udp parity/parity:v1.7.0 --ui-interface all --jsonrpc-interface all --tracing on --pruning fast --warp --mode active --chain kovan
+```
+
