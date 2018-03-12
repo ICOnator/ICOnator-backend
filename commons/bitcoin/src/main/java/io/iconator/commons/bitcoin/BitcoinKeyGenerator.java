@@ -1,5 +1,6 @@
 package io.iconator.commons.bitcoin;
 
+import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.model.Keys;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
@@ -8,22 +9,22 @@ import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.params.TestNet3Params;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Service;
 
 @Service
+@Import(BitcoinConfig.class)
 public class BitcoinKeyGenerator {
 
     private static final Logger LOG = LoggerFactory.getLogger(BitcoinKeyGenerator.class);
 
-    @Value("${io.iconator.commons.bitcoin.network}")
-    private String bitcoinNetwork;
+    private BitcoinConfig bitcoinConfig;
 
-    public BitcoinKeyGenerator() {
-    }
-
-    public BitcoinKeyGenerator(String bitcoinNetwork) {
-        this.bitcoinNetwork = bitcoinNetwork;
+    @Autowired
+    public BitcoinKeyGenerator(BitcoinConfig bitcoinConfig) {
+        this.bitcoinConfig = bitcoinConfig;
     }
 
     public Keys getKeys() {
@@ -59,7 +60,7 @@ public class BitcoinKeyGenerator {
     }
 
     public NetworkParameters getNetworkParameters() {
-        return BitcoinNet.getNetworkParams(BitcoinNet.of(bitcoinNetwork));
+        return BitcoinNet.getNetworkParams(BitcoinNet.of(bitcoinConfig.getBitcoinNetwork()));
     }
 
 }

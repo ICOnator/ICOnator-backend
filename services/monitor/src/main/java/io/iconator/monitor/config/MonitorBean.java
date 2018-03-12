@@ -2,6 +2,7 @@ package io.iconator.monitor.config;
 
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
+import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.BitcoinMonitor;
@@ -33,11 +34,14 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 
 @Configuration
-@Import(value = {MonitorAppConfig.class})
+@Import(value = {MonitorAppConfig.class, BitcoinConfig.class})
 public class MonitorBean {
 
     @Autowired
     private MonitorAppConfig appConfig;
+
+    @Autowired
+    private BitcoinConfig bitcoinConfig;
 
     @Bean
     public Web3j web3j() {
@@ -46,7 +50,7 @@ public class MonitorBean {
 
     @Bean
     public NetworkParameters chainNetworkParameters() {
-        return BitcoinNet.getNetworkParams(BitcoinNet.of(appConfig.getBitcoinNetwork()));
+        return BitcoinNet.getNetworkParams(BitcoinNet.of(bitcoinConfig.getBitcoinNetwork()));
     }
 
     @Bean

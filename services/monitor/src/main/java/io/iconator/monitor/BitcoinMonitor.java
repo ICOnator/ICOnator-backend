@@ -60,8 +60,7 @@ public class BitcoinMonitor {
     private final InvestorRepository investorRepository;
     private final PaymentLogRepository paymentLogRepository;
     private Set<TransactionOutput> processedUTXOs = new HashSet<>();
-    private Map<String, String> monitoredAddresses = new HashMap<>(); // public key -> address
-    private BigDecimal totalRaised = BigDecimal.ZERO;
+    private Map<String, String> monitoredAddresses = new HashMap<>();
 
     private ICOnatorMessageService messageService;
 

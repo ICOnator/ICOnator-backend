@@ -16,7 +16,6 @@ dependencies {
 
     compile project(':commons:bitcoin')
     compile project(':commons:ethereum')
-    compile project(':commons:mail-service')
     compile project(':commons:amqp-service')
     compile project(':commons:sql-repository')
 

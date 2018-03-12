@@ -51,7 +51,7 @@ public class MonitoringInit {
         monitorExistingAddresses();
 
         ethereumMonitor.start(appConfig.getStartBlock());
-        bitcoinMonitor.start();
+        //bitcoinMonitor.start();
 
         LOG.info("All monitors started");
     }

@@ -12,19 +12,12 @@ public class MonitorAppConfig {
     @Value("${io.iconator.monitor.etherfullnodeurl}")
     private String etherFullNodeUrl;
 
-    @Value("${io.iconator.monitor.bitcoinnetwork}")
-    private String bitcoinNetwork;
-
     public Long getStartBlock() {
         return startBlock;
     }
 
     public String getEtherFullNodeUrl() {
         return etherFullNodeUrl;
-    }
-
-    public String getBitcoinNetwork() {
-        return bitcoinNetwork;
     }
 
 }
