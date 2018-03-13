@@ -7,3 +7,5 @@ allprojects {
         maven { url 'https://dl.bintray.com/ethereum/maven/' }
     }
 }
+
+task stage(dependsOn: ['services:core:build'])
