@@ -9,11 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 @Configuration
 @Profile({"!prod"})
 public class CorsConfiguration implements WebMvcConfigurer {
-    @Value("${io.iconator.commons.frontend_url}")
+    @Value("${io.iconator.backend.frontendUrl}")
     private String frontendUrl;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**").allowedMethods("*").allowedOrigins("GET", "OPTIONS").allowedOrigins(this.frontendUrl, "http://localhost:8080");
+        registry.addMapping("/**").allowedMethods("*").allowedOrigins("GET", "OPTIONS").allowedOrigins(this.frontendUrl);
     }
 }
