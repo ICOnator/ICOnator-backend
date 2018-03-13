@@ -17,11 +17,7 @@ public class CoreApplication {
 
 
     public static void main(String[] args) {
-        try {
-            run(CoreApplication.class, args);
-        } catch (Throwable t) {
-            LOG.error("cannot execute core", t);
-        }
+        run(CoreApplication.class, args);
     }
 
 }

@@ -11,11 +11,7 @@ public class EmailApplication {
     private static final Logger LOG = LoggerFactory.getLogger(EmailApplication.class);
 
     public static void main(String[] args) {
-        try {
-            run(EmailApplication.class, args);
-        } catch (Throwable t) {
-            LOG.error("cannot execute email", t);
-        }
+        run(EmailApplication.class, args);
     }
 
 }
