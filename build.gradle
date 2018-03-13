@@ -9,3 +9,4 @@ allprojects {
 }
 
 task stage(dependsOn: ['services:core:build'])
+gradle.startParameter.excludedTaskNames += "test"
