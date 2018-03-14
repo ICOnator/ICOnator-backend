@@ -27,7 +27,6 @@ public class MessageQueueApplication {
 
     @EventListener(ApplicationReadyEvent.class)
     public void doSomethingAfterStartup() throws Exception {
-        System.out.println("hello world, I have just started up");
         BuiltInMessageBroker.start();
     }
 }
