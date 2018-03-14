@@ -15,9 +15,11 @@ public class CoreApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);
 
-
     public static void main(String[] args) {
-        run(CoreApplication.class, args);
+        try {
+            run(CoreApplication.class, args);
+        } catch (Throwable t) {
+            LOG.error("cannot execute core", t);
+        }
     }
-
 }
