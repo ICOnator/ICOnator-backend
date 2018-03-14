@@ -1,11 +1,8 @@
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 
-jar.enabled = true
-bootJar.enabled = false
-
-repositories {
-    maven { url 'http://download.oracle.com/maven' }
+bootJar {
+    launchScript()
 }
 
 dependencies {
@@ -13,7 +10,7 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-amqp'
     compile 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    compile 'org.apache.qpid:qpid-broker:7.0.1'
+    compile 'org.apache.qpid:qpid-broker:7.0.2'
     compile 'junit:junit'
 
 }
