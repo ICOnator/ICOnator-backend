@@ -10,7 +10,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -21,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
-@Transactional
 public class PaymentLogRepositoryTest {
 
     @Autowired
@@ -46,9 +44,9 @@ public class PaymentLogRepositoryTest {
     @Test(expected = DataIntegrityViolationException.class)
     public void testSaveTwoPaymentLogWithSameTransactionIdentifier() {
         PaymentLog p1 = createPaymentLog();
-        paymentLogRepository.save(p1);
+        paymentLogRepository.saveAndFlush(p1);
         PaymentLog p2 = createPaymentLog();
-        paymentLogRepository.save(p2);
+        paymentLogRepository.saveAndFlush(p2);
     }
 
     private PaymentLog createPaymentLog() {

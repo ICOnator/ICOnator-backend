@@ -85,7 +85,7 @@ public class RegisterController {
                 emailConfirmationToken = generateRandomUUID();
                 oInvestor = Optional.of(createInvestor(registerRequest.getEmail(), emailConfirmationToken, ipAddress));
                 Investor investor = oInvestor.get();
-                investorRepository.save(investor);
+                investorRepository.saveAndFlush(investor);
                 LOG.debug("Investor saved to the database: email="
                         + investor.getEmail() + "), emailConfirmationToken="
                         + investor.getEmailConfirmationToken());

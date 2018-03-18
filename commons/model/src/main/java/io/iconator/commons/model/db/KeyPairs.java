@@ -5,13 +5,15 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 
 @Entity(name = "keypairs")
 public class KeyPairs {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
+    @SequenceGenerator(name = "id_seq", sequenceName = "keypairs_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @Column(name = "id", updatable = false)
     private long id;
 
     @Column(name = "public_btc", unique = true, nullable = false)

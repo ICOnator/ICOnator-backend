@@ -15,9 +15,13 @@ import java.util.Objects;
 import static javax.persistence.TemporalType.TIMESTAMP;
 
 @Entity
-@Table(name = "investor", indexes = {
-        @Index(columnList = "pay_in_bitcoin_public_key", name = "pay_in_bitcoin_public_key_idx"),
-        @Index(columnList = "pay_in_ether_public_key", name = "pay_in_ether_public_key_idx")})
+@Table(
+        name = "investor",
+        indexes = {
+                @Index(columnList = "pay_in_bitcoin_public_key", name = "pay_in_bitcoin_public_key_idx"),
+                @Index(columnList = "pay_in_ether_public_key", name = "pay_in_ether_public_key_idx")
+        }
+)
 public class Investor {
 
     @Id

@@ -9,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.Optional;
@@ -20,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
-@Transactional
 public class InvestorRepositoryTest {
 
     @Autowired
@@ -72,17 +70,17 @@ public class InvestorRepositoryTest {
     public void testEmailConfirmationTokenUniqueConstraint() {
         String randomUUID = UUID.randomUUID().toString();
         Investor i1 = new Investor(new Date(), "test1@test1.com", randomUUID);
-        investorRepository.save(i1);
+        investorRepository.saveAndFlush(i1);
         Investor i2 = new Investor(new Date(), "test2@test2.com", randomUUID);
-        investorRepository.save(i2);
+        investorRepository.saveAndFlush(i2);
     }
 
     @Test(expected = DataIntegrityViolationException.class)
     public void testEmailUniqueConstraint() {
         Investor i1 = new Investor(new Date(), "test@test.com", UUID.randomUUID().toString());
-        investorRepository.save(i1);
+        investorRepository.saveAndFlush(i1);
         Investor i2 = new Investor(new Date(), "test@test.com", UUID.randomUUID().toString());
-        investorRepository.save(i2);
+        investorRepository.saveAndFlush(i2);
     }
 
     private Investor createInvestor() {

@@ -1,14 +1,13 @@
 package io.iconator.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.commons.bitcoin.BitcoinKeyGenerator;
-import io.iconator.commons.ethereum.EthereumKeyGenerator;
 import io.iconator.backend.BaseApplicationTest;
 import io.iconator.backend.dto.AddressRequest;
 import io.iconator.backend.dto.RegisterRequest;
 import io.iconator.backend.utils.Constants;
+import io.iconator.commons.bitcoin.BitcoinKeyGenerator;
+import io.iconator.commons.ethereum.EthereumKeyGenerator;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.test.utils.BuiltInMessageBroker;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -19,10 +18,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// DirtiesContext is used to reset the context before starting any test method
+// E.g., freshly restarting the h2 database
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class RegisterAddressTest extends BaseApplicationTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterAddressTest.class);
@@ -131,7 +134,7 @@ public class RegisterAddressTest extends BaseApplicationTest {
     @Test
     public void testLargeEmailAddress() throws Exception {
         testImpl.postRegister(
-                    new RegisterRequest()
+                new RegisterRequest()
                         .setEmail(RandomStringUtils.randomAlphanumeric(Constants.EMAIL_CHAR_MAX_SIZE + 1)))
                 .expectStatus(status().isBadRequest());
     }
@@ -188,7 +191,7 @@ public class RegisterAddressTest extends BaseApplicationTest {
                 .postAddress(
                         new AddressRequest()
                                 .setAddress(RegisterAddressTestImpl.generateEthereumKey())
-                                .setRefundBTC(RegisterAddressTestImpl.generateBitcoinKey() + "1")
+                                .setRefundBTC(RegisterAddressTestImpl.generateBitcoinKey() + "11")
                                 .setRefundETH("")
                 )
                 .expectStatus(status().isBadRequest());
