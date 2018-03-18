@@ -6,7 +6,6 @@ bootJar {
     launchScript()
 }
 
-
 dependencies {
 
     compile project(':commons:bitcoin')

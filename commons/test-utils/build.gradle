@@ -5,6 +5,9 @@ bootJar {
     launchScript()
 }
 
+jar.enabled = true
+bootJar.enabled = false
+
 dependencies {
 
     compile 'org.springframework.boot:spring-boot-starter-amqp'

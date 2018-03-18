@@ -1,5 +1,5 @@
-//These plugins are used for the subprojects as described here:
-//https://stackoverflow.com/questions/26236308/how-to-apply-plugin-to-allprojects-with-new-gradle-plugins-mechanism
+// These plugins are used for the subprojects as described here:
+// https://stackoverflow.com/questions/26236308/how-to-apply-plugin-to-allprojects-with-new-gradle-plugins-mechanism
 plugins {
     id 'java'
     id 'org.springframework.boot' version '2.0.0.RELEASE' apply false
@@ -7,7 +7,7 @@ plugins {
     id 'org.unbroken-dome.test-sets' version '1.4.2' apply false
 }
 
-//don't generate a build folder in root
+// Don't generate a build folder in root
 jar.enabled = false
 
 subprojects {
@@ -16,10 +16,10 @@ subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        //used for https://github.com/kenglxn/QRGen, they publish on github
+        // Used for https://github.com/kenglxn/QRGen, they publish on github
         maven { url "https://jitpack.io" }
         maven { url 'https://dl.bintray.com/ethereum/maven/' }
-        // Required due to "com.sleepycat" dependency:
+        // Required due to "com.sleepycat" dependency
         maven { url 'http://download.oracle.com/maven' }
         // Used for rates
         maven { url 'https://raw.githubusercontent.com/blockchain/api-v1-client-java/mvn-repo/' }
@@ -29,16 +29,12 @@ subprojects {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-//don't generate a build folder in the services directory
+// Don't generate a build folder in the services directory
 configure([project("services")]) {
     jar.enabled = false
 }
 
-//don't generate a build folder in the commons directory
+// Don't generate a build folder in the commons directory
 configure([project("commons")]) {
     jar.enabled = false
 }
-
-//TODO: fix tests, then remove these lines
-task stage(dependsOn: ['services:core:build'])
-gradle.startParameter.excludedTaskNames += "test"
