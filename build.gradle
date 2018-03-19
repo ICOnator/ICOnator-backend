@@ -40,4 +40,6 @@ configure([project("commons")]) {
 }
 
 // Define which tasks Heroku will run before starting the server
-task stage(dependsOn: ['services:core:build', 'services:monitor:build'])
+task stage(dependsOn: ['services:core:build', 'services:monitor:build']) {
+    gradle.startParameter.excludedTaskNames += "test"
+}
