@@ -38,3 +38,6 @@ configure([project("services")]) {
 configure([project("commons")]) {
     jar.enabled = false
 }
+
+// Define which tasks Heroku will run before starting the server
+task stage(dependsOn: ['services:core:build', 'services:monitor:build'])
