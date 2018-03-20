@@ -6,6 +6,10 @@ bootJar {
     launchScript()
 }
 
+testSets {
+    integrationTest { dirName = 'test-integration' }
+}
+
 dependencies {
 
     compile project(':commons:model')

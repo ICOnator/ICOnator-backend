@@ -1,6 +1,17 @@
 rootProject.name = 'iconator-backend'
+
+FileFilter fileFilter = new FileFilter() {
+    @Override
+    boolean accept(File pathname) {
+        if (pathname.name ==~ /.DS_Store/) {
+            return false;
+        }
+        return true;
+    }
+}
+
 ['services', 'commons'].each { String dir ->
-    file(dir).listFiles().each { File module ->
+    file(dir).listFiles(fileFilter).each { File module ->
         include "${dir}:${module.name}"
     }
 }
