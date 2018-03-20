@@ -12,3 +12,5 @@ deploy:
     - services/monitor/build/libs/monitor.jar
     - services/rates/build/libs/rates.jar
   skip_cleanup: true
+  on:
+    tags: true
