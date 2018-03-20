@@ -4,7 +4,9 @@ public enum ExchangeType {
 
     KRAKEN("Kraken"),
     BITSTAMP("Bitstamp"),
-    BITFINEX("Bitfinex");
+    BITFINEX("Bitfinex"),
+    GDAX("GDAX"),
+    COINMARKETCAP("CoinMarketCap");
 
     private final String exchangeName;
 
@@ -12,4 +14,7 @@ public enum ExchangeType {
         this.exchangeName = exchangeName;
     }
 
+    public String getExchangeName() {
+        return this.exchangeName;
+    }
 }

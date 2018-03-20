@@ -52,6 +52,8 @@ public class ExchangeRateServiceTest {
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.BITFINEX));
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.BITSTAMP));
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.KRAKEN));
+        assertTrue(checkIfExchangeIsPresent(all, ExchangeType.GDAX));
+        assertTrue(checkIfExchangeIsPresent(all, ExchangeType.COINMARKETCAP));
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.ETH));
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.BTC));
     }

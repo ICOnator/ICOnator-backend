@@ -58,6 +58,14 @@ public class ExchangeRateService {
     private MarketDataService bitstampMarketDataService;
 
     @Autowired
+    @Qualifier("gdaxMarketDataService")
+    private MarketDataService gdaxMarketDataService;
+
+    @Autowired
+    @Qualifier("coinMarketCapMarketDataService")
+    private MarketDataService coinMarketCapMarketDataService;
+
+    @Autowired
     private Retryer retryer;
 
     public Optional<BigDecimal> getRate(ExchangeType exchangeType, CurrencyPair currencyPair) {
@@ -72,6 +80,10 @@ public class ExchangeRateService {
                         t = krakenMarketDataService.getTicker(currencyPair);
                     case BITFINEX:
                         t = bitfinexMarketDataService.getTicker(currencyPair);
+                    case GDAX:
+                        t = gdaxMarketDataService.getTicker(currencyPair);
+                    case COINMARKETCAP:
+                        t = coinMarketCapMarketDataService.getTicker(currencyPair);
                     default:
                         t = krakenMarketDataService.getTicker(currencyPair);
 
