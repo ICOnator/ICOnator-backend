@@ -139,6 +139,7 @@ local.properties
 
 gradle*
 logs/
+**/*.log
 
 .gradle/
 .idea/
