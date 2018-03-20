@@ -141,6 +141,8 @@ gradle*
 logs/
 **/*.log
 
+**/*.gz
+
 .gradle/
 .idea/
 build/
