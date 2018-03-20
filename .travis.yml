@@ -7,10 +7,10 @@ deploy:
   api_key:
     secure: "XLxDaYYF45g0jz1GP7gP0jdarUq+eAbKoWCimFc7iFBslE8G4YBTYdvQ5JK/ejPgB/U7p69ClyMNDd+TmAFJNOBsDa+yq50A5zoNKp9VOpQYs63sWmnHjAb4zysDpz76ojmcpFY3G9gq2uiDhdh4uOc/UvL/WMC5GHI5ZEv915MsEDsn/V5nHduXHwO+f+1GO5J+b8ilAz1mz9vqqUcW/1bcr+VJ42S+TXUbsvy+cl9pSyqpX9GQ3vHsubJb0LHDqbWvEri7RphddwekjUscK4bWZ9WbL1/rudy2WOSP7ivX3f1PZMAp4cQevIEG2x9ZGbQBsSIwBeM6Y4nyRpwOVnN/stqkQdlpuqatwMbusLbzWSXY73wsKFJQyX3eHAuBbUYcBSSnAvRcNMJp9I7c6L82qDjf7ScvTWjuvv+jveUMsxLXE8e/8GmknHCh7ClAUjwq7agjmvCe5e2vKrp5oSNIQzw/UAkAZDg06NMkyOJ3dFv9CXBQhvTpkUhTFEy2dQWuydAahz8tvRCevK6K5Kr69MRzkWp59RfK0v36sEnTDFqir9TG4EKenU4cPwKhNIjn+cauAd4WUJWIlbahioiw+2Eg3sM8XaCCKW14iZeU6XldNOpXAh0kDGtY4V6o8CnYgph72t+HYDQbMja8IxUj+U8I6tWLWc7eMyKYyEk="
   file:
-    - ICOnator/ICOnator-backend/services/core/build/libs/core.jar
-    - ICOnator/ICOnator-backend/services/email/build/libs/email.jar
-    - ICOnator/ICOnator-backend/services/monitor/build/libs/monitor.jar
-    - ICOnator/ICOnator-backend/services/rates/build/libs/rates.jar
+    - services/core/build/libs/core.jar
+    - services/email/build/libs/email.jar
+    - services/monitor/build/libs/monitor.jar
+    - services/rates/build/libs/rates.jar
   skip_cleanup: true
   on:
     tags: true
