@@ -60,3 +60,11 @@ Run parity in the Kovan (testnet) chain:
 docker run --rm -ti -p 8180:8180 -p 127.0.0.1:8180:8180 -p 127.0.0.1:8545:8545 -p 127.0.0.1:8546:8546 -p 127.0.0.1:30303:30303 -p 127.0.0.1:30303:30303/udp parity/parity:v1.7.0 --ui-interface all --jsonrpc-interface all --tracing on --pruning fast --warp --mode active --chain kovan
 ```
 
+### ELK stack
+
+Install elk-stack:
+```
+git clone https://github.com/deviantony/docker-elk.git
+docker-compose up
+```
+Full documentation: [docker-elk](https://github.com/deviantony/docker-elk)
