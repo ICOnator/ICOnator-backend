@@ -22,7 +22,10 @@ public class RatesApplication {
         try {
             run(RatesApplication.class, args);
         } catch (Throwable t) {
-            LOG.error("cannot execute rates", t);
+            //ignore silent exception
+            if(!t.getClass().toString().endsWith("SilentExitException")) {
+                LOG.error("cannot execute rates", t);
+            }
         }
     }
 

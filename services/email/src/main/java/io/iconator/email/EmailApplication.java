@@ -14,7 +14,10 @@ public class EmailApplication {
         try {
             run(EmailApplication.class, args);
         } catch (Throwable t) {
-            LOG.error("cannot execute core", t);
+            //ignore silent exception
+            if(!t.getClass().toString().endsWith("SilentExitException")) {
+                LOG.error("cannot execute core", t);
+            }
         }
     }
 

@@ -19,7 +19,10 @@ public class MonitorApplication {
         try {
             run(MonitorApplication.class, args);
         } catch (Throwable t) {
-            LOG.error("cannot execute monitor", t);
+            //ignore silent exception
+            if(!t.getClass().toString().endsWith("SilentExitException")) {
+                LOG.error("cannot execute monitor", t);
+            }
         }
     }
 
