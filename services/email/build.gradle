@@ -12,15 +12,8 @@ dependencies {
     compile project(':commons:mail-service')
     compile project(':commons:sql-repository')
 
-    // Spring Boot
-    compile 'org.springframework.boot:spring-boot-starter-web'
-    compile 'org.springframework.boot:spring-boot-devtools'
-    compile 'org.springframework.retry:spring-retry'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
 
-    compile 'io.springfox:springfox-swagger-ui:2.6.1'
-    compile 'io.springfox:springfox-swagger2:2.6.1'
-
-    compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 
 }

@@ -19,10 +19,15 @@ subprojects {
         // Used for https://github.com/kenglxn/QRGen, they publish on github
         maven { url "https://jitpack.io" }
         maven { url 'https://dl.bintray.com/ethereum/maven/' }
-        // Required due to "com.sleepycat" dependency
+        // Required due to "com.sleepycat" dependency - used by qpid-broker
         maven { url 'http://download.oracle.com/maven' }
         // Used for rates
         maven { url 'https://raw.githubusercontent.com/blockchain/api-v1-client-java/mvn-repo/' }
+    }
+
+    dependencies {
+        testCompile group: 'junit', name: 'junit', version: '4.12'
+        compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     }
 
     sourceCompatibility = JavaVersion.VERSION_1_8

@@ -18,29 +18,13 @@ dependencies {
     // Spring Boot
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'org.springframework.boot:spring-boot-devtools'
-    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
-    compile 'org.springframework.boot:spring-boot-starter-actuator'
-    compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    compile 'org.springframework.retry:spring-retry'
-    compile 'io.springfox:springfox-swagger-ui:2.6.1'
-    compile 'io.springfox:springfox-swagger2:2.6.1'
 
-    compile 'commons-io:commons-io:2.5'
+
+    compile 'org.apache.commons:commons-lang3:3.5'
 
     compile 'info.blockchain:api:1.1.4'
     compile 'com.github.rholder:guava-retrying:2.0.0'
 
-    runtime 'net.logstash.logback:logstash-logback-encoder:4.11'
-
-    // Database drivers
-    runtime 'org.postgresql:postgresql'
-    runtime 'com.h2database:h2'
-
-    // Ethereum and Bitcoin libs
-    compile 'org.ethereum:ethereumj-core:1.5.+'
-    compile 'org.ethereum:solcJ-all:0.4.8'
-    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
-    compile 'org.web3j:core:2.3.0'
     compile 'org.knowm.xchange:xchange-kraken:4.3.4'
     compile 'org.knowm.xchange:xchange-bitfinex:4.3.4'
     compile 'org.knowm.xchange:xchange-bitstamp:4.3.4'
@@ -48,7 +32,6 @@ dependencies {
     compile 'org.knowm.xchange:xchange-gdax:4.3.4'
     compile 'org.knowm.xchange:xchange-binance:4.3.4'
 
-    compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 
 }
