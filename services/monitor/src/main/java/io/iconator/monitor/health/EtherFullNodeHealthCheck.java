@@ -14,7 +14,7 @@ import java.net.*;
 @Component
 public class EtherFullNodeHealthCheck implements HealthIndicator {
 
-    @Value("${io.iconator.monitor.etherfullnodeurl}")
+    @Value("${io.iconator.monitor.eth.node.url}")
     private String etherNodeUrl;
 
     private URL url;
