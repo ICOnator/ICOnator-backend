@@ -12,7 +12,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.util.ArrayList;
 
-@Profile("!prod") //add -Dspring.profiles.active=prod to disable swagger
+@Profile("!prod")
 @Configuration
 @EnableSwagger2
 public class SwaggerConfiguration {
@@ -25,7 +25,7 @@ public class SwaggerConfiguration {
 
     private ApiInfo apiInfo() {
         return new ApiInfo("ICOnator",
-                "ICOnator is a scalable ICO platform",
+                "A straight-forward, secure, configurable, user-friendly, and scalable open source ICO platform – driven by the community.",
                 "1.0.0",
                 null,
                 new Contact("", "", ""),
