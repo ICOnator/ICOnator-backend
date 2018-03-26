@@ -6,18 +6,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MonitorAppConfig {
 
-    @Value("${io.iconator.monitor.startblock}")
-    private Long startBlock;
+    @Value("${io.iconator.monitor.eth.node.start-block}")
+    private Long ethereumNodeStartBlock;
 
-    @Value("${io.iconator.monitor.etherfullnodeurl}")
-    private String etherFullNodeUrl;
+    @Value("${io.iconator.monitor.eth.node.url}")
+    private String ethereumNodeUrl;
 
-    public Long getStartBlock() {
-        return startBlock;
+    public Long getEthereumNodeStartBlock() {
+        return ethereumNodeStartBlock;
     }
 
-    public String getEtherFullNodeUrl() {
-        return etherFullNodeUrl;
+    public String getEthereumNodeUrl() {
+        return ethereumNodeUrl;
     }
 
 }

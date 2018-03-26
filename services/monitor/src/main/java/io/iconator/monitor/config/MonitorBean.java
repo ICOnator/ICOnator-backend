@@ -45,7 +45,7 @@ public class MonitorBean {
 
     @Bean
     public Web3j web3j() {
-        return Web3j.build(new HttpService(appConfig.getEtherFullNodeUrl()));
+        return Web3j.build(new HttpService(appConfig.getEthereumNodeUrl()));
     }
 
     @Bean

@@ -41,7 +41,7 @@ public class MonitoringInit {
             initMonitors();
         } catch (HttpHostConnectException e) {
             LOG.error("Could not connect to ethereum full node on {}: {}",
-                    appConfig.getEtherFullNodeUrl(), e.getMessage());
+                    appConfig.getEthereumNodeUrl(), e.getMessage());
             System.exit(1);
         }
     }
@@ -50,8 +50,8 @@ public class MonitoringInit {
 
         monitorExistingAddresses();
 
-        ethereumMonitor.start(appConfig.getStartBlock());
-        //bitcoinMonitor.start();
+        ethereumMonitor.start(appConfig.getEthereumNodeStartBlock());
+        bitcoinMonitor.start();
 
         LOG.info("All monitors started");
     }
