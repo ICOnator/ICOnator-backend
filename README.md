@@ -12,7 +12,7 @@ To be described.
 
 ## How to run?
 
-To be described.
+ICOnator has integrated swagger in the non-production profile. To see the API in swagger, go to [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html).
 
 ## Architecture
 
