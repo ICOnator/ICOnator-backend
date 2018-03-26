@@ -33,7 +33,7 @@
     } ]
   }],
   "virtualhostnodes" : [ {
-    "name" : "default",
+    "name" : "vhost1",
     "type" : "Memory",
     "defaultVirtualHostNode" : "true",
     "virtualHostInitialConfiguration" : "{\"type\": \"Memory\" }"
