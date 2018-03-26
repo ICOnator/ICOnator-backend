@@ -11,9 +11,7 @@ dependencies {
     compile project(':commons:amqp-service')
     compile project(':commons:mail-service')
     compile project(':commons:sql-repository')
+    compile project(':commons:services-base')
 
     compile 'org.springframework.boot:spring-boot-starter-actuator'
-
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-
 }

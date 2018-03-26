@@ -14,11 +14,7 @@ dependencies {
 
     compile project(':commons:model')
     compile project(':commons:sql-repository')
-
-    // Spring Boot
-    compile 'org.springframework.boot:spring-boot-starter-web'
-    compile 'org.springframework.boot:spring-boot-devtools'
-
+    compile project(':commons:services-base')
 
     compile 'org.apache.commons:commons-lang3:3.5'
 
@@ -31,7 +27,4 @@ dependencies {
     compile 'org.knowm.xchange:xchange-coinmarketcap:4.3.4'
     compile 'org.knowm.xchange:xchange-gdax:4.3.4'
     compile 'org.knowm.xchange:xchange-binance:4.3.4'
-
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-
 }
