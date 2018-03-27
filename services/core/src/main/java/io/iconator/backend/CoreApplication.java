@@ -14,7 +14,8 @@ import static org.springframework.boot.SpringApplication.run;
 @EntityScan("io.iconator.commons.model.db")
 
 //required for swagger to find the configuration (baseservice) and the API methods (controller)
-@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.backend.controller"})
+@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.backend.controller",
+        "io.iconator.backend.service"})
 public class CoreApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);
