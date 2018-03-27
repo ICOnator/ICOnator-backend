@@ -59,6 +59,7 @@ Run parity in the Kovan (testnet) chain:
 ```
 docker run --rm -ti -p 127.0.0.1:8180:8180 -p 127.0.0.1:8545:8545 -p 127.0.0.1:8546:8546 -p 127.0.0.1:30303:30303 -p 127.0.0.1:30303:30303/udp parity/parity --ui-interface all --jsonrpc-interface all --tracing on --pruning fast --warp --mode active --chain kovan
 ```
+## Application Monitoring
 
 ### ELK stack
 
@@ -67,4 +68,54 @@ Install elk-stack:
 git clone https://github.com/deviantony/docker-elk.git
 docker-compose up
 ```
-Full documentation: [docker-elk](https://github.com/deviantony/docker-elk)
+Full documentation: [docker-elk](https://github.com/deviantony/docker-elk).
+
+### Filebeat
+
+Install Filebeat agent(s): [instructions](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-installation.html)
+
+Configure *Filebeat* to send collected files to *Logstash* or *ElasticSearch* remotely:
+
+Edit `filebeat.yml` configuration file.
+
+Under `filebeat.prospectors` add the following snippet:  
+```
+- type: log  
+  enabled: true    
+  paths:
+    - /path/file.log
+ ```
+Under `Outputs` add the following snippets:  
+```
+output.elasticsearch:
+  hosts: ["localhost:9200"]
+  
+output.logstash:
+  hosts: ["localhost:5044"]
+```
+
+### Logstash
+
+Edit `logstash.conf` to specify input and output.
+
+```
+input {
+	tcp {
+		port => 5000
+	}
+	beats {
+    		port => 5044
+  	}
+}
+
+## Add your filters / logstash plugins configuration here
+
+output {
+	elasticsearch {
+    		hosts => "localhost:9200"
+    		manage_template => false
+    		index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+    		document_type => "%{[@metadata][type]}" 
+  	}
+}
+```
