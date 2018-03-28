@@ -6,15 +6,23 @@
     <include resource="org/springframework/boot/logging/logback/file-appender.xml" />
     <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
+    <springProperty name="logstashAddress" source="logstash.address" />
+    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${logstashAddress}</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+    </appender>
+
     <root level="DEBUG">
         <appender-ref ref="FILE" />
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="STASH" />
     </root>
 
     <springProfile name="dev,prod">
         <root level="INFO">
             <appender-ref ref="FILE" />
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="STASH" />
         </root>
     </springProfile>
 
