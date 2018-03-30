@@ -102,7 +102,7 @@ public class BitcoinMonitor {
      * @param publicKey Bitcoin public key as hex string
      * @param timestamp Timestamp in seconds when this key was created
      */
-    public void addMonitoredPublicKey(String publicKey, long timestamp) {
+    public synchronized void addMonitoredPublicKey(String publicKey, long timestamp) {
         final Address address = ECKey.fromPublicOnly(Hex.decode(publicKey))
                 .toAddress(this.bitcoinNetworkParameters);
         final String addressString = address.toBase58();

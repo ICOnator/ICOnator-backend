@@ -3,9 +3,11 @@ package io.iconator.commons.amqp.service;
 import io.iconator.commons.amqp.AMQPMessageService;
 import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.amqp.model.SetWalletAddressMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import org.slf4j.Logger;
 
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.FUNDS_RECEIVED_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
@@ -34,6 +36,11 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     @Override
     public void send(FundsReceivedEmailMessage fundsReceivedEmailMessage) {
         sendExchange(FUNDS_RECEIVED_ROUTING_KEY, fundsReceivedEmailMessage);
+    }
+
+    @Override
+    public void send(SetWalletAddressMessage setWalletAddressMessage) {
+        sendExchange(ADDRESS_SET_WALLET_ROUTING_KEY, setWalletAddressMessage);
     }
 
     private void sendExchange(String routingKey, Object message) {

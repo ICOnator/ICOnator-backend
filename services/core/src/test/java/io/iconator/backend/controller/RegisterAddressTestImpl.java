@@ -3,6 +3,7 @@ package io.iconator.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import io.iconator.backend.message.ConfirmationEmailMessageConsumer;
+import io.iconator.backend.message.SetWalletAddressMessageConsumer;
 import io.iconator.commons.bitcoin.BitcoinKeyGenerator;
 import io.iconator.commons.ethereum.EthereumKeyGenerator;
 import io.iconator.commons.model.db.Investor;
@@ -18,8 +19,10 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
+import static io.iconator.commons.amqp.model.constants.QueueConstants.ADDRESS_SET_WALLET_QUEUE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_CONFIRMATION_EMAIL_QUEUE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_SUMMARY_EMAIL_QUEUE;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
 import static org.junit.Assert.assertTrue;
@@ -42,7 +45,8 @@ public class RegisterAddressTestImpl {
     private InvestorRepository investorRepository;
     private ObjectMapper objectMapper;
 
-    private ConfirmationEmailMessageConsumer messageConsumer;
+    private ConfirmationEmailMessageConsumer confirmationEmailMessageConsumer;
+    private SetWalletAddressMessageConsumer setWalletAddressMessageConsumer;
 
     private ResultActions resultActions;
     private String confirmationEmailToken;
@@ -62,6 +66,10 @@ public class RegisterAddressTestImpl {
         channel.exchangeDeclare(ICONATOR_ENTRY_EXCHANGE, "topic", true);
         channel.queueBind(REGISTER_SUMMARY_EMAIL_QUEUE, ICONATOR_ENTRY_EXCHANGE, REGISTER_SUMMARY_EMAIL_ROUTING_KEY);
 
+        channel.queueDeclare(ADDRESS_SET_WALLET_QUEUE, true, false, false, null);
+        channel.exchangeDeclare(ICONATOR_ENTRY_EXCHANGE, "topic", true);
+        channel.queueBind(ADDRESS_SET_WALLET_QUEUE, ICONATOR_ENTRY_EXCHANGE, ADDRESS_SET_WALLET_ROUTING_KEY);
+
         return this;
     }
 
@@ -69,6 +77,7 @@ public class RegisterAddressTestImpl {
         channel.exchangeDelete(ICONATOR_ENTRY_EXCHANGE);
         channel.queueDelete(REGISTER_CONFIRMATION_EMAIL_QUEUE);
         channel.queueDelete(REGISTER_SUMMARY_EMAIL_QUEUE);
+        channel.queueDelete(ADDRESS_SET_WALLET_QUEUE);
         return this;
     }
 
@@ -145,14 +154,26 @@ public class RegisterAddressTestImpl {
     }
 
     protected RegisterAddressTestImpl setUpConfirmationEmailConsumer() throws Exception {
-        messageConsumer = new ConfirmationEmailMessageConsumer();
-        channel.basicConsume(REGISTER_CONFIRMATION_EMAIL_QUEUE, messageConsumer);
-        Thread.sleep(1000);
+        confirmationEmailMessageConsumer = new ConfirmationEmailMessageConsumer();
+        channel.basicConsume(REGISTER_CONFIRMATION_EMAIL_QUEUE, confirmationEmailMessageConsumer);
         return this;
     }
 
-    protected RegisterAddressTestImpl assertConfirmationEmailMessageConsumedMessagesSizeEquals(int size) {
-        assertTrue(messageConsumer.getConsumedMessages().size() == size);
+    protected RegisterAddressTestImpl setUpSetWalletAddressMessageConsumer() throws Exception {
+        setWalletAddressMessageConsumer = new SetWalletAddressMessageConsumer();
+        channel.basicConsume(ADDRESS_SET_WALLET_QUEUE, setWalletAddressMessageConsumer);
+        return this;
+    }
+
+    protected RegisterAddressTestImpl assertConfirmationEmailMessageConsumedMessagesSizeEquals(int size) throws Exception {
+        Thread.sleep(1000);
+        assertTrue(confirmationEmailMessageConsumer.getConsumedMessages().size() == size);
+        return this;
+    }
+
+    protected RegisterAddressTestImpl assertSetWalletAddressMessageConsumedMessagesSizeEquals(int size) throws Exception {
+        Thread.sleep(1000);
+        assertTrue(setWalletAddressMessageConsumer.getConsumedMessages().size() == size);
         return this;
     }
 

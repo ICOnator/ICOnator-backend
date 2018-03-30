@@ -12,6 +12,7 @@ import io.iconator.backend.controller.exceptions.WalletAddressAlreadySetExceptio
 import io.iconator.backend.dto.AddressRequest;
 import io.iconator.backend.dto.AddressResponse;
 import io.iconator.backend.utils.Constants;
+import io.iconator.commons.amqp.model.SetWalletAddressMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinAddressService;
@@ -142,6 +143,8 @@ public class AddressController {
             investorRepository.save(investor);
             SummaryEmailMessage summaryEmailMessage = new SummaryEmailMessage(build(oInvestor.get()));
             messageService.send(summaryEmailMessage);
+            SetWalletAddressMessage setWalletAddressMessage = new SetWalletAddressMessage(build(oInvestor.get()));
+            messageService.send(setWalletAddressMessage);
         } catch (Exception e) {
             LOG.error("Unexpected exception in AddressController:", e);
             throw new UnexpectedException();

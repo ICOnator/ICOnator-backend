@@ -69,6 +69,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                 .setBitcoinKeyGenerator(bitcoinKeyGenerator)
                 .setInvestorRepository(investorRepository)
                 .setObjectMapper(objectMapper)
+                .setUpConfirmationEmailConsumer()
+                .setUpSetWalletAddressMessageConsumer()
                 .initializeMockMvc();
     }
 
@@ -81,7 +83,6 @@ public class RegisterAddressTest extends BaseApplicationTest {
     public void testRegisterEmail() throws Exception {
         testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
                 .expectStatus(status().is2xxSuccessful())
-                .setUpConfirmationEmailConsumer()
                 .assertConfirmationEmailMessageConsumedMessagesSizeEquals(1);
     }
 
@@ -114,7 +115,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC(RegisterAddressTestImpl.generateBitcoinKey())
                                 .setRefundETH(RegisterAddressTestImpl.generateEthereumKey())
                 )
-                .expectStatus(status().is2xxSuccessful());
+                .expectStatus(status().is2xxSuccessful())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(1);
     }
 
     @Test
@@ -128,7 +130,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC("")
                                 .setRefundETH("")
                 )
-                .expectStatus(status().isBadRequest());
+                .expectStatus(status().isBadRequest())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(0);
     }
 
     @Test
@@ -162,7 +165,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC("")
                                 .setRefundETH("")
                 )
-                .expectStatus(status().isUnauthorized());
+                .expectStatus(status().isUnauthorized())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(0);;
     }
 
     @Test
@@ -178,7 +182,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC("")
                                 .setRefundETH("")
                 )
-                .expectStatus(status().isBadRequest());
+                .expectStatus(status().isBadRequest())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(0);
     }
 
     @Test
@@ -194,7 +199,8 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC(RegisterAddressTestImpl.generateBitcoinKey() + "11")
                                 .setRefundETH("")
                 )
-                .expectStatus(status().isBadRequest());
+                .expectStatus(status().isBadRequest())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(0);
     }
 
     @Test
@@ -210,14 +216,14 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundBTC("")
                                 .setRefundETH(RegisterAddressTestImpl.generateEthereumKey() + "1")
                 )
-                .expectStatus(status().isBadRequest());
+                .expectStatus(status().isBadRequest())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(0);
     }
 
     @Test
     public void testOverwritingWalletAddressWithEmailConfirmationToken() throws Exception {
         testImpl.postRegister(new RegisterRequest().setEmail(TEST_EMAIL))
                 .expectStatus(status().is2xxSuccessful())
-                .setUpConfirmationEmailConsumer()
                 .assertConfirmationEmailMessageConsumedMessagesSizeEquals(1)
                 .fetchConfirmationEmailTokenFromDB(TEST_EMAIL)
                 .getRegister()
@@ -229,13 +235,15 @@ public class RegisterAddressTest extends BaseApplicationTest {
                                 .setRefundETH(RegisterAddressTestImpl.generateEthereumKey())
                 )
                 .expectStatus(status().is2xxSuccessful())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(1)
                 .postAddress(
                         new AddressRequest()
                                 .setAddress(RegisterAddressTestImpl.generateEthereumKey())
                                 .setRefundBTC(RegisterAddressTestImpl.generateBitcoinKey())
                                 .setRefundETH(RegisterAddressTestImpl.generateEthereumKey())
                 )
-                .expectStatus(status().isConflict());
+                .expectStatus(status().isConflict())
+                .assertSetWalletAddressMessageConsumedMessagesSizeEquals(1);
     }
 
 }

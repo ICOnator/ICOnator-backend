@@ -144,7 +144,7 @@ public class EthereumMonitor {
      *
      * @param publicKey Ethereum public key as hex string
      */
-    public void addMonitoredEtherPublicKey(String publicKey) {
+    public synchronized void addMonitoredEtherPublicKey(String publicKey) {
         String addressString = Hex.toHexString(org.ethereum.crypto.ECKey.fromPublicOnly(Hex.decode(publicKey)).getAddress());
         if (!addressString.startsWith("0x"))
             addressString = "0x" + addressString;

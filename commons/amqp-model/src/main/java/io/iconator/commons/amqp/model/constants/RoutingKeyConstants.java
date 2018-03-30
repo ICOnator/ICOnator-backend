@@ -9,4 +9,6 @@ public class RoutingKeyConstants {
     public static final String REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY = "iconator.register.confirmation";
     public static final String REGISTER_SUMMARY_EMAIL_ROUTING_KEY = "iconator.register.summary";
 
+    public static final String ADDRESS_SET_WALLET_ROUTING_KEY = "iconator.address.set-wallet";
+
 }
