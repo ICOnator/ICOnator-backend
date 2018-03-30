@@ -18,6 +18,4 @@ dependencies {
     compile 'net.logstash.logback:logstash-logback-encoder:5.0'
 
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor'
-
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

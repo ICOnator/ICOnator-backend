@@ -1,5 +1,6 @@
 package io.iconator.backend;
 
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,12 +23,28 @@ public class CoreApplication {
 
     public static void main(String[] args) {
         try {
+            startMessageQueue();
             run(CoreApplication.class, args);
         } catch (Throwable t) {
             //ignore silent exception
             if(!t.getClass().toString().endsWith("SilentExitException")) {
                 LOG.error("cannot execute core", t);
             }
+        }
+    }
+
+    /**
+     * Starts the message queue when no profile is set, this means we are local
+     * and we want to start the message queue on this machine. Also, the dev-tools
+     * with Spring Boot, restart the application, thus, we don't want to restart the queue.
+     *
+     * @throws Exception
+     */
+    private static void startMessageQueue() throws Exception {
+        String profile = System.getenv("spring.profiles.active");
+        if(Strings.isNullOrEmpty(profile)
+                && !Thread.currentThread().getName().equals("restartedMain")) {
+            io.iconator.commons.test.utils.BuiltInMessageBroker.start();
         }
     }
 }
