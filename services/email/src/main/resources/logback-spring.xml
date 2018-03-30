@@ -2,8 +2,6 @@
 <configuration>
 
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
-    <property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}/}spring.log}"/>
-    <include resource="org/springframework/boot/logging/logback/file-appender.xml" />
     <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
     <springProperty name="logstashAddress" source="logstash.address" />
@@ -13,14 +11,12 @@
     </appender>
 
     <root level="DEBUG">
-        <appender-ref ref="FILE" />
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="STASH" />
     </root>
 
     <springProfile name="dev,prod">
         <root level="INFO">
-            <appender-ref ref="FILE" />
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="STASH" />
         </root>
