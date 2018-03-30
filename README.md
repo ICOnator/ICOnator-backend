@@ -28,7 +28,7 @@ To be described.
 
 ## Development
 
-### RabbitMQ (AMQP 0.9.2 protocol)
+### RabbitMQ (AMQP 0.9.1 protocol)
 
 All the applications interact with AMQP protocol and require a message broker running. For developing localy, an message queue is started automatically. In the "dev" and "prod" profile, no message queue is started automatically, and needs to be started manually:
 
