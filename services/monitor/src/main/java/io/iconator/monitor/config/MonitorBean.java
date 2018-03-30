@@ -5,6 +5,7 @@ import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
+import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
@@ -109,8 +110,10 @@ public class MonitorBean {
                                            Web3j web3j,
                                            InvestorRepository investorRepository,
                                            PaymentLogRepository paymentLogRepository,
+                                           SaleTierRepository saleTierRepository,
                                            ICOnatorMessageService messageService) {
-        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository, messageService);
+        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository,
+                saleTierRepository, messageService);
     }
 
     @Bean
@@ -122,10 +125,11 @@ public class MonitorBean {
                                          PeerGroup peerGroup,
                                          InvestorRepository investorRepository,
                                          PaymentLogRepository paymentLogRepository,
+                                         SaleTierRepository saleTierRepository,
                                          ICOnatorMessageService messageService) throws Exception {
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogRepository, messageService);
+                investorRepository, paymentLogRepository, saleTierRepository, messageService);
     }
 
     @Bean

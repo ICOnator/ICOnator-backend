@@ -8,6 +8,7 @@ import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
+import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Block;
@@ -46,7 +47,7 @@ import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.BUILDING;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.IN_CONFLICT;
 
-public class BitcoinMonitor {
+public class BitcoinMonitor extends BaseMonitor {
 
     private final static Logger LOG = LoggerFactory.getLogger(BitcoinMonitor.class);
 
@@ -72,7 +73,9 @@ public class BitcoinMonitor {
                           PeerGroup peerGroup,
                           InvestorRepository investorRepository,
                           PaymentLogRepository paymentLogRepository,
+                          SaleTierRepository saleTierRepository,
                           ICOnatorMessageService messageService) throws Exception {
+        super(saleTierRepository);
         this.fxService = fxService;
 
         this.bitcoinBlockchain = bitcoinBlockchain;
@@ -231,8 +234,13 @@ public class BitcoinMonitor {
         BigDecimal amountTokens = BigDecimal.ZERO;
 
         try {
-            // TODO: 04.03.18 Guil:
-            // Here add to the tiers
+
+            //  ConversionResult result = calcTokensAndUpdateTiers(usdReceived, blockTime);
+            //  if (result.hasOverflow()) {
+            //      TODO: 2018-03-30 Claude:
+            //      Handle overflow of payment which could not be converted into tokens due to last tier being full.
+            //  }
+            // amountTokens = new BigDecimal(result.getTokens());
 
             PaymentLog paymentLog = new PaymentLog(identifier, new Date(), new Date(blockTime.toEpochMilli()),
                     CurrencyType.BTC, new BigDecimal(value), USDperBTC, usdReceived, email, amountTokens);

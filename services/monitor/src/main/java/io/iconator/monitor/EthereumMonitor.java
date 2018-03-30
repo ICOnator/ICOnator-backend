@@ -7,6 +7,7 @@ import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
+import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Optional.ofNullable;
 
-public class EthereumMonitor {
+public class EthereumMonitor extends BaseMonitor {
 
     private final static Logger LOG = LoggerFactory.getLogger(EthereumMonitor.class);
 
@@ -50,7 +51,9 @@ public class EthereumMonitor {
                            Web3j web3j,
                            InvestorRepository investorRepository,
                            PaymentLogRepository paymentLogRepository,
+                           SaleTierRepository saleTierRepository,
                            ICOnatorMessageService messageService) {
+        super(saleTierRepository);
         this.fxService = fxService;
         this.web3j = web3j;
         this.investorRepository = investorRepository;
@@ -85,11 +88,15 @@ public class EthereumMonitor {
 
         try {
             LOG.debug("USD {} to be converted to tokens, hash {}", usdReceived.toPlainString(), hash);
-
-            // TODO: 04.03.18 Guil:
-            // Here add to the tiers
-
             Date dateTimestamp = timestamp != null ? new Date(Instant.ofEpochMilli(timestamp).getEpochSecond()) : null;
+
+//            ConversionResult result = calcTokensAndUpdateTiers(usdReceived, dateTimestamp);
+//            if (result.hasOverflow()) {
+//                // TODO: 2018-03-30 Claude:
+//                // Handle overflow of payment which could not be converted into tokens due to last tier being full.
+//            }
+//            amountTokens = result.getTokens();
+
             PaymentLog paymentLog = new PaymentLog(hash, new Date(), dateTimestamp,
                     CurrencyType.ETH, new BigDecimal(wei), USDperETH, usdReceived, email, amountTokens);
             Optional<PaymentLog> oSavedPaymentLog = ofNullable(paymentLogRepository.save(paymentLog));
