@@ -45,7 +45,7 @@ public class RegisterAddressTest extends BaseApplicationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${io.iconator.backend.frontendWalletPath}")
+    @Value("${io.iconator.services.core.frontendWalletPath}")
     private String frontendWalletUrlPath;
 
     @Value("${io.iconator.commons.amqp.url}")

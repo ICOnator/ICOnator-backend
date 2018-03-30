@@ -43,10 +43,10 @@ public class RegisterController {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterController.class);
 
-    @Value("${io.iconator.backend.frontendUrl}")
+    @Value("${io.iconator.services.core.frontendUrl}")
     private String frontendUrl;
 
-    @Value("${io.iconator.backend.frontendWalletPath}")
+    @Value("${io.iconator.services.core.frontendWalletPath}")
     private String frontendWalletUrlPath;
 
     @Autowired

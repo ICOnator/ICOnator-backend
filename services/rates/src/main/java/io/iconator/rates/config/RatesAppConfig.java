@@ -11,31 +11,31 @@ import java.util.List;
 @Configuration
 public class RatesAppConfig {
 
-    @Value("${io.iconator.rates.user-agent}")
+    @Value("${io.iconator.services.rates.user-agent}")
     private String userAgent;
 
-    @Value("${io.iconator.rates.etherscan.api-token}")
+    @Value("${io.iconator.services.rates.etherscan.api-token}")
     private String etherScanApiToken;
 
-    @Value("${io.iconator.rates.etherscan.url}")
+    @Value("${io.iconator.services.rates.etherscan.url}")
     private String etherScanUrl;
 
-    @Value("${io.iconator.rates.blockr.url}")
+    @Value("${io.iconator.services.rates.blockr.url}")
     private String blockrUrl;
 
-    @Value("${io.iconator.rates.currencies.enabled}")
+    @Value("${io.iconator.services.rates.currencies.enabled}")
     private CurrencyType[] enabledCurrencies;
 
-    @Value("${io.iconator.rates.exchanges.enabled}")
+    @Value("${io.iconator.services.rates.exchanges.enabled}")
     private ExchangeType[] enabledExchanges;
 
-    @Value("${io.iconator.rates.retry.attempts.max}")
+    @Value("${io.iconator.services.rates.retry.attempts.max}")
     private Integer maxAttempts;
 
-    @Value("${io.iconator.rates.retry.wait-between-attemps.min}")
+    @Value("${io.iconator.services.rates.retry.wait-between-attemps.min}")
     private Long minTimeWait;
 
-    @Value("${io.iconator.rates.retry.wait-between-attemps.max}")
+    @Value("${io.iconator.services.rates.retry.wait-between-attemps.max}")
     private Long maxTimeWait;
 
     public String getUserAgent() {

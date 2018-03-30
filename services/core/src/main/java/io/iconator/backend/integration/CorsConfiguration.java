@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfiguration implements WebMvcConfigurer {
 
-    @Value("${io.iconator.backend.cors.urls}")
+    @Value("${io.iconator.services.core.cors.urls}")
     private String[] corsUrls;
 
     @Override

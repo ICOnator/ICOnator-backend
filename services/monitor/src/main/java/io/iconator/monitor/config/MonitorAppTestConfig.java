@@ -8,16 +8,16 @@ import org.springframework.context.annotation.Profile;
 @Profile("dev")
 public class MonitorAppTestConfig {
 
-    @Value("${io.iconator.monitor.eth.rinkeby.wallet-path}")
+    @Value("${io.iconator.services.monitor.eth.rinkeby.wallet-path}")
     private String ethWalletPath;
 
-    @Value("${io.iconator.monitor.eth.rinkeby.wallet-password}")
+    @Value("${io.iconator.services.monitor.eth.rinkeby.wallet-password}")
     private String ethWalletPassword;
 
-    @Value("${io.iconator.monitor.btc.testnet.wallet-path}")
+    @Value("${io.iconator.services.monitor.btc.testnet.wallet-path}")
     private String btcWalletPath;
 
-    @Value("${io.iconator.monitor.btc.testnet.wallet-password}")
+    @Value("${io.iconator.services.monitor.btc.testnet.wallet-password}")
     private String btcWalletPassword;
 
     public String getEthWalletPath() {

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MonitorAppConfig {
 
-    @Value("${io.iconator.monitor.eth.node.start-block}")
+    @Value("${io.iconator.services.monitor.eth.node.start-block}")
     private Long ethereumNodeStartBlock;
 
     @Value("${io.iconator.monitor.eth.node.url}")
