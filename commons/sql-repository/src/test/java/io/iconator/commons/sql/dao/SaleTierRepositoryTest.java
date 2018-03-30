@@ -10,8 +10,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigInteger;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
@@ -35,12 +33,12 @@ public class SaleTierRepositoryTest {
     @Test
     public void testFindAllOrderByBeginDate() {
         storeThreeSuccessiveTiers();
-        List<SaleTier> tiers = tierRepository.findAllByOrderByBeginDateAsc();
+        List<SaleTier> tiers = tierRepository.findAllByOrderByStartDateAsc();
         ListIterator<SaleTier> it = tiers.listIterator();
         SaleTier t1 = it.next();
         while (it.hasNext()) {
             SaleTier t2 = it.next();
-            assertTrue(t1.getBeginDate().before(t2.getBeginDate()));
+            assertTrue(t1.getStartDate().before(t2.getStartDate()));
             t1 = t2;
         }
     }
@@ -51,10 +49,10 @@ public class SaleTierRepositoryTest {
         tierRepository.save(createTier(3, "2018-01-21", "2018-01-30", 0.1, 3000L, false));
     }
 
-    private SaleTier createTier(int tierNo, String begin, String end, double discount, long tokenMax,
+    private SaleTier createTier(int tierNo, String start, String end, double discount, long tokenMax,
                                 boolean active) {
 
-        Date beginDate = java.sql.Date.valueOf(begin);
+        Date beginDate = java.sql.Date.valueOf(start);
         Date endDate = java.sql.Date.valueOf(end);
         return new SaleTier(
                 tierNo,

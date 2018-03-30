@@ -18,7 +18,7 @@ public class SaleTierService {
         this.saleTierRepository = saleTierRepository;
     }
 
-    public List<SaleTier> getAllSaleTiersOrderdByBeginDate() {
-        return saleTierRepository.findAllByOrderByBeginDateAsc();
+    public List<SaleTier> getAllSaleTiersOrderByStartDate() {
+        return saleTierRepository.findAllByOrderByStartDateAsc();
     }
 }

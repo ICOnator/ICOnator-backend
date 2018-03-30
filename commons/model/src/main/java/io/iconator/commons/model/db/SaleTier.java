@@ -20,8 +20,8 @@ public class SaleTier {
     private String description;
 
     @Temporal(TemporalType.DATE)
-    @Column(name = "begin_date")
-    private Date beginDate;
+    @Column(name = "start_date")
+    private Date startDate;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "end_date")
@@ -41,11 +41,11 @@ public class SaleTier {
 
     protected SaleTier() {}
 
-    public SaleTier(int tierNo, String description, Date beginDate, Date endDate,
+    public SaleTier(int tierNo, String description, Date startDate, Date endDate,
                     double discount, BigInteger tokenMax, boolean isActive) {
         this.tierNo = tierNo;
         this.description = description;
-        this.beginDate = beginDate;
+        this.startDate = startDate;
         this.endDate = endDate;
         this.discount = discount;
         this.tokenMax = tokenMax;
@@ -61,8 +61,8 @@ public class SaleTier {
         return description;
     }
 
-    public Date getBeginDate() {
-        return beginDate;
+    public Date getStartDate() {
+        return startDate;
     }
 
     public Date getEndDate() {

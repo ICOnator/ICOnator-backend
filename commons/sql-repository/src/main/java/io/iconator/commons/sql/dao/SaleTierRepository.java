@@ -16,7 +16,7 @@ public interface SaleTierRepository extends JpaRepository<SaleTier, Long>{
 
     Optional<SaleTier> findTierByIsActiveTrue();
 
-    List<SaleTier> findAllByOrderByBeginDateAsc();
+    List<SaleTier> findAllByOrderByStartDateAsc();
 
 
 }
