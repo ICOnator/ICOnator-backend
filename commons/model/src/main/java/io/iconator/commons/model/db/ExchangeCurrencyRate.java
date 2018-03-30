@@ -23,7 +23,7 @@ import static javax.persistence.TemporalType.TIMESTAMP;
 public class ExchangeCurrencyRate {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     private long id;
 
