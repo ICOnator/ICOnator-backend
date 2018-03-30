@@ -1,3 +1,8 @@
+ext {
+    isProd = System.properties['env'] == 'prod'
+    isDev = System.properties['env'] == 'dev'
+}
+
 apply plugin: 'org.unbroken-dome.test-sets' //for Integration Tests
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
@@ -17,4 +22,9 @@ dependencies {
     compile 'javax.ws.rs:jsr311-api:1.1.1'
 
     testCompile project(':commons:test-utils')
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+
+    if (!isProd && !isDev) {
+        compile project(':commons:test-utils')
+    }
 }

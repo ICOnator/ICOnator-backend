@@ -27,4 +27,6 @@ dependencies {
     compile 'org.knowm.xchange:xchange-coinmarketcap:4.3.4'
     compile 'org.knowm.xchange:xchange-gdax:4.3.4'
     compile 'org.knowm.xchange:xchange-binance:4.3.4'
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

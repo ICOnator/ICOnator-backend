@@ -87,3 +87,10 @@ INSERT INTO keypairs (`id`, `public_btc`, `public_eth`) VALUES (85, '02bf3e9ab16
 INSERT INTO keypairs (`id`, `public_btc`, `public_eth`) VALUES (86, '03638febef8e97bc61e7f09988b88951a7b6643bb4cdb4703a8c091b639a395682','04c4c1423e34098681194dcafb1bac5c9965c4577cc34ab3eb2e84c47485d35aa9adf0f2f90aae11e9560527284fc2bf4744162dff94559aa032c8524a91dc6802');
 INSERT INTO keypairs (`id`, `public_btc`, `public_eth`) VALUES (87, '03940e5dffd1bb8832be5d17e8613a25556d7a1b9092c05c54fe03b24583d46be8','046b082dfc919d0524538cf0ed59ccccd10c5435ecdeb89440b89d981d5ecccef2a591de1c01658e6c4307c27518c861598df35844b441f640c79dca7101b845dc');
 INSERT INTO keypairs (`id`, `public_btc`, `public_eth`) VALUES (88, '02fa5dec670787eda94afdff63ac7258bf1892c96b8715d369edae994a7903cf6f','049bff4457595d34cb3b3d43bcd5be7c8305ca306173797e2d4eb7bcf247da3b34aea64e3032889c8a768ddddf250dbb70128bc0ebd95b887a551a53298bd256b7');
+
+INSERT INTO sale_tier (`id`, `tier_no`, `description`, `begin_date`, `end_date`, `discount`, `tokens_sold`, `token_max`, `is_active`)
+VALUES (0, 0, 'pre-sale tier', '2018-03-01', '2018-03-10', 0.2, 0, 2000, TRUE);
+INSERT INTO sale_tier (`id`, `tier_no`, `description`, `begin_date`, `end_date`, `discount`, `tokens_sold`, `token_max`, `is_active`)
+VALUES (1, 1, 'main tier', '2018-03-11', '2018-03-20', 0.1, 0, 20000, FALSE);
+INSERT INTO sale_tier (`id`, `tier_no`, `description`, `begin_date`, `end_date`, `discount`, `tokens_sold`, `token_max`, `is_active`)
+VALUES (2, 2, 'main tier', '2018-03-21', '2018-03-30', 0.0, 0, 200000, FALSE);
