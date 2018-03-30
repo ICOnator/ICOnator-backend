@@ -32,7 +32,7 @@ public class TierController {
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public ResponseEntity<List<SaleTier>> getAllTiers() {
-        return new ResponseEntity<>(saleTierService.getAllSaleTiersOrderdByBeginDate(),
+        return new ResponseEntity<>(saleTierService.getAllSaleTiersOrderByStartDate(),
                 HttpStatus.OK);
     }
 }
