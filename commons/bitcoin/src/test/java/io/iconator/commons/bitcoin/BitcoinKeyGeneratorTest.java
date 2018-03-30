@@ -1,8 +1,8 @@
 package io.iconator.commons.bitcoin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.model.Keys;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;

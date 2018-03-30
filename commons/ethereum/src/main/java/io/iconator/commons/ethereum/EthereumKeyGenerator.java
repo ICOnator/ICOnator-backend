@@ -13,11 +13,17 @@ public class EthereumKeyGenerator {
     public Keys getKeys() {
         ECKey key = new ECKey();
         byte[] address = key.getAddress();
+        byte[] publicKey = key.getPubKey();
+        String publicKeyAsHexString = Hex.toHexString(publicKey);
         byte[] privateKey = key.getPrivKeyBytes();
+        String privateKeyAsHexString = Hex.toHexString(privateKey);
         return new Keys()
                 .setAddress(address)
                 .setAddressAsString("0x" + Hex.toHexString(address))
+                .setPublicKey(publicKey)
+                .setPublicKeyAsHexString(publicKeyAsHexString)
                 .setPrivateKey(privateKey)
+                .setPrivateKeyAsHexString(privateKeyAsHexString)
                 .setAddressAsStringWithPrivate(key.toStringWithPrivate());
     }
 

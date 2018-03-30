@@ -1,4 +1,4 @@
-package io.iconator.backend.configuration;
+package io.iconator.backend.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;

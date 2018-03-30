@@ -31,12 +31,18 @@ public class BitcoinKeyGenerator {
         ECKey key = new ECKey();
         byte[] address = key.getPubKey();
         String addressAsString = key.toAddress(getNetworkParameters()).toString();
+        byte[] publicKey = key.getPubKey();
+        String publicKeyAsHexString = key.getPublicKeyAsHex();
         byte[] privateKey = key.getPrivKeyBytes();
+        String privateKeyAsHexString = key.getPrivateKeyAsHex();
         String addressAsStringWithPrivate = key.toStringWithPrivate(getNetworkParameters()).toString();
         return new Keys()
                 .setAddress(address)
                 .setAddressAsString(addressAsString)
+                .setPublicKey(publicKey)
+                .setPublicKeyAsHexString(publicKeyAsHexString)
                 .setPrivateKey(privateKey)
+                .setPrivateKeyAsHexString(privateKeyAsHexString)
                 .setAddressAsStringWithPrivate(addressAsStringWithPrivate);
     }
 
