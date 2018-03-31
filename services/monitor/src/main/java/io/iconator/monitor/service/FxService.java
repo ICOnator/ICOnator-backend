@@ -32,9 +32,9 @@ public class FxService {
     public BigDecimal getUSDPerBTC(Long timestamp) throws USDBTCFxException {
         Date timestampDate = Date.from(Instant.ofEpochSecond(timestamp));
         Optional<ExchangeAggregateRate> exchangeAggregateRate =
-                aggregateRateRepository.findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDate(timestampDate);
+                aggregateRateRepository.findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateAsc(timestampDate);
 
-        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.ETH))
+        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.BTC))
                 .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
                 .orElseThrow(() -> new USDBTCFxException("No FX aggregation found for USD-BTC."));
     }
