@@ -50,10 +50,16 @@ public class MonitoringInit {
 
         monitorExistingAddresses();
 
-        ethereumMonitor.start(appConfig.getEthereumNodeStartBlock());
-        bitcoinMonitor.start();
+        if (appConfig.getEthereumNodeEnabled()) {
+            ethereumMonitor.start(appConfig.getEthereumNodeStartBlock());
+            LOG.info("Ethereum monitor started.");
+        }
 
-        LOG.info("All monitors started");
+        if (appConfig.getBitcoinNodeEnabled()) {
+            bitcoinMonitor.start();
+            LOG.info("Bitcoin monitor started.");
+        }
+
     }
 
     private void monitorExistingAddresses() {
