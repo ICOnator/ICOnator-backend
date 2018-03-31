@@ -57,31 +57,67 @@ public class SaleTier {
         return tierNo;
     }
 
+    public void setTierNo(int tierNo) {
+        this.tierNo = tierNo;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Date getStartDate() {
         return startDate;
     }
 
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
     public Date getEndDate() {
         return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 
     public double getDiscount() {
         return discount;
     }
 
+    public void setDiscount(double discount) {
+        this.discount = discount;
+    }
+
     public BigInteger getTokensSold() {
         return tokensSold;
+    }
+
+    public void setTokensSold(BigInteger tokensSold) {
+        this.tokensSold = tokensSold;
     }
 
     public BigInteger getTokenMax() {
         return tokenMax;
     }
 
-    public boolean getActive() {
+    public void setTokenMax(BigInteger tokenMax) {
+        this.tokenMax = tokenMax;
+    }
+
+    public boolean isActive() {
         return isActive;
+    }
+
+    public void setActive() {
+        isActive = true;
+    }
+
+    public void setInactive() {
+        isActive = false;
     }
 }

@@ -14,9 +14,12 @@ import java.util.Optional;
 @Repository
 public interface SaleTierRepository extends JpaRepository<SaleTier, Long>{
 
-    Optional<SaleTier> findTierByIsActiveTrue();
+    Optional<SaleTier> findByIsActiveTrue();
 
     List<SaleTier> findAllByOrderByStartDateAsc();
 
+    Optional<SaleTier> findByTierNo(int tierNo);
+
+    Optional<SaleTier> findFirstByOrderByEndDateDesc();
 
 }
