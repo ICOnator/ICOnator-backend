@@ -4,6 +4,7 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.ExchangeType;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
+import io.iconator.rates.config.AggregationServiceConfig;
 import io.iconator.rates.config.Beans;
 import io.iconator.rates.config.BlockchainInfoClientConfig;
 import io.iconator.rates.config.EtherScanClientConfig;
@@ -13,11 +14,8 @@ import io.iconator.rates.config.TestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -28,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
         TestConfig.class,
+        AggregationServiceConfig.class,
         ExchangeRateServiceConfig.class,
         BlockchainInfoClientConfig.class,
         EtherScanClientConfig.class,
@@ -57,7 +56,6 @@ public class ExchangeRateServiceTest {
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.ETH));
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.BTC));
     }
-
 
     private boolean checkIfCurrencyIsPresent(List<ExchangeAggregateRate> rates, CurrencyType currencyType) {
         return rates.stream().anyMatch((aggregateRate) -> {

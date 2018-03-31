@@ -1,5 +1,7 @@
 package io.iconator.commons.model.db;
 
+import io.iconator.commons.model.CurrencyType;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,7 +17,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static javax.persistence.TemporalType.TIMESTAMP;
 
@@ -42,6 +46,9 @@ public class ExchangeAggregateRate {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "exchangeAggregateRate")
     private List<ExchangeEntryRate> exchangeEntryRates = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "exchangeAggregateRate")
+    private Set<ExchangeAggregateCurrencyRate> exchangeAggregateCurrencyRates = new HashSet<>();
 
     public ExchangeAggregateRate() {
     }
@@ -74,6 +81,32 @@ public class ExchangeAggregateRate {
 
     public void addExchangeEntry(ExchangeEntryRate exchangeEntryRate) {
         exchangeEntryRates.add(exchangeEntryRate);
+    }
+
+    public List<ExchangeCurrencyRate> getAllExchangeCurrencyRates(CurrencyType currencyType) {
+        List<ExchangeCurrencyRate> allExchangeCurrencyRates = new ArrayList<>();
+        getExchangeEntryRates().stream().forEach((exchangeEntryRate) -> {
+            allExchangeCurrencyRates.addAll(exchangeEntryRate.getExchangeCurrencyRates()
+                    .stream()
+                    .filter((currencyRate) -> currencyRate.getCurrencyType() == currencyType)
+                    .collect(Collectors.toList())
+            );
+        });
+        return allExchangeCurrencyRates;
+    }
+
+    public Set<ExchangeAggregateCurrencyRate> getExchangeAggregateCurrencyRates() {
+        return exchangeAggregateCurrencyRates;
+    }
+
+    public Optional<ExchangeAggregateCurrencyRate> getExchangeAggregateCurrencyRates(CurrencyType currencyType) {
+        return exchangeAggregateCurrencyRates.stream()
+                .filter((aggCurrencyRate) -> aggCurrencyRate.getCurrencyType() == currencyType)
+                .findFirst();
+    }
+
+    public void addExchangeAggregateCurrencyRate(ExchangeAggregateCurrencyRate exchangeAggregateCurrencyRate) {
+        exchangeAggregateCurrencyRates.add(exchangeAggregateCurrencyRate);
     }
 
 }

@@ -1,11 +1,18 @@
 package io.iconator.monitor.service;
 
+import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
+import io.iconator.monitor.service.exceptions.USDBTCFxException;
+import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Optional;
 
 @Service
 public class FxService {
@@ -13,22 +20,23 @@ public class FxService {
     @Autowired
     private ExchangeAggregateRateRepository aggregateRateRepository;
 
-    public BigDecimal getUSDperETH(Long blockHeight) {
-        // TODO: 05.03.18 Guil:
-        // To be done.
-        return null;
+    public BigDecimal getUSDperETH(Long blockHeight) throws USDETHFxException {
+        Optional<ExchangeAggregateRate> exchangeAggregateRate =
+                aggregateRateRepository.findFirstOptionalByBlockNrEthGreaterThanEqualOrderByBlockNrEthAsc(blockHeight);
+
+        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.ETH))
+                .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
+                .orElseThrow(() -> new USDETHFxException("No FX aggregation found for USD-ETH."));
     }
 
-    public BigDecimal getUSDPerBTC(Long timestamp) {
-        // TODO: 05.03.18 Guil:
-        // To be done.
-        return null;
-    }
+    public BigDecimal getUSDPerBTC(Long timestamp) throws USDBTCFxException {
+        Date timestampDate = Date.from(Instant.ofEpochSecond(timestamp));
+        Optional<ExchangeAggregateRate> exchangeAggregateRate =
+                aggregateRateRepository.findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDate(timestampDate);
 
-    public BigDecimal weiToUSD(BigInteger weiAmount, Long blockHeight) {
-        // TODO: 05.03.18 Guil:
-        // To be done.
-        return null;
+        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.ETH))
+                .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
+                .orElseThrow(() -> new USDBTCFxException("No FX aggregation found for USD-BTC."));
     }
 
 }

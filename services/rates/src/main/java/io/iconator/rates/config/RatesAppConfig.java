@@ -23,8 +23,11 @@ public class RatesAppConfig {
     @Value("${io.iconator.services.rates.blockr.url}")
     private String blockrUrl;
 
-    @Value("${io.iconator.services.rates.currencies.enabled}")
-    private CurrencyType[] enabledCurrencies;
+    @Value("${io.iconator.services.rates.currencies.fiat.base}")
+    private CurrencyType baseFiatCurrency;
+
+    @Value("${io.iconator.services.rates.currencies.crypto.enabled}")
+    private CurrencyType[] enabledCryptoCurrencies;
 
     @Value("${io.iconator.services.rates.exchanges.enabled}")
     private ExchangeType[] enabledExchanges;
@@ -37,6 +40,12 @@ public class RatesAppConfig {
 
     @Value("${io.iconator.services.rates.retry.wait-between-attemps.max}")
     private Long maxTimeWait;
+
+    @Value("${io.iconator.services.rates.outliers.std-dev.threshold.lower-bound}")
+    private Double outlierStdDevThresholdLowerBound;
+
+    @Value("${io.iconator.services.rates.outliers.std-dev.threshold.upper-bound}")
+    private Double outlierStdDevThresholdUpperBound;
 
     public String getUserAgent() {
         return userAgent;
@@ -54,8 +63,12 @@ public class RatesAppConfig {
         return blockrUrl;
     }
 
-    public List<CurrencyType> getEnabledCurrencies() {
-        return Arrays.asList(enabledCurrencies);
+    public CurrencyType getBaseFiatCurrency() {
+        return baseFiatCurrency;
+    }
+
+    public List<CurrencyType> getEnabledCryptoCurrencies() {
+        return Arrays.asList(enabledCryptoCurrencies);
     }
 
     public List<ExchangeType> getEnabledExchanges() {
@@ -72,5 +85,13 @@ public class RatesAppConfig {
 
     public Long getMaxTimeWait() {
         return maxTimeWait;
+    }
+
+    public Double getOutlierStdDevThresholdLowerBound() {
+        return outlierStdDevThresholdLowerBound;
+    }
+
+    public Double getOutlierStdDevThresholdUpperBound() {
+        return outlierStdDevThresholdUpperBound;
     }
 }

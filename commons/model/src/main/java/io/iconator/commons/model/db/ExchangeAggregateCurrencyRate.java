@@ -14,8 +14,8 @@ import javax.persistence.Table;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "exchange_currency_rate")
-public class ExchangeCurrencyRate {
+@Table(name = "exchange_aggregate_currency_rate")
+public class ExchangeAggregateCurrencyRate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -23,36 +23,36 @@ public class ExchangeCurrencyRate {
     private long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exchange_entry_rate_id")
-    private ExchangeEntryRate exchangeEntryRate;
+    @JoinColumn(name = "exchange_aggregate_rate_id")
+    private ExchangeAggregateRate exchangeAggregateRate;
 
     @Column(name = "currency_type", nullable = false)
     private CurrencyType currencyType;
 
-    @Column(name = "exchange_rate")
-    private BigDecimal exchangeRate;
+    @Column(name = "aggregate_exchange_rate")
+    private BigDecimal aggregateExchangeRate;
 
-    public ExchangeCurrencyRate() {
+    public ExchangeAggregateCurrencyRate() {
     }
 
-    public ExchangeCurrencyRate(CurrencyType currencyType, BigDecimal exchangeRate) {
+    public ExchangeAggregateCurrencyRate(CurrencyType currencyType, BigDecimal aggregateExchangeRate) {
         this.currencyType = currencyType;
-        this.exchangeRate = exchangeRate;
+        this.aggregateExchangeRate = aggregateExchangeRate;
     }
 
     public long getId() {
         return id;
     }
 
-    public ExchangeEntryRate getExchangeEntryRate() {
-        return exchangeEntryRate;
+    public ExchangeAggregateRate getExchangeAggregateRate() {
+        return exchangeAggregateRate;
     }
 
     public CurrencyType getCurrencyType() {
         return currencyType;
     }
 
-    public BigDecimal getExchangeRate() {
-        return exchangeRate;
+    public BigDecimal getAggregateExchangeRate() {
+        return aggregateExchangeRate;
     }
 }

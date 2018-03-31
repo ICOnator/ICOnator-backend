@@ -2,10 +2,12 @@ package io.iconator.commons.sql.dao;
 
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.ExchangeType;
+import io.iconator.commons.model.db.ExchangeAggregateCurrencyRate;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.model.db.ExchangeCurrencyRate;
 import io.iconator.commons.model.db.ExchangeEntryRate;
 import io.iconator.commons.sql.dao.config.TestConfig;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,16 @@ public class ExchangeAggregateRateRepositoryTest {
         assertTrue(optionalAggregateRate.filter((aggRate) ->
                         aggRate.getExchangeEntryRates().stream()
                                 .anyMatch((exRate) -> exRate.getExchangeType() == ExchangeType.KRAKEN)
+                ).isPresent()
+        );
+        assertTrue(optionalAggregateRate.filter((aggRate) ->
+                        aggRate.getExchangeAggregateCurrencyRates().stream()
+                                .anyMatch((aggregateCurrencyRate) -> aggregateCurrencyRate.getCurrencyType() == CurrencyType.BTC)
+                ).isPresent()
+        );
+        assertTrue(optionalAggregateRate.filter((aggRate) ->
+                        aggRate.getExchangeAggregateCurrencyRates().stream()
+                                .anyMatch((aggregateCurrencyRate) -> aggregateCurrencyRate.getCurrencyType() == CurrencyType.ETH)
                 ).isPresent()
         );
     }
@@ -103,6 +115,23 @@ public class ExchangeAggregateRateRepositoryTest {
 
     }
 
+    @Test
+    public void testFindFirstOptionalByOrderCreationDate() {
+
+        Instant now = Instant.now();
+        createMultipleExchangeAggregateRate(now);
+
+        List<ExchangeAggregateRate> aggregateRates = aggregateRateRepository
+                .findAllByOrderByCreationDate();
+
+        Optional<ExchangeAggregateRate> aggregateRate = aggregateRateRepository
+                .findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDate(Date.from(now.plusSeconds(5)));
+
+        assertTrue(aggregateRate.isPresent());
+        assertTrue(aggregateRate.filter((aggRate) -> aggRate.getBlockNrBtc() == 3).isPresent());
+
+    }
+
     private ExchangeAggregateRate createExchangeAggregateRateWithMultipleExchangeEntry(ExchangeType... exchangeTypes) {
         ExchangeAggregateRate aggregateRate = createExchangeAggregateRate();
         Arrays.asList(exchangeTypes).stream().forEach((type) -> {
@@ -113,23 +142,34 @@ public class ExchangeAggregateRateRepositoryTest {
             entryRate.addCurrencyRate(rateETH);
             aggregateRate.addExchangeEntry(entryRate);
         });
+        ExchangeAggregateCurrencyRate aggregateCurrencyRateBTC = createExchangeAggregateCurrencyRate(
+                CurrencyType.BTC, aggregateRate.getAllExchangeCurrencyRates(CurrencyType.BTC));
+        ExchangeAggregateCurrencyRate aggregateCurrencyRateETH = createExchangeAggregateCurrencyRate(
+                CurrencyType.ETH, aggregateRate.getAllExchangeCurrencyRates(CurrencyType.ETH));
+        aggregateRate.addExchangeAggregateCurrencyRate(aggregateCurrencyRateBTC);
+        aggregateRate.addExchangeAggregateCurrencyRate(aggregateCurrencyRateETH);
+
         aggregateRateRepository.save(aggregateRate);
         return aggregateRate;
     }
 
     private void createMultipleExchangeAggregateRate() {
+        createMultipleExchangeAggregateRate(Instant.now());
+    }
+
+    private void createMultipleExchangeAggregateRate(Instant now) {
         ExchangeAggregateRate a1 = createExchangeAggregateRate(
-                new Date(Instant.now().minusSeconds(10).toEpochMilli()),
+                Date.from(now.minusSeconds(10)),
                 new Long(1),
                 new Long(1));
         aggregateRateRepository.save(a1);
         ExchangeAggregateRate a2 = createExchangeAggregateRate(
-                new Date(Instant.now().toEpochMilli()),
+                Date.from(now),
                 new Long(2),
                 new Long(2));
         aggregateRateRepository.save(a2);
         ExchangeAggregateRate a3 = createExchangeAggregateRate(
-                new Date(Instant.now().plusSeconds(10).toEpochMilli()),
+                Date.from(now.plusSeconds(10)),
                 new Long(3),
                 new Long(3));
         aggregateRateRepository.save(a3);
@@ -141,7 +181,7 @@ public class ExchangeAggregateRateRepositoryTest {
 
     private ExchangeAggregateRate createExchangeAggregateRate(Date creationDate, Long blockNrEth, Long blockNrBtc) {
         return new ExchangeAggregateRate(
-                new Date(),
+                creationDate,
                 blockNrEth,
                 blockNrBtc
         );
@@ -156,5 +196,12 @@ public class ExchangeAggregateRateRepositoryTest {
 
     private ExchangeCurrencyRate createExchangeCurrencyRate(CurrencyType currencyType) {
         return new ExchangeCurrencyRate(currencyType, new BigDecimal(123.45));
+    }
+
+    private ExchangeAggregateCurrencyRate createExchangeAggregateCurrencyRate(CurrencyType currencyType, List<ExchangeCurrencyRate> currencyRates) {
+        Mean mean = new Mean();
+        double[] rateDoubles = currencyRates.stream().mapToDouble((value) -> value.getExchangeRate().doubleValue()).toArray();
+        double meanValue = mean.evaluate(rateDoubles, 0, rateDoubles.length);
+        return new ExchangeAggregateCurrencyRate(currencyType, new BigDecimal(meanValue));
     }
 }

@@ -3,6 +3,7 @@ package io.iconator.rates.service;
 import com.github.rholder.retry.Retryer;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.ExchangeType;
+import io.iconator.commons.model.db.ExchangeAggregateCurrencyRate;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.model.db.ExchangeCurrencyRate;
 import io.iconator.commons.model.db.ExchangeEntryRate;
@@ -41,6 +42,9 @@ public class ExchangeRateService {
 
     @Autowired
     private ExchangeAggregateRateRepository exchangeAggregateRateRepository;
+
+    @Autowired
+    private AggregationService aggregationService;
 
     @Autowired
     private RatesAppConfig ratesAppConfig;
@@ -114,25 +118,56 @@ public class ExchangeRateService {
             LOG.error("Could not fetch current BTC block number.", t);
         }
 
-
-        List<CurrencyType> enabledCurrencies = ratesAppConfig.getEnabledCurrencies();
+        List<CurrencyType> enabledCryptoCurrencies = ratesAppConfig.getEnabledCryptoCurrencies();
         List<ExchangeType> enabledExchanges = ratesAppConfig.getEnabledExchanges();
+        CurrencyType baseFiatCurrency = ratesAppConfig.getBaseFiatCurrency();
 
+        // create an "ExchangeAggregateRate" -- representing an entry with multiple exchanges and
+        // an aggregated rate value for each crypto currency
         ExchangeAggregateRate exchangeAggregateRate = new ExchangeAggregateRate(new Date(), blockNrETH, blockNrBTC);
+
+        // for each exchange
         enabledExchanges.stream().forEach((enabledExchange) -> {
+            // create an "ExchangeEntryRate" -- representing an exchange
             ExchangeEntryRate exchangeEntryRate = new ExchangeEntryRate(new Date(), enabledExchange);
-            enabledCurrencies.stream().forEach((enabledCurrency) -> {
-                Optional<BigDecimal> oRate = getRate(enabledExchange,
-                        new CurrencyPair(Currency.getInstance(enabledCurrency.toString()), Currency.USD));
-                oRate.ifPresent((rate) -> {
-                    ExchangeCurrencyRate exchangeCurrencyRate = new ExchangeCurrencyRate(enabledCurrency, rate);
-                    exchangeEntryRate.addCurrencyRate(exchangeCurrencyRate);
-                });
+            // for each crypto currency
+            enabledCryptoCurrencies.stream().forEach((enabledCryptoCurrency) -> {
+                // get the actual rate, and add as a currency rate to the "ExchangeEntryRate"
+                getRateAndAddCurrencyRate(exchangeEntryRate, enabledExchange, enabledCryptoCurrency, baseFiatCurrency);
             });
+            // add to the "ExchangeAggregateRate"
             exchangeAggregateRate.addExchangeEntry(exchangeEntryRate);
         });
 
+        // for each enabled crypto currency
+        enabledCryptoCurrencies.stream().forEach((enabledCryptoCurrency) -> {
+            // get all "ExchangeCurrencyRate" from all exchanges with such crypto currency
+            List<ExchangeCurrencyRate> allExchangeCurrencyRates = exchangeAggregateRate.getAllExchangeCurrencyRates(enabledCryptoCurrency);
+            // remove outliers and get the mean
+            BigDecimal mean = aggregationService.removeOutliersAndGetMean(allExchangeCurrencyRates);
+            // create a new aggregate currency
+            ExchangeAggregateCurrencyRate aggCurrencyRate = new ExchangeAggregateCurrencyRate(enabledCryptoCurrency, mean);
+            // add to the top-level "ExchangeAggregateRate"
+            exchangeAggregateRate.addExchangeAggregateCurrencyRate(aggCurrencyRate);
+        });
+
         exchangeAggregateRateRepository.save(exchangeAggregateRate);
+    }
+
+    private void getRateAndAddCurrencyRate(ExchangeEntryRate exchangeEntryRate,
+                                           ExchangeType exchangeType,
+                                           CurrencyType cryptoType,
+                                           CurrencyType fiatType) {
+        Optional<BigDecimal> oRate = getRate(exchangeType,
+                new CurrencyPair(Currency.getInstance(cryptoType.toString()), convertCurrencyTypes(fiatType)));
+        oRate.ifPresent((rate) -> {
+            ExchangeCurrencyRate exchangeCurrencyRate = new ExchangeCurrencyRate(cryptoType, rate);
+            exchangeEntryRate.addCurrencyRate(exchangeCurrencyRate);
+        });
+    }
+
+    private Currency convertCurrencyTypes(CurrencyType currencyType) {
+        return Currency.getInstanceNoCreate(currencyType.name());
     }
 
 }
