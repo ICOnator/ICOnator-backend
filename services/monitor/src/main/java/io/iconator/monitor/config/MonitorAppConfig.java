@@ -9,7 +9,7 @@ public class MonitorAppConfig {
     @Value("${io.iconator.services.monitor.eth.node.start-block}")
     private Long ethereumNodeStartBlock;
 
-    @Value("${io.iconator.monitor.eth.node.url}")
+    @Value("${io.iconator.services.monitor.eth.node.url}")
     private String ethereumNodeUrl;
 
     public Long getEthereumNodeStartBlock() {
