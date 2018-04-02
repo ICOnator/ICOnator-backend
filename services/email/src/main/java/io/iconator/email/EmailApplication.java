@@ -8,12 +8,12 @@ import org.springframework.context.annotation.PropertySource;
 import static org.springframework.boot.SpringApplication.run;
 
 @SpringBootApplication
-@PropertySource("email.application-${spring.profiles.active:default}.properties")
 public class EmailApplication {
     private static final Logger LOG = LoggerFactory.getLogger(EmailApplication.class);
 
     public static void main(String[] args) {
         try {
+            System.setProperty("spring.config.name", "email.application");
             run(EmailApplication.class, args);
         } catch (Throwable t) {
             //ignore silent exception

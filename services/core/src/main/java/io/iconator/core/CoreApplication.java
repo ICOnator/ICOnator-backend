@@ -16,13 +16,13 @@ import static org.springframework.boot.SpringApplication.run;
 
 //required for swagger to find the configuration (baseservice) and the API methods (controller)
 @ComponentScan("io.iconator")
-@PropertySource("core.application-${spring.profiles.active:default}.properties")
 public class CoreApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);
 
     public static void main(String[] args) {
         try {
+            System.setProperty("spring.config.name", "core.application");
             run(CoreApplication.class, args);
         } catch (Throwable t) {
             //ignore silent exception

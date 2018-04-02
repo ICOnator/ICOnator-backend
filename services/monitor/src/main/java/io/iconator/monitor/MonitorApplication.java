@@ -13,12 +13,12 @@ import static org.springframework.boot.SpringApplication.run;
 @SpringBootApplication
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
 @EntityScan("io.iconator.commons.model.db")
-@PropertySource("monitor.application-${spring.profiles.active:default}.properties")
 public class MonitorApplication {
     private static final Logger LOG = LoggerFactory.getLogger(MonitorApplication.class);
 
     public static void main(String[] args) throws Exception {
         try {
+            System.setProperty("spring.config.name", "monitor.application");
             run(MonitorApplication.class, args);
         } catch (Throwable t) {
             //ignore silent exception
