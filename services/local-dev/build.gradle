@@ -1,0 +1,14 @@
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+bootJar {
+    launchScript()
+}
+
+dependencies {
+    compile project(':services:core')
+    compile project(':services:email')
+    compile project(':services:monitor')
+    compile project(':services:rates')
+    compile project(':commons:test-utils')
+}

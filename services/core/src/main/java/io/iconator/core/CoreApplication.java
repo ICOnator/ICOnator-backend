@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import static org.springframework.boot.SpringApplication.run;
@@ -16,6 +17,7 @@ import static org.springframework.boot.SpringApplication.run;
 
 //required for swagger to find the configuration (baseservice) and the API methods (controller)
 @ComponentScan({"io.iconator.commons.baseservice", "io.iconator.core"})
+@PropertySource("core.application-${spring.profiles.active:default}.properties")
 public class CoreApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);

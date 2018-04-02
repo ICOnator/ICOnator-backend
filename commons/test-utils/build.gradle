@@ -15,5 +15,5 @@ dependencies {
 
     compile 'org.apache.qpid:qpid-broker:7.0.2'
     compile 'junit:junit'
-
+    compile 'org.subethamail:subethasmtp:3.1.7'
 }
