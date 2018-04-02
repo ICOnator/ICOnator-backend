@@ -4,7 +4,9 @@ apply plugin: 'io.spring.dependency-management'
 
 bootJar {
     launchScript()
+    baseName += "-exec"
 }
+jar.enabled = true
 
 dependencies {
 
