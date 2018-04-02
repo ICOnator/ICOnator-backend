@@ -114,9 +114,11 @@ input {
     		port => 5044
   	}
 }
+```
 
 ## Add your filters / logstash plugins configuration here
 
+```
 output {
 	elasticsearch {
     		hosts => "localhost:9200"
@@ -125,4 +127,13 @@ output {
     		document_type => "%{[@metadata][type]}" 
   	}
 }
+```
+
+# Docker
+
+
+
+```
+$ ./gradlew clean build 
+$ export ICONATOR_VERSION=0.0.1 && docker build -f docker/base/Dockerfile -t iconator/base:${ICONATOR_VERSION} -t iconator/base:latest ./
 ```
