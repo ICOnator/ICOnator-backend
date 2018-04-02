@@ -175,12 +175,10 @@ public class EthereumMonitor extends BaseMonitor {
             started = true;
 
             web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(
-                    new DefaultBlockParameterNumber(startBlock),
-                    true
-            ).subscribe(ethBlock -> {
-
-
-            });
+                    new DefaultBlockParameterNumber(startBlock), false)
+                    .subscribe(block -> {
+                        LOG.info("Processing block number: {}", block.getBlock().getNumber());
+                    });
 
             web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(
                     new DefaultBlockParameterNumber(startBlock))
@@ -205,7 +203,7 @@ public class EthereumMonitor extends BaseMonitor {
 
                         if (monitoredAddresses.get(tx.getFrom().toLowerCase()) != null) {
                             // This should normally not happen as it means funds are stolen!
-                            LOG.error("WARN: Removed: {} wei from pay-in address", tx.getValue().toString());
+                            LOG.error("ATTENTION: Removed: {} wei from pay-in address", tx.getValue().toString());
                         }
                     }, throwable -> {
                         LOG.error("Error during scanning of txs: ", throwable);

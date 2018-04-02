@@ -9,4 +9,6 @@ public class QueueConstants {
 
     public static final String FUNDS_RECEIVED_EMAIL_QUEUE = "funds_received_email_queue";
 
+    public static final String EXCHANGE_RATE_REQUEST_QUEUE = "exchange_rate_request_queue";
+
 }

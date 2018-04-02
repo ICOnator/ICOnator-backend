@@ -3,7 +3,6 @@ package io.iconator.commons.model.db;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
@@ -12,6 +11,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
 
+import static javax.persistence.GenerationType.SEQUENCE;
 import static javax.persistence.TemporalType.TIMESTAMP;
 
 @Entity
@@ -25,7 +25,7 @@ import static javax.persistence.TemporalType.TIMESTAMP;
 public class Investor {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = SEQUENCE)
     @Column(name = "id", nullable = false)
     private long id;
 

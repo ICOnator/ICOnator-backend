@@ -20,9 +20,6 @@ public class RatesAppConfig {
     @Value("${io.iconator.services.rates.etherscan.url}")
     private String etherScanUrl;
 
-    @Value("${io.iconator.services.rates.blockr.url}")
-    private String blockrUrl;
-
     @Value("${io.iconator.services.rates.currencies.fiat.base}")
     private CurrencyType baseFiatCurrency;
 
@@ -31,6 +28,12 @@ public class RatesAppConfig {
 
     @Value("${io.iconator.services.rates.exchanges.enabled}")
     private ExchangeType[] enabledExchanges;
+
+    @Value("${io.iconator.services.rates.fetch.periodic.enabled}")
+    private Boolean periodicEnabled;
+
+    @Value("${io.iconator.services.rates.fetch.periodic.interval}")
+    private Integer periodicInterval;
 
     @Value("${io.iconator.services.rates.retry.attempts.max}")
     private Integer maxAttempts;
@@ -59,10 +62,6 @@ public class RatesAppConfig {
         return etherScanUrl;
     }
 
-    public String getBlockrUrl() {
-        return blockrUrl;
-    }
-
     public CurrencyType getBaseFiatCurrency() {
         return baseFiatCurrency;
     }
@@ -73,6 +72,14 @@ public class RatesAppConfig {
 
     public List<ExchangeType> getEnabledExchanges() {
         return Arrays.asList(enabledExchanges);
+    }
+
+    public Boolean getPeriodicEnabled() {
+        return periodicEnabled;
+    }
+
+    public Integer getPeriodicInterval() {
+        return periodicInterval;
     }
 
     public Integer getMaxAttempts() {

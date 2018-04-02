@@ -1,15 +1,23 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import java.math.BigInteger;
 import java.util.Date;
 
+import static javax.persistence.GenerationType.SEQUENCE;
+
 @Entity
-@Table(name="sale_tier")
+@Table(name = "sale_tier")
 public class SaleTier {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy = SEQUENCE)
     @Column(name = "id", updatable = false)
     private long id;
 
@@ -39,7 +47,8 @@ public class SaleTier {
     @Column(name = "is_active")
     private boolean isActive;
 
-    protected SaleTier() {}
+    protected SaleTier() {
+    }
 
     public SaleTier(int tierNo, String description, Date startDate, Date endDate,
                     double discount, BigInteger tokenMax, boolean isActive) {

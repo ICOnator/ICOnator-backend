@@ -3,15 +3,15 @@ package io.iconator.commons.model.db;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.SequenceGenerator;
+
+import static javax.persistence.GenerationType.SEQUENCE;
 
 @Entity(name = "keypairs")
 public class KeyPairs {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = SEQUENCE)
     @Column(name = "id", nullable = false)
     private long id;
 

@@ -116,19 +116,35 @@ public class ExchangeAggregateRateRepositoryTest {
     }
 
     @Test
-    public void testFindFirstOptionalByOrderCreationDate() {
+    public void testFindFirstOptionalByOrderCreationDate_asc() {
 
         Instant now = Instant.now();
         createMultipleExchangeAggregateRate(now);
 
-        List<ExchangeAggregateRate> aggregateRates = aggregateRateRepository
-                .findAllByOrderByCreationDate();
-
         Optional<ExchangeAggregateRate> aggregateRate = aggregateRateRepository
-                .findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDate(Date.from(now.plusSeconds(5)));
+                .findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateAsc(Date.from(now.minusSeconds(5)));
 
         assertTrue(aggregateRate.isPresent());
-        assertTrue(aggregateRate.filter((aggRate) -> aggRate.getBlockNrBtc() == 3).isPresent());
+        assertTrue(aggregateRate.filter((aggRate) -> aggRate.getBlockNrBtc() == 2).isPresent());
+
+    }
+
+    @Test
+    public void testFindFirstOptionalByOrderCreationDate_desc() {
+
+        Instant now = Instant.now();
+        createMultipleExchangeAggregateRate(now);
+
+        Optional<ExchangeAggregateRate> aggregateRate1 = aggregateRateRepository
+                .findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateDesc(Date.from(now.minusSeconds(15)));
+
+        assertTrue(aggregateRate1.isPresent());
+        assertTrue(aggregateRate1.filter((aggRate) -> aggRate.getBlockNrBtc() == 3).isPresent());
+
+        Optional<ExchangeAggregateRate> aggregateRate2 = aggregateRateRepository
+                .findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateDesc(Date.from(now.plusSeconds(15)));
+
+        assertTrue(!aggregateRate2.isPresent());
 
     }
 

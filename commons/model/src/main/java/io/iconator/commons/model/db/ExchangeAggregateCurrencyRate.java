@@ -4,27 +4,21 @@ import io.iconator.commons.model.CurrencyType;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.math.BigDecimal;
+
+import static javax.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "exchange_aggregate_currency_rate")
 public class ExchangeAggregateCurrencyRate {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = SEQUENCE)
     @Column(name = "id", nullable = false)
     private long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exchange_aggregate_rate_id")
-    private ExchangeAggregateRate exchangeAggregateRate;
 
     @Column(name = "currency_type", nullable = false)
     private CurrencyType currencyType;
@@ -42,10 +36,6 @@ public class ExchangeAggregateCurrencyRate {
 
     public long getId() {
         return id;
-    }
-
-    public ExchangeAggregateRate getExchangeAggregateRate() {
-        return exchangeAggregateRate;
     }
 
     public CurrencyType getCurrencyType() {

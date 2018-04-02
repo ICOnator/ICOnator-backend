@@ -11,4 +11,6 @@ public class RoutingKeyConstants {
 
     public static final String ADDRESS_SET_WALLET_ROUTING_KEY = "iconator.address.set-wallet";
 
+    public static final String EXCHANGE_RATE_REQUEST_ROUTING_KEY = "iconator.exchange.rate.request";
+
 }

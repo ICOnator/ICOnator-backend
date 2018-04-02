@@ -14,7 +14,7 @@ import static org.springframework.boot.SpringApplication.run;
 @EntityScan(basePackages = {"io.iconator.commons.model.db"})
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
 @EnableAutoConfiguration
-@ComponentScan(basePackages = {"io.iconator.commons.sql.dao"})
+@ComponentScan(basePackages = {"io.iconator.commons.sql.dao", "io.iconator.rates"})
 public class RatesApplication {
     private static final Logger LOG = LoggerFactory.getLogger(RatesApplication.class);
 
