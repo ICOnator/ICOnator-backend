@@ -20,8 +20,4 @@ dependencies {
 
     testCompile project(':commons:test-utils')
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-
-    //if (!isProd && !isDev) {
-    //    compile project(':commons:test-utils')
-    //}
 }

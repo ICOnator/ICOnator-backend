@@ -15,7 +15,7 @@ import static org.springframework.boot.SpringApplication.run;
 @EntityScan("io.iconator.commons.model.db")
 
 //required for swagger to find the configuration (baseservice) and the API methods (controller)
-@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.core"})
+@ComponentScan("io.iconator")
 @PropertySource("core.application-${spring.profiles.active:default}.properties")
 public class CoreApplication {
 
