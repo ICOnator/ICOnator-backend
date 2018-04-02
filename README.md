@@ -4,13 +4,20 @@
 
 ICOnator has the aim to make the tokenization of assets a popular and easy process.
 
-We are building the most straight-forward, secure, configurable, and user-friendly open source ICO/ITO platform ever -- all driven by the community!
-
 ## Description
 
-To be described.
+We are building the most straight-forward, secure, configurable, and user-friendly open source ICO/ITO platform ever -- all driven by the community!
 
 ## How to run?
+
+For developing localy, an message queue and email sink is started automatically. Just start ICOnatorApplication, run:
+
+```
+./gradlew clean build
+./services/local-dev/build/libs/local-dev.jar
+```
+
+You still need to run the Parity node in order that the monitor can connect to localhost:8545
 
 ICOnator has integrated swagger in the non-production profile. To see the API in swagger, go to [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html).
 
@@ -30,7 +37,7 @@ To be described.
 
 ### RabbitMQ (AMQP 0.9.1 protocol)
 
-All the applications interact with AMQP protocol and require a message broker running. For developing localy, an message queue is started automatically. In the "dev" and "prod" profile, no message queue is started automatically, and needs to be started manually:
+All the applications interact with AMQP protocol and require a message broker running.
 
 The easiest way to bootstrap a message broker is to use RabbitMQ using docker. Execute the following:
 
