@@ -10,6 +10,8 @@ FileFilter fileFilter = new FileFilter() {
     }
 }
 
+include 'local-dev'
+
 ['services', 'commons'].each { String dir ->
     file(dir).listFiles(fileFilter).each { File module ->
         include "${dir}:${module.name}"

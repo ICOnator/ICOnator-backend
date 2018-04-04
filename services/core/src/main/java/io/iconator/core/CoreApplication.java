@@ -11,11 +11,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import static org.springframework.boot.SpringApplication.run;
 
 @SpringBootApplication
-@EnableJpaRepositories("io.iconator.commons.sql.dao")
-@EntityScan("io.iconator.commons.model.db")
-
-//required for swagger to find the configuration (baseservice) and the API methods (controller)
-@ComponentScan("io.iconator")
+@EnableJpaRepositories({"io.iconator.commons.sql.dao"})
+@EntityScan({"io.iconator.commons.model.db"})
+@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.core"})
 public class CoreApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);

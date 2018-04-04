@@ -4,6 +4,13 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.ExchangeType;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
+import io.iconator.rates.config.AggregationServiceConfig;
+import io.iconator.rates.config.Beans;
+import io.iconator.rates.config.BlockchainInfoClientConfig;
+import io.iconator.rates.config.EtherScanClientConfig;
+import io.iconator.rates.config.ExchangeRateServiceConfig;
+import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.TestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +24,17 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = {
+        TestConfig.class,
+        AggregationServiceConfig.class,
+        ExchangeRateServiceConfig.class,
+        BlockchainInfoClientConfig.class,
+        EtherScanClientConfig.class,
+        RatesAppConfig.class,
+        Beans.class
+})
 @DataJpaTest
-@TestPropertySource({"classpath:application-test.properties", "classpath:rates.application.properties"})
-
+@TestPropertySource({"classpath:rates.application.properties", "classpath:application-test.properties"})
 public class ExchangeRateServiceTest {
 
     @Autowired
@@ -37,10 +51,8 @@ public class ExchangeRateServiceTest {
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.BITFINEX));
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.BITSTAMP));
         assertTrue(checkIfExchangeIsPresent(all, ExchangeType.KRAKEN));
-        //GDAX, COINMARKETCAP are not running
-        //TODO: figure out why and fix
-        //assertTrue(checkIfExchangeIsPresent(all, ExchangeType.GDAX));
-        //assertTrue(checkIfExchangeIsPresent(all, ExchangeType.COINMARKETCAP));
+        assertTrue(checkIfExchangeIsPresent(all, ExchangeType.GDAX));
+        assertTrue(checkIfExchangeIsPresent(all, ExchangeType.COINMARKETCAP));
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.ETH));
         assertTrue(checkIfCurrencyIsPresent(all, CurrencyType.BTC));
     }

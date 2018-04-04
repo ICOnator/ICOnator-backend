@@ -8,18 +8,9 @@ ICOnator has the aim to make the tokenization of assets a popular and easy proce
 
 We are building the most straight-forward, secure, configurable, and user-friendly open source ICO/ITO platform ever -- all driven by the community!
 
-## How to run?
+## API documentation
 
-For developing localy, an message queue and email sink is started automatically. Just start ICOnatorApplication, run:
-
-```
-./gradlew clean build
-./services/local-dev/build/libs/local-dev.jar
-```
-
-You still need to run the Parity node in order that the monitor can connect to localhost:8545
-
-ICOnator has integrated swagger in the non-production profile. To see the API in swagger, go to [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html).
+ICOnator has integrated swagger in the non-production profile. The API documentation is available on [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html).
 
 ## Architecture
 
@@ -66,6 +57,7 @@ Run parity in the Kovan (testnet) chain:
 ```
 docker run --rm -ti -p 127.0.0.1:8180:8180 -p 127.0.0.1:8545:8545 -p 127.0.0.1:8546:8546 -p 127.0.0.1:30303:30303 -p 127.0.0.1:30303:30303/udp parity/parity --ui-interface all --jsonrpc-interface all --tracing on --pruning fast --warp --mode active --chain kovan
 ```
+
 ## Application Monitoring
 
 ### ELK stack
@@ -130,8 +122,6 @@ output {
 ```
 
 # Docker
-
-
 
 ```
 $ ./gradlew clean build 

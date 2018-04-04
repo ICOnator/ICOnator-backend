@@ -33,17 +33,7 @@ subprojects {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-// Don't generate a build folder in the services directory
-configure([project("services")]) {
+// Don't generate a build folder in the root of the following projects:
+configure([project('commons'), project('services')]) {
     jar.enabled = false
 }
-
-// Don't generate a build folder in the commons directory
-configure([project("commons")]) {
-    jar.enabled = false
-}
-
-// Define which tasks Heroku will run before starting the server
-//task stage(dependsOn: ['services:core:build', 'services:monitor:build', 'services:email:build']) {
-//    gradle.startParameter.excludedTaskNames += "test"
-//}

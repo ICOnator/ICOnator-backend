@@ -7,6 +7,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@TestPropertySource("classpath:application.properties")
+@TestPropertySource({"classpath:application.properties"})
 public abstract class TokenAppBaseTest {
 }
