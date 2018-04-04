@@ -1,3 +1,9 @@
+buildscript {
+    dependencies {
+        classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0')
+    }
+}
+
 // These plugins are used for the subprojects as described here:
 // https://stackoverflow.com/questions/26236308/how-to-apply-plugin-to-allprojects-with-new-gradle-plugins-mechanism
 plugins {
@@ -31,9 +37,12 @@ subprojects {
 
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+
+    ext.dockerVersion = project.hasProperty('dockerVersion') ? project['dockerVersion'] : '0.0.1'
+
 }
 
 // Don't generate a build folder in the root of the following projects:
-configure([project('commons'), project('services')]) {
+configure([project(':commons'), project(':services')]) {
     jar.enabled = false
 }

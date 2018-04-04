@@ -123,7 +123,57 @@ output {
 
 # Docker
 
+## Build the images
+
+You can build the images as simple as running a command in gradle. However, before building a docker image for each service (`services/*`) it's required to build the executable JARs.
+
+In a single command line:
+
 ```
-$ ./gradlew clean build 
-$ export ICONATOR_VERSION=0.0.1 && docker build -f docker/base/Dockerfile -t iconator/base:${ICONATOR_VERSION} -t iconator/base:latest ./
+$ sh gradlew clean build && sh gradlew docker
+```  
+
+By default, only the tag `latest` will be added to the docker image. If a version is required, then the project parameter `dockerVersion` should be added to gradle:
+
+```
+$ ./gradlew clean build && ./gradlew -PdockerVersion=1.0 docker dockerTag
+```
+
+This command will produce something similar to the following result:
+
+```
+$ docker images                                              
+REPOSITORY          TAG        IMAGE ID         CREATED                  SIZE
+iconator/core       1.0        424c921ac2e9     Less than a second ago   179MB
+iconator/core       latest     424c921ac2e9     Less than a second ago   179MB
+iconator/email      1.0        6d489a3eda44     Less than a second ago   184MB
+iconator/email      latest     6d489a3eda44     Less than a second ago   184MB
+iconator/rates      1.0        87d7240a7b5a     Less than a second ago   149MB
+iconator/rates      latest     87d7240a7b5a     Less than a second ago   149MB
+iconator/monitor    1.0        f58d5eaf674a     Less than a second ago   180MB
+iconator/monitor    latest     f58d5eaf674a     Less than a second ago   180MB
+``` 
+
+Now you can already run the images. :-)
+
+## Run
+
+The git repository [ICOnator-docker-compose](https://github.com/ICOnator/ICOnator-docker-compose) provides the easiest and
+fastest way to run and deploy the ICOnator.
+
+If you want to run manually, you would need to specify the environment variables provided by each application.
+
+Basically, the general command is:
+
+```
+$ SPRING_PROFILES_ACTIVE=dev docker run iconator/<SERVICE_NAME>:latest
+```
+
+where `<SERVICE_NAME>` is the module under `services/*`, and `SPRING_PROFILES_ACTIVE` env variable specifies 
+the profile -- which can be "dev" or "prod". If no `SPRING_PROFILES_ACTIVE` is specified, then the default config is used.
+
+For example, to run the `core` service:
+
+```
+$ SPRING_PROFILES_ACTIVE=dev docker run iconator/core:latest
 ```

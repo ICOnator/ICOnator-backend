@@ -13,7 +13,8 @@ import org.springframework.context.annotation.PropertySource;
         "core.application.properties",
         "email.application.properties",
         "monitor.application.properties",
-        "rates.application.properties"})
+        "rates.application.properties"
+})
 public class ICOnatorLocalDevApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(ICOnatorLocalDevApplication.class);
