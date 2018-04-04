@@ -136,7 +136,7 @@ $ sh gradlew clean build && sh gradlew docker
 By default, only the tag `latest` will be added to the docker image. If a version is required, then the project parameter `dockerVersion` should be added to gradle:
 
 ```
-$ ./gradlew clean build && ./gradlew -PdockerVersion=1.0 docker dockerTag
+$ sh gradlew clean build && sh gradlew -PdockerVersion=1.0 docker dockerTag
 ```
 
 This command will produce something similar to the following result:
