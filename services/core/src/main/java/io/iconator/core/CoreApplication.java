@@ -14,7 +14,7 @@ import static org.springframework.boot.SpringApplication.run;
 @SpringBootApplication
 @EnableJpaRepositories({"io.iconator.commons.sql.dao"})
 @EntityScan({"io.iconator.commons.model.db"})
-@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.core"})
+@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.commons.security", "io.iconator.core"})
 @PropertySources({
         @PropertySource(value = "classpath:core.application.properties"),
         @PropertySource(value = "classpath:core.application-${spring.profiles.active}.properties", ignoreResourceNotFound = true)

@@ -177,3 +177,17 @@ For example, to run the `core` service:
 ```
 $ SPRING_PROFILES_ACTIVE=dev docker run iconator/core:latest
 ```
+
+# Authentication
+
+Get JWT
+```
+curl -i -H "application/x-www-form-urlencoded" -X POST -d "username=<USER>&password=<PASSWORD>" http://localhost:8081/login
+```
+
+where `<USER>` = spring.security.user.name and `<PASSWORD>` = spring.security.user.password
+
+Send authenticated request
+```
+curl -i -H "Authorization: Bearer <TOKEN>" http://localhost:8081/actuator/health
+```
