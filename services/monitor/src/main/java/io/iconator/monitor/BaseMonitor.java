@@ -6,7 +6,6 @@ import io.iconator.commons.sql.dao.SaleTierRepository;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 
@@ -32,17 +31,17 @@ public class BaseMonitor {
         // Must be synchronized from here in order that a tier does not change while calculating
         // the amount of tokens a investor will receive.
         Optional<SaleTier> oCurrentTier = saleTierRepository.findByIsActiveTrue();
-        BigDecimal usdLeft = amount;
+        BigDecimal remainingAmount = amount;
         BigInteger tokensTotal = BigInteger.ZERO;
 
-        while (oCurrentTier.isPresent() && usdLeft.compareTo(BigDecimal.ZERO) > 0) {
+        while (oCurrentTier.isPresent() && remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
             if (!currentTier.isActive()) {
                 currentTier.setStartDate(blockTime);
                 currentTier.setActive();
             }
 
-            BigDecimal tentativeTokensDecimal = calcAmountInTokens(usdLeft, currentTier.getDiscount());
+            BigDecimal tentativeTokensDecimal = calcAmountInTokens(remainingAmount, currentTier.getDiscount());
             BigInteger tentativeTokens = tentativeTokensDecimal.toBigInteger();
 
             if (tokensExceedHardcap(tentativeTokens, currentTier)) {
@@ -50,26 +49,33 @@ public class BaseMonitor {
                 BigInteger tokensToCurrentTier = currentTier.getTokensSold().subtract(currentTier.getTokenMax());
                 currentTier.setTokensSold(tokensToCurrentTier);
                 tokensTotal = tokensTotal.add(tokensToCurrentTier);
-                usdLeft = calcAmountInUsd(
+                remainingAmount = calcAmountInCurrency(
                         tentativeTokensDecimal.subtract(new BigDecimal(tokensToCurrentTier)),
                         currentTier.getDiscount());
 
                 currentTier.setEndDate(blockTime);
                 currentTier.setInactive();
-                oCurrentTier = saleTierRepository.findByTierNo(currentTier.getTierNo() + 1);
+                oCurrentTier = getNextTier(currentTier);
             } else {
                 // All tokens can be retrieved from the same tier.
                 currentTier.setTokensSold(currentTier.getTokensSold().add(tentativeTokens));
                 tokensTotal = tokensTotal.add(tentativeTokens);
-                usdLeft = BigDecimal.ZERO;
+                remainingAmount = BigDecimal.ZERO;
             }
         }
-        return new ConversionResult(tokensTotal, usdLeft);
+        return new ConversionResult(tokensTotal, remainingAmount);
+    }
+
+    /**
+     * Assumes that the SaleTier's numbers (tierNo) are consecutive by increments of 1.
+     */
+    protected Optional<SaleTier> getNextTier(SaleTier currentTier) {
+        return saleTierRepository.findByTierNo(currentTier.getTierNo() + 1);
     }
 
     public static class ConversionResult {
-        BigInteger tokens;
-        BigDecimal overflow;
+        private BigInteger tokens;
+        private BigDecimal overflow;
 
         private ConversionResult(BigInteger tokens, BigDecimal overflow) {
             this.tokens = tokens;
@@ -89,18 +95,16 @@ public class BaseMonitor {
         }
     }
 
-    private BigDecimal calcAmountInTokens(BigDecimal amountUsd, double discountRate) {
-        BigDecimal tokensPerUsd = BigDecimal.valueOf(1 / (1 - discountRate));
-        return amountUsd.multiply(tokensPerUsd);
+    private BigDecimal calcAmountInTokens(BigDecimal currency, double discountRate) {
+       return currency.divide(BigDecimal.valueOf(1-discountRate), RoundingMode.DOWN);
     }
 
-    private BigDecimal calcAmountInUsd(BigDecimal tokens, double discountRate) {
-        BigDecimal tokensPerUsd = BigDecimal.valueOf(1 / (1 - discountRate));
-        return tokens.divide(tokensPerUsd, RoundingMode.DOWN);
+    private BigDecimal calcAmountInCurrency(BigDecimal tokens, double discountRate) {
+        return tokens.divide(BigDecimal.valueOf(1-discountRate), RoundingMode.DOWN);
     }
 
-    private boolean tokensExceedHardcap(BigInteger newTokens, SaleTier tier) {
-        return tier.getTokensSold().add(newTokens).compareTo(tier.getTokenMax()) >= 0;
+    private boolean tokensExceedHardcap(BigInteger tokens, SaleTier tier) {
+        return tier.getTokensSold().add(tokens).compareTo(tier.getTokenMax()) >= 0;
     }
 
 //    public boolean isLastTierActiveAndAmountOverflowsLastTier(BigDecimal amountUsd) {

@@ -78,7 +78,7 @@ public class SaleTierRepositoryTest {
                 endDate,
                 discount,
                 BigInteger.valueOf(tokenMax),
-                true);
+                active);
     }
 
     private SaleTier createActiveTier() {
