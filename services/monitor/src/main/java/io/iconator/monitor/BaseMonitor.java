@@ -35,19 +35,21 @@ public class BaseMonitor {
         BigDecimal remainingAmount = amount;
         BigInteger tokensTotal = BigInteger.ZERO;
 
-        while (oCurrentTier.isPresent() && remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
+        while (oCurrentTier.isPresent()) {
             SaleTier currentTier = oCurrentTier.get();
             if (!currentTier.isActive()) {
                 currentTier.setStartDate(blockTime);
                 currentTier.setActive();
             }
 
+            if (remainingAmount.compareTo(BigDecimal.ZERO) <= 0) break;
+
             BigDecimal tentativeTokensDecimal = calcAmountInTokens(remainingAmount, currentTier.getDiscount());
             BigInteger tentativeTokens = tentativeTokensDecimal.toBigInteger();
 
             if (tokensExceedHardcap(tentativeTokens, currentTier)) {
                 // Tokens must be distributed over multiple tiers
-                BigInteger tokensToCurrentTier = currentTier.getTokensSold().subtract(currentTier.getTokenMax());
+                BigInteger tokensToCurrentTier = currentTier.getTokenMax().subtract(currentTier.getTokensSold());
                 currentTier.setTokensSold(tokensToCurrentTier);
                 tokensTotal = tokensTotal.add(tokensToCurrentTier);
                 remainingAmount = calcAmountInCurrency(
@@ -101,7 +103,7 @@ public class BaseMonitor {
     }
 
     private BigDecimal calcAmountInCurrency(BigDecimal tokens, double discountRate) {
-        return tokens.divide(BigDecimal.valueOf(1 - discountRate), RoundingMode.DOWN);
+        return tokens.multiply(BigDecimal.valueOf(1-discountRate));
     }
 
     private boolean tokensExceedHardcap(BigInteger tokens, SaleTier tier) {
