@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -23,9 +24,10 @@ import static org.junit.Assert.fail;
 
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestConfig.class }, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
-@TestPropertySource({"classpath:monitor.application-test.properties"})
+@TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class BaseMonitorTest {
 
     private final static double TIER_ONE_DISCOUNT = 0.5;
@@ -68,8 +70,8 @@ public class BaseMonitorTest {
 
     private SaleTier createTier(int tierNo, String start, String end, double discount, long tokenMax, boolean active) {
 
-        Date beginDate = java.sql.Date.valueOf(start);
-        Date endDate = java.sql.Date.valueOf(end);
+        Date beginDate = Date.valueOf(start);
+        Date endDate = Date.valueOf(end);
         return new SaleTier(
                 tierNo,
                 "test tier",

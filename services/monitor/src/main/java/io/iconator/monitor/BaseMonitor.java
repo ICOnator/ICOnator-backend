@@ -16,14 +16,15 @@ public class BaseMonitor {
     public BaseMonitor(SaleTierRepository saleTierRepository) {
         this.saleTierRepository = saleTierRepository;
     }
+
     /**
      * The returned pair consists of
      * - key:   the tokens that the given amount is worth
      * - value: amount which could not be converted into tokens because all tiers where already full.
-     *
+     * <p>
      * Converts with the assumption of an exchange rate of 1:1 of the given input to the tokens
      * (smallest unit of the token).
-     *
+     * <p>
      * Converted currency amounts are rounded down to the next integer token amount.
      */
     public ConversionResult calcTokensAndUpdateTiers(BigDecimal amount, Date blockTime) {
@@ -96,11 +97,11 @@ public class BaseMonitor {
     }
 
     private BigDecimal calcAmountInTokens(BigDecimal currency, double discountRate) {
-       return currency.divide(BigDecimal.valueOf(1-discountRate), RoundingMode.DOWN);
+        return currency.divide(BigDecimal.valueOf(1 - discountRate), RoundingMode.DOWN);
     }
 
     private BigDecimal calcAmountInCurrency(BigDecimal tokens, double discountRate) {
-        return tokens.divide(BigDecimal.valueOf(1-discountRate), RoundingMode.DOWN);
+        return tokens.divide(BigDecimal.valueOf(1 - discountRate), RoundingMode.DOWN);
     }
 
     private boolean tokensExceedHardcap(BigInteger tokens, SaleTier tier) {
