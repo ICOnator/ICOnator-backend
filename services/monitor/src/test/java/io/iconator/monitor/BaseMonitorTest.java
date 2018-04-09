@@ -32,9 +32,9 @@ import static org.junit.Assert.fail;
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class BaseMonitorTest {
 
-    private final static double T1_DISCOUNT = 0.5;
-    private final static double T2_DISCOUNT = 0.2;
-    private final static double T3_DISCOUNT = 0.1;
+    private final static BigDecimal T1_DISCOUNT = new BigDecimal("0.5");
+    private final static BigDecimal T2_DISCOUNT = new BigDecimal("0.2");
+    private final static BigDecimal T3_DISCOUNT = new BigDecimal("0.1");
 
     private final static int T1_NO = 1;
     private final static int T2_NO = 2;
@@ -58,7 +58,7 @@ public class BaseMonitorTest {
     private SaleTierRepository saleTierRepository;
 
     @Before
-    public void setUpTiersInDb() {
+    public void setUpTiers() {
         saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
         saleTierRepository.save(createTier(2, T2_START_DATE, T2_END_DATE, T2_DISCOUNT, 2000L, false));
         saleTierRepository.save(createTier(3, T3_START_DATE, T3_END_DATE, T3_DISCOUNT, 3000L, false));
@@ -161,6 +161,47 @@ public class BaseMonitorTest {
         }
     }
 
+    @Test
+    public void testBuyTokensOverflowingThirdTier() {
+        final BigDecimal currency = BigDecimal.valueOf(500L + 1600L + 2790L);
+        final BigDecimal expectedOverflow = BigDecimal.valueOf(90L);
+        final Date blockTime = Date.valueOf("2018-01-02");
+        ConversionResult result = baseMonitor.calcTokensAndUpdateTiers(currency, blockTime);
+        assertEquals(0, result.getOverflow().compareTo(expectedOverflow));
+        assertEquals(0, result.getTokens().compareTo(T1_MAX.add(T2_MAX).add(T3_MAX)));
+
+        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        if (oActiveTier.isPresent()) {
+            fail("There shouldn't be any active tear anymore, but was.");
+        }
+
+        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
+        }
+
+        oTier = saleTierRepository.findByTierNo(T2_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T2_NO, blockTime, blockTime, T2_MAX, false);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T2_NO));
+        }
+
+        oTier = saleTierRepository.findByTierNo(T3_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T3_NO, blockTime, blockTime, T3_MAX, false);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
+        }
+    }
+
+    @Test
+    public void testRoundingBehavior() {
+
+    }
+
     private void assertTier(SaleTier tier, int tierNo, Date startDate, Date endDate,
                             BigInteger tokensSold, boolean isActive) {
 
@@ -171,7 +212,7 @@ public class BaseMonitorTest {
         assertEquals(isActive, tier.isActive());
     }
 
-    private SaleTier createTier(int tierNo, Date startDate, Date endDate, double discount,
+    private SaleTier createTier(int tierNo, Date startDate, Date endDate, BigDecimal discount,
                                 long tokenMax, boolean active) {
 
         return new SaleTier(

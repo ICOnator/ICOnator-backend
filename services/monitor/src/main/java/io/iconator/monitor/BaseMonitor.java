@@ -5,6 +5,7 @@ import io.iconator.commons.sql.dao.SaleTierRepository;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Optional;
@@ -12,6 +13,8 @@ import java.util.Optional;
 public class BaseMonitor {
 
     private SaleTierRepository saleTierRepository;
+
+    private static final MathContext mc = new MathContext(34, RoundingMode.DOWN);
 
     public BaseMonitor(SaleTierRepository saleTierRepository) {
         this.saleTierRepository = saleTierRepository;
@@ -98,12 +101,12 @@ public class BaseMonitor {
         }
     }
 
-    private BigDecimal calcAmountInTokens(BigDecimal currency, double discountRate) {
-        return currency.divide(BigDecimal.valueOf(1 - discountRate), RoundingMode.DOWN);
+    private BigDecimal calcAmountInTokens(BigDecimal currency, BigDecimal discountRate) {
+        return currency.divide(BigDecimal.ONE.subtract(discountRate), mc);
     }
 
-    private BigDecimal calcAmountInCurrency(BigDecimal tokens, double discountRate) {
-        return tokens.multiply(BigDecimal.valueOf(1-discountRate));
+    private BigDecimal calcAmountInCurrency(BigDecimal tokens, BigDecimal discountRate) {
+        return tokens.multiply(BigDecimal.ONE.subtract(discountRate));
     }
 
     private boolean tokensExceedHardcap(BigInteger tokens, SaleTier tier) {

@@ -7,6 +7,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
@@ -36,7 +37,7 @@ public class SaleTier {
     private Date endDate;
 
     @Column(name = "discount")
-    private double discount;
+    private BigDecimal discount;
 
     @Column(name = "tokens_sold")
     private BigInteger tokensSold;
@@ -51,7 +52,7 @@ public class SaleTier {
     }
 
     public SaleTier(int tierNo, String description, Date startDate, Date endDate,
-                    double discount, BigInteger tokenMax, boolean isActive) {
+                    BigDecimal discount, BigInteger tokenMax, boolean isActive) {
         this.tierNo = tierNo;
         this.description = description;
         this.startDate = startDate;
@@ -94,11 +95,11 @@ public class SaleTier {
         this.endDate = endDate;
     }
 
-    public double getDiscount() {
+    public BigDecimal getDiscount() {
         return discount;
     }
 
-    public void setDiscount(double discount) {
+    public void setDiscount(BigDecimal discount) {
         this.discount = discount;
     }
 
