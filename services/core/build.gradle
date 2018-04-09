@@ -17,6 +17,7 @@ dependencies {
     compile project(':commons:amqp-service')
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
+    compile project(':commons:security-actuator')
 
     compile 'javax.ws.rs:jsr311-api:1.1.1'
     compile 'org.springframework.boot:spring-boot-starter-actuator'

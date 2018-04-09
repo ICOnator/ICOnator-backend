@@ -2,7 +2,7 @@
 
 # ICOnator
 
-ICOnator has the aim to make the tokenization of assets a popular and easy process.
+ICOnator has the aim to make the tokenization of assets a popular and an easy process.
 
 ## Description
 
