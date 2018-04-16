@@ -82,7 +82,7 @@ public class BaseMonitorTest {
         ConversionResult result = null;
         try {
             result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             fail(e.getMessage());
         }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
@@ -117,7 +117,7 @@ public class BaseMonitorTest {
         ConversionResult result = null;
         try {
             result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             fail(e.getMessage());
         }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
@@ -153,7 +153,7 @@ public class BaseMonitorTest {
         ConversionResult result = null;
         try {
             result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             fail(e.getMessage());
         }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
@@ -198,7 +198,7 @@ public class BaseMonitorTest {
             result = baseMonitor.convertToTokensAndUpdateTiers(currency2, blockTime2);
             overflow = overflow.add(result.getOverflow());
             tokens = tokens.add(result.getTokens());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             fail(e.getMessage());
         }
         assertEquals(0, overflow.compareTo(BigDecimal.ZERO));
@@ -234,7 +234,7 @@ public class BaseMonitorTest {
         ConversionResult result = null;
         try {
             result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             fail(e.getMessage());
         }
         assertEquals(0, result.getOverflow().compareTo(expectedOverflow));
