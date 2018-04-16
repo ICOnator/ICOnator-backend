@@ -18,6 +18,9 @@ public class MonitorAppConfig {
     @Value("${io.iconator.services.monitor.btc.node.enabled}")
     private Boolean bitcoinNodeEnabled;
 
+    @Value("${io.iconator.services.monitor.retry.wait-between-attemps.max}")
+    private Long tokenConversionMaxTimeWait;
+
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
     }
@@ -32,5 +35,9 @@ public class MonitorAppConfig {
 
     public Boolean getBitcoinNodeEnabled() {
         return bitcoinNodeEnabled;
+    }
+
+    public Long getTokenConversionMaxTimeWait() {
+        return tokenConversionMaxTimeWait;
     }
 }

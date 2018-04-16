@@ -1,12 +1,6 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
@@ -21,6 +15,9 @@ public class SaleTier {
     @GeneratedValue(strategy = SEQUENCE)
     @Column(name = "id", updatable = false)
     private long id;
+
+    @Version
+    private Long version = 0L;
 
     @Column(name = "tier_no")
     private int tierNo;

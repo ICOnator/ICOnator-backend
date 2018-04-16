@@ -2,10 +2,7 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -40,8 +37,9 @@ public class PaymentLog {
     @Column(name = "usd_amount", nullable = false)
     private BigDecimal usdValue;
 
-    @Column(name = "email", nullable = false)
-    private String email;
+    @OneToOne()
+    @JoinColumn(name = "investor", nullable = false)
+    private Investor investor;
 
     @Column(name = "token_amount", nullable = false)
     private BigDecimal tokenAmount;
@@ -49,7 +47,9 @@ public class PaymentLog {
     public PaymentLog() {
     }
 
-    public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency, BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue, String email, BigDecimal tokenAmount) {
+    public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
+                      BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
+                      Investor investor, BigDecimal tokenAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -57,7 +57,7 @@ public class PaymentLog {
         this.paymentAmount = paymentAmount;
         this.fxRate = fxRate;
         this.usdValue = usdValue;
-        this.email = email;
+        this.investor = investor;
         this.tokenAmount = tokenAmount;
     }
 
@@ -93,11 +93,15 @@ public class PaymentLog {
         return usdValue;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
     public BigDecimal getTokenAmount() {
         return tokenAmount;
+    }
+
+    public void setTokenAmount(BigDecimal amount) {
+        this.tokenAmount = amount;
+    }
+
+    public Investor getInvestor() {
+        return investor;
     }
 }

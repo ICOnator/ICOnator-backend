@@ -4,48 +4,30 @@ import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
-import org.bitcoinj.core.Address;
-import org.bitcoinj.core.Block;
-import org.bitcoinj.core.BlockChain;
-import org.bitcoinj.core.Context;
-import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.PeerGroup;
-import org.bitcoinj.core.StoredBlock;
-import org.bitcoinj.core.TransactionConfidence;
+import io.iconator.monitor.service.exceptions.USDBTCFxException;
+import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
-import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
-import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-import static java.util.Optional.ofNullable;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.BUILDING;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.IN_CONFLICT;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
 
 public class BitcoinMonitor extends BaseMonitor {
 
@@ -57,10 +39,10 @@ public class BitcoinMonitor extends BaseMonitor {
     private final NetworkParameters bitcoinNetworkParameters;
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
-    private final FxService fxService;
-    private final InvestorRepository investorRepository;
-    private final PaymentLogRepository paymentLogRepository;
-    private Set<TransactionOutput> processedUTXOs = new HashSet<>();
+
+    /* Used in addition to the PaymentLog entries because processing of transactions can fail and
+     * lead to a refund but must still be marked as processed.
+     */
     private Map<String, String> monitoredAddresses = new HashMap<>();
 
     private ICOnatorMessageService messageService;
@@ -74,17 +56,17 @@ public class BitcoinMonitor extends BaseMonitor {
                           InvestorRepository investorRepository,
                           PaymentLogRepository paymentLogRepository,
                           SaleTierRepository saleTierRepository,
-                          ICOnatorMessageService messageService) throws Exception {
-        super(saleTierRepository);
-        this.fxService = fxService;
+                          EligibleForRefundRepository eligibleForRefundRepository,
+                          ICOnatorMessageService messageService) {
+
+        super(saleTierRepository, investorRepository, paymentLogRepository,
+                eligibleForRefundRepository, fxService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
         this.bitcoinContext = bitcoinContext;
         this.bitcoinNetworkParameters = bitcoinNetworkParameters;
         this.peerGroup = peerGroup;
-        this.investorRepository = investorRepository;
-        this.paymentLogRepository = paymentLogRepository;
 
         this.messageService = messageService;
 
@@ -140,30 +122,29 @@ public class BitcoinMonitor extends BaseMonitor {
     private void addCoinsReceivedListener() {
         wallet.addCoinsReceivedEventListener((wallet1, tx, prevBalance, newBalance) -> {
             Context.propagate(this.bitcoinContext);
-            // Check outputs
             tx.getOutputs().forEach(utxo -> {
-                // If not already processed and this output sends to one of our watched addresses
-                if (!processedUTXOs.contains(utxo) && utxo.getScriptPubKey().isSentToAddress()) {
-                    Address address = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters);
-                    if (wallet1.getWatchedAddresses().contains(address)) {
+                try {
+                    String txoIdentifier = BitcoinUtils.getTransactionOutputIdentifier(utxo);
+                    Address receivingAddress = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters);
+                    if (wallet1.getWatchedAddresses().contains(receivingAddress)
+                            && isTransactionUnprocessed(txoIdentifier)
+                            && utxo.getScriptPubKey().isSentToAddress()) {
 
-                        // If the confidence is already BUILDING (1 block or more on best chain)
-                        // we have a hit
                         if (BitcoinUtils.isBuilding(tx)) {
-                            coinsReceived(utxo);
-
-                            // If pending or unknown we add a confidence changed listener and wait for block inclusion
+                            // Transaction is coverd by 1 block or more on best chain.
+                            processTransactionOutput(utxo);
                         } else if (BitcoinUtils.isPending(tx) || BitcoinUtils.isUnknown(tx)) {
-                            LOG.info("Pending: {} satoshi received in {}", utxo.getValue(), tx.getHashAsString());
+                            // If pending or unknown we add a confidence changed listener and wait for block inclusion
+                            LOG.info("Pending: {} satoshi received in transaction output {}", utxo.getValue(), txoIdentifier);
                             Listener listener = new Listener() {
                                 @Override
                                 public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
-                                    if (!processedUTXOs.contains(utxo)) {
+                                    if (isTransactionUnprocessed(txoIdentifier)) {
                                         if (confidence.getConfidenceType().equals(BUILDING)) {
-                                            coinsReceived(utxo);
+                                            processTransactionOutput(utxo);
                                             tx.getConfidence().removeEventListener(this);
-                                        } else if (confidence.getConfidenceType().equals(DEAD) || confidence
-                                                .getConfidenceType().equals(IN_CONFLICT)) {
+                                        } else if (confidence.getConfidenceType().equals(DEAD)
+                                                || confidence.getConfidenceType().equals(IN_CONFLICT)) {
                                             tx.getConfidence().removeEventListener(this);
                                         }
                                     }
@@ -172,6 +153,8 @@ public class BitcoinMonitor extends BaseMonitor {
                             tx.getConfidence().addEventListener(listener);
                         }
                     }
+                } catch (RuntimeException e) {
+                    LOG.error("Failed processing transaction output.", e);
                 }
             });
         });
@@ -182,113 +165,156 @@ public class BitcoinMonitor extends BaseMonitor {
      *
      * @param utxo The transaction output we received
      */
-    private void coinsReceived(TransactionOutput utxo) {
-        long satoshi = utxo.getValue().getValue();
-        final String address = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters).toBase58();
+    private void processTransactionOutput(TransactionOutput utxo) {
+        BigInteger satoshi = BigInteger.valueOf(utxo.getValue().getValue());
 
-        // Retrieve the timestamp from the first block that this transaction was seen in
-        long timestamp = utxo.getParentTransaction().getAppearsInHashes().keySet().stream()
-                .map((blockHash) -> {
-                    try {
-                        return this.bitcoinBlockStore.get(blockHash);
-                    } catch (BlockStoreException e) {
-                        return null; // This can happen if the transaction was seen in a side-chain
-                    }
-                })
-                .filter(Objects::nonNull)
-                .map(StoredBlock::getHeader)
-                .map(Block::getTime)
-                .mapToLong(date -> (date.getTime() / 1000L))
-                .min().orElse(0L);
-        if (timestamp == 0L) {
-            LOG.error("Could not get time for utxo in tx {} with satoshi value {}",
-                    address, satoshi);
+        String txoIdentifier;
+        try {
+            txoIdentifier = BitcoinUtils.getTransactionOutputIdentifier(utxo);
+        } catch (RuntimeException e) {
+            LOG.error("Failed fetching identifier for transaction output. " +
+                    "Can't process transaction without its identifier.", e);
             return;
         }
 
-        // Calculate USD value
-        BigDecimal USDperBTC = null;
+        String receivingAddress;
+        try {
+            receivingAddress = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters).toBase58();
+        } catch (RuntimeException e)  {
+            LOG.error("Couldn't fetch receiver address for transaction output {}. " +
+                    "Can't process transaction without reciever address.", txoIdentifier, e);
+            return;
+        }
+
+        Investor investor;
+        try {
+            String publicKey = monitoredAddresses.get(receivingAddress);
+            investor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey).get();
+        } catch (NoSuchElementException e) {
+            LOG.error("Couldn't fetch investor for receiver address {}. Can't process transaction " +
+                    "without knowing the associated investor. Transaction output {} must be refunded",
+                    receivingAddress, txoIdentifier, e);
+            handleMissingInvestor(satoshi, txoIdentifier);
+            return;
+        }
+
+        Date timestamp;
+        try {
+            timestamp = BitcoinUtils.getTimestampOfTransaction(utxo.getParentTransaction(), bitcoinBlockStore);
+        } catch (RuntimeException e) {
+            LOG.error("Failed fetching timestamp for transaction output {}. Can't process " +
+                    "bitcoin transaction without transaction timestamp. Transaction output must " +
+                    "be refunded.",
+                    txoIdentifier, e);
+            return;
+        }
+
+        BigDecimal USDperBTC, usdReceived;
         try {
             USDperBTC = fxService.getUSDPerBTC(timestamp);
-        } catch (Exception e) {
-            LOG.error("Could not fetch exchange rate for utxo in tx {} with satoshi value {}. {} {}",
-                    address, satoshi, e.getMessage(), e.getCause());
+            usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
+        } catch (USDBTCFxException e) {
+            LOG.error("Couldn't get US dollar price per Bitcoin for transaction output {}. " +
+                    "Transaction Output must be refunded.", txoIdentifier, e);
+            handleMissingFxRate(satoshi, txoIdentifier, investor);
+            return;
+        } catch (RuntimeException e) {
+            LOG.error("Failed to fetch payment amount in US dollars for transaction output {}. " +
+                    "Transaction Output must be refunded.", txoIdentifier, e);
+            handleFailedConversionToUsd(satoshi, txoIdentifier, investor);
             return;
         }
-        BigDecimal usdReceived = BigDecimal.valueOf(satoshi)
-                .multiply(USDperBTC)
-                .divide(BigDecimal.valueOf(100_000_000L), BigDecimal.ROUND_DOWN);
 
-        // Fetch email
-        String publicKey = monitoredAddresses.get(address);
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey);
-        String email = oInvestor.map((investor) -> investor.getEmail()).orElseGet(() -> {
-            LOG.error("Could not fetch email address for public key {} / address {}.", publicKey, address);
-            return null;
-        });
-
-        final String identifier = utxo.getParentTransaction().getHashAsString() + "_"
-                + String.valueOf(utxo.getIndex());
-        BigInteger value = new BigInteger(String.valueOf(satoshi));
-        Instant blockTime = Instant.ofEpochSecond(timestamp);
-        BigDecimal amountTokens = BigDecimal.ZERO;
-
-        try {
-
-            //  ConversionResult result = calcTokensAndUpdateTiers(usdReceived, blockTime);
-            //  if (result.hasOverflow()) {
-            //      TODO: 2018-03-30 Claude:
-            //      Handle overflow of payment which could not be converted into tokens due to last tier being full.
-            //  }
-            // amountTokens = new BigDecimal(result.getTokens());
-
-            PaymentLog paymentLog = new PaymentLog(identifier, new Date(), new Date(blockTime.toEpochMilli()),
-                    CurrencyType.BTC, new BigDecimal(value), USDperBTC, usdReceived, email, amountTokens);
-            Optional<PaymentLog> oSavedPaymentLog = ofNullable(paymentLogRepository.save(paymentLog));
-            oSavedPaymentLog.ifPresent(p -> {
-                final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();
-
-                FundsReceivedEmailMessage fundsReceivedEmailMessage = new FundsReceivedEmailMessage(
-                        build(oInvestor.get()),
-                        new BigDecimal(value),
+        PaymentLog paymentLog = paymentLogRepository.save(
+                new PaymentLog(
+                        txoIdentifier,
+                        new Date(),
+                        timestamp,
                         CurrencyType.BTC,
-                        blockChainInfoLink,
-                        // TODO: 05.03.18 Guil:
-                        // calculate the tokens amount!
-                        null
-                );
+                        new BigDecimal(satoshi),
+                        USDperBTC,
+                        usdReceived,
+                        investor,
+                        BigDecimal.ZERO)
+        );
 
-                messageService.send(fundsReceivedEmailMessage);
-
-                LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / Tokens Amount {}",
-                        utxo.getValue().toFriendlyString(),
-                        p.getPaymentAmount(),
-                        p.getFxRate(),
-                        p.getEmail(),
-                        p.getCreateDate(),
-                        address,
-                        p.getTokenAmount());
-            });
-
-        } catch (DataIntegrityViolationException e) {
-            LOG.info("Pay-in already exists on the database: {} / {} USD / {} FX / {} / Time: {] / Address: {}",
-                    utxo.getValue().toFriendlyString(),
-                    usdReceived,
-                    USDperBTC,
-                    email,
-                    timestamp,
-                    address);
-        } catch (Exception e) {
-            LOG.error("Could not save pay-in: {} / {} USD / {} FX / {} / Time: {] / Address: {}",
-                    utxo.getValue().toFriendlyString(),
-                    usdReceived,
-                    USDperBTC,
-                    email,
-                    timestamp,
-                    address);
+        ConversionResult conversionResult;
+        try {
+            conversionResult = convertToTokensAndUpdateTiers(usdReceived, timestamp);
+        } catch (Throwable e) {
+            LOG.error("Failed to convert payment to tokens for transaction output {}. " +
+                    "Transaction Output must be refunden.", txoIdentifier, e);
+            handleFailedTokenConversion(satoshi, txoIdentifier, investor);
+            return;
+        }
+        BigDecimal tokenAmount = new BigDecimal(conversionResult.getTokens());
+        paymentLog.setTokenAmount(tokenAmount);
+        if (conversionResult.hasOverflow()) {
+            LOG.info("Final tier is full. Overflow will be refunded for Transaction Output {}", txoIdentifier);
+            handleFinalTierOverflow(conversionResult.getOverflow(), USDperBTC, txoIdentifier, investor);
         }
 
-        processedUTXOs.add(utxo);
+        final String blockChainInfoLink = "https://blockchain.info/tx/" +
+                utxo.getParentTransaction().getHashAsString();
+
+        messageService.send(new FundsReceivedEmailMessage(
+                build(investor),
+                new BigDecimal(satoshi),
+                CurrencyType.BTC,
+                blockChainInfoLink,
+                tokenAmount));
+
+        LOG.info("Pay-in received and saved: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
+                        "Tokens Amount {}",
+                utxo.getValue().toFriendlyString(),
+                paymentLog.getPaymentAmount(),
+                paymentLog.getFxRate(),
+                investor.getEmail(),
+                paymentLog.getCreateDate(),
+                receivingAddress,
+                paymentLog.getTokenAmount());
     }
 
+    private void handleMissingInvestor(BigInteger satoshi, String txIdentifier) {
+        eligibleForRefundInSatoshi(
+                RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
+                satoshi,
+                txIdentifier,
+                null);
+    }
+
+    private void handleMissingFxRate(BigInteger satoshi, String txIdentifier, Investor investor) {
+        eligibleForRefundInSatoshi(
+                RefundReason.MISSING_FX_RATE,
+                satoshi,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleFailedConversionToUsd(BigInteger satoshi, String txIdentifier, Investor investor) {
+        eligibleForRefundInSatoshi(
+                RefundReason.FAILED_CONVERSION_TO_USD,
+                satoshi,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleFailedTokenConversion(BigInteger satoshi, String txIdentifier, Investor investor) {
+        eligibleForRefundInSatoshi(
+                RefundReason.TOKEN_CONVERSION_FAILED,
+                satoshi,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleFinalTierOverflow(BigDecimal usd, BigDecimal usdPerBtc, String txIdentifier,
+                                         Investor investor) {
+
+        BigInteger satoshi = BitcoinUtils.convertUsdToSatoshi(usd, usdPerBtc);
+        eligibleForRefundInSatoshi(
+                RefundReason.FINAL_TIER_OVERFLOW,
+                satoshi,
+                txIdentifier,
+                investor);
+    }
 }

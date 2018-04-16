@@ -3,17 +3,14 @@ package io.iconator.monitor.config;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import org.bitcoinj.core.BlockChain;
-import org.bitcoinj.core.CheckpointManager;
-import org.bitcoinj.core.Context;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.PeerGroup;
+import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
@@ -111,9 +108,10 @@ public class MonitorBean {
                                            InvestorRepository investorRepository,
                                            PaymentLogRepository paymentLogRepository,
                                            SaleTierRepository saleTierRepository,
+                                           EligibleForRefundRepository eligibleForRefundRepository,
                                            ICOnatorMessageService messageService) {
         return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository,
-                saleTierRepository, messageService);
+                saleTierRepository, eligibleForRefundRepository, messageService);
     }
 
     @Bean
@@ -126,15 +124,16 @@ public class MonitorBean {
                                          InvestorRepository investorRepository,
                                          PaymentLogRepository paymentLogRepository,
                                          SaleTierRepository saleTierRepository,
-                                         ICOnatorMessageService messageService) throws Exception {
+                                         EligibleForRefundRepository eligibleForRefundRepository,
+                                         ICOnatorMessageService messageService) {
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogRepository, saleTierRepository, messageService);
+                investorRepository, paymentLogRepository, saleTierRepository,
+                eligibleForRefundRepository, messageService);
     }
 
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
-
 }

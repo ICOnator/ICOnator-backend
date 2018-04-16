@@ -1,6 +1,7 @@
 package io.iconator.commons.sql.dao;
 
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.config.TestConfig;
 import org.junit.Test;
@@ -25,6 +26,9 @@ public class PaymentLogRepositoryTest {
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
+    @Autowired
+    private InvestorRepository investorRepository;
+
     @Test
     public void testSave() {
         PaymentLog p = createPaymentLog();
@@ -35,9 +39,10 @@ public class PaymentLogRepositoryTest {
     public void testSaveAndFind() {
         PaymentLog p = createPaymentLog();
         paymentLogRepository.save(p);
-        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByEmail("test@test.com");
+        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifier("identifier");
         assertTrue(oPaymentLog.isPresent());
-        assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.getEmail().equals("test@test.com")).isPresent());
+        assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.getInvestor().getEmail()
+                .equals("test@test.com")).isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.equals(p)).isPresent());
     }
 
@@ -50,6 +55,12 @@ public class PaymentLogRepositoryTest {
     }
 
     private PaymentLog createPaymentLog() {
+        Investor investor = investorRepository.save(
+                new Investor(new Date(),"test@test.com", "token", "walletAddress",
+                        "payInEtherPublicKey", "payInBitcoinPublicKey", "refundEtherAddress",
+                        "refundBitcoinAddress", "ipAddress"
+                ));
+
         return new PaymentLog("identifier",
                 new Date(),
                 new Date(),
@@ -57,7 +68,7 @@ public class PaymentLogRepositoryTest {
                 new BigDecimal(1),
                 new BigDecimal(2),
                 new BigDecimal(3),
-                "test@test.com",
+                investor,
                 new BigDecimal(100));
     }
 

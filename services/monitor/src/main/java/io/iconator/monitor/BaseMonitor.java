@@ -1,24 +1,65 @@
 package io.iconator.monitor;
 
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.Unit;
+import io.iconator.commons.model.db.EligibleForRefund;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
+import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
+import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.service.FxService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
+import static com.github.rholder.retry.WaitStrategies.randomWait;
+
+@Component
 public class BaseMonitor {
 
-    private SaleTierRepository saleTierRepository;
+    private final static Logger LOG = LoggerFactory.getLogger(BitcoinMonitor.class);
 
-    private static final MathContext mc = new MathContext(34, RoundingMode.DOWN);
+    protected static final MathContext MATH_CONTEXT = new MathContext(34, RoundingMode.DOWN);
 
-    public BaseMonitor(SaleTierRepository saleTierRepository) {
+    private final SaleTierRepository saleTierRepository;
+    protected final InvestorRepository investorRepository;
+    protected final PaymentLogRepository paymentLogRepository;
+    protected final EligibleForRefundRepository eligibleForRefundRepository;
+    protected final FxService fxService;
+
+    @Autowired
+    private MonitorAppConfig appConfig;
+
+    public BaseMonitor(SaleTierRepository saleTierRepository, InvestorRepository investorRepository,
+                       PaymentLogRepository paymentLogRepository,
+                       EligibleForRefundRepository eligibleForRefundRepository, FxService fxService) {
         this.saleTierRepository = saleTierRepository;
+        this.investorRepository = investorRepository;
+        this.paymentLogRepository = paymentLogRepository;
+        this.eligibleForRefundRepository = eligibleForRefundRepository;
+        this.fxService = fxService;
     }
+
 
     /**
      * The returned pair consists of
@@ -28,44 +69,75 @@ public class BaseMonitor {
      * Converts with the assumption of an exchange rate of 1:1 of the given input to the tokens
      * (smallest unit of the token).
      * <p>
-     * Converted currency amounts are rounded down to the next integer token amount.
+     * Converted amount is rounded down to the next whole number if it is not an integer.
      */
-    public ConversionResult calcTokensAndUpdateTiers(BigDecimal amount, Date blockTime) {
-        // TODO 18-03-30 Claude:
-        // Must be synchronized from here in order that a tier does not change while calculating
-        // the amount of tokens a investor will receive.
-        Optional<SaleTier> oCurrentTier = saleTierRepository.findByIsActiveTrue();
+    public ConversionResult convertToTokensAndUpdateTiers(BigDecimal amount, Date blockTimestamp)
+            throws Throwable {
+
+        if (blockTimestamp == null) {
+            throw new IllegalArgumentException("Block time stamp must not be null.");
+        }
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount must must not be null.");
+        }
+
+        Retryer<ConversionResult> retryer = RetryerBuilder.<ConversionResult>newBuilder()
+                    .retryIfExceptionOfType(OptimisticLockException.class)
+                    .withWaitStrategy(randomWait(
+                        appConfig.getTokenConversionMaxTimeWait(),
+                        TimeUnit.MILLISECONDS))
+                    .withStopStrategy(StopStrategies.neverStop())
+                    .build();
+
+        Callable<ConversionResult> callable =
+                () -> convertToTokensAndUpdateTiersInternal(amount, blockTimestamp);
+
+        try {
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            throw e.getCause();
+        } catch (RetryException e) {
+            // should never happen because retryer is set to never stop tyring.
+        }
+        return null;
+    }
+
+    @Transactional(rollbackFor = OptimisticLockException.class)
+    protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal amount, Date blockTime) {
         BigDecimal remainingAmount = amount;
         BigInteger tokensTotal = BigInteger.ZERO;
+        Optional<SaleTier> oCurrentTier = saleTierRepository.findByIsActiveTrue();
 
-        while (oCurrentTier.isPresent()) {
+        while (oCurrentTier.isPresent() && remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
-            if (!currentTier.isActive()) {
-                currentTier.setStartDate(blockTime);
-                currentTier.setActive();
-            }
 
-            if (remainingAmount.compareTo(BigDecimal.ZERO) <= 0) break;
+            BigDecimal tokensDecimal = convertCurrencyToTokens(remainingAmount, currentTier.getDiscount());
+            BigInteger tokens = tokensDecimal.toBigInteger();
 
-            BigDecimal tentativeTokensDecimal = calcAmountInTokens(remainingAmount, currentTier.getDiscount());
-            BigInteger tentativeTokens = tentativeTokensDecimal.toBigInteger();
-
-            if (tokensExceedHardcap(tentativeTokens, currentTier)) {
+            if (tokensExceedHardcap(tokens, currentTier)) {
                 // Tokens must be distributed over multiple tiers
+                // Calculate the amount that is assigned to the current tier and what remains for
+                // the next tier.
                 BigInteger tokensToCurrentTier = currentTier.getTokenMax().subtract(currentTier.getTokensSold());
-                currentTier.setTokensSold(tokensToCurrentTier);
+                currentTier.setTokensSold(currentTier.getTokensSold().add(tokensToCurrentTier));
                 tokensTotal = tokensTotal.add(tokensToCurrentTier);
-                remainingAmount = calcAmountInCurrency(
-                        tentativeTokensDecimal.subtract(new BigDecimal(tokensToCurrentTier)),
+                remainingAmount = convertTokensToCurrency(
+                        tokensDecimal.subtract(new BigDecimal(tokensToCurrentTier)),
                         currentTier.getDiscount());
 
+                // Close the filled up tier and open the next one.
                 currentTier.setEndDate(blockTime);
                 currentTier.setInactive();
                 oCurrentTier = getNextTier(currentTier);
+                if (oCurrentTier.isPresent()) {
+                    oCurrentTier.get().setStartDate(blockTime);
+                    oCurrentTier.get().setActive();
+                }
+
             } else {
                 // All tokens can be retrieved from the same tier.
-                currentTier.setTokensSold(currentTier.getTokensSold().add(tentativeTokens));
-                tokensTotal = tokensTotal.add(tentativeTokens);
+                currentTier.setTokensSold(currentTier.getTokensSold().add(tokens));
+                tokensTotal = tokensTotal.add(tokens);
                 remainingAmount = BigDecimal.ZERO;
             }
         }
@@ -101,11 +173,11 @@ public class BaseMonitor {
         }
     }
 
-    private BigDecimal calcAmountInTokens(BigDecimal currency, BigDecimal discountRate) {
-        return currency.divide(BigDecimal.ONE.subtract(discountRate), mc);
+    private BigDecimal convertCurrencyToTokens(BigDecimal currency, BigDecimal discountRate) {
+        return currency.divide(BigDecimal.ONE.subtract(discountRate), MATH_CONTEXT);
     }
 
-    private BigDecimal calcAmountInCurrency(BigDecimal tokens, BigDecimal discountRate) {
+    private BigDecimal convertTokensToCurrency(BigDecimal tokens, BigDecimal discountRate) {
         return tokens.multiply(BigDecimal.ONE.subtract(discountRate));
     }
 
@@ -113,15 +185,34 @@ public class BaseMonitor {
         return tier.getTokensSold().add(tokens).compareTo(tier.getTokenMax()) >= 0;
     }
 
-//    public boolean isLastTierActiveAndAmountOverflowsLastTier(BigDecimal amountUsd) {
-//        Optional<SaleTier> oLastTier = saleTierRepository.findFirstByOrderByEndDateDesc();
-//        if (oLastTier.isPresent()) {
-//            SaleTier lastTier = oLastTier.get();
-//            BigInteger tokens = convertWithDiscountRate(amountUsd, lastTier.getDiscount()).toBigInteger();
-//            boolean overFlowsLastTier = lastTier.getTokensSold().add(tokens).compareTo(lastTier.getTokenMax()) > 0;
-//            return  lastTier.isActive() && overFlowsLastTier;
-//        } else {
-//            throw new IllegalStateException("No Tier was found in database.");
-//        }
-//    }
+    protected boolean isTransactionUnprocessed(String txIdentifier) {
+        return !paymentLogRepository.existsByTxIdentifier(txIdentifier)
+            && !eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
+    }
+
+    protected EligibleForRefund eligibleForRefundInSatoshi(EligibleForRefund.RefundReason reason,
+                                                        BigInteger amount,
+                                                        String txoIdentifier,
+                                                        Investor investor) {
+
+        Unit unit = Unit.SATOSHI;
+        CurrencyType currency = CurrencyType.BTC;
+        EligibleForRefund entry =
+                new EligibleForRefund(reason, amount, unit, currency, investor, txoIdentifier);
+
+        return eligibleForRefundRepository.save(entry);
+    }
+
+    protected EligibleForRefund eligibleForRefundInWei(EligibleForRefund.RefundReason reason,
+                                                           BigInteger amount,
+                                                           String txoIdentifier,
+                                                           Investor investor) {
+
+        Unit unit = Unit.WEI;
+        CurrencyType currency = CurrencyType.ETH;
+        EligibleForRefund entry =
+                new EligibleForRefund(reason, amount, unit, currency, investor, txoIdentifier);
+
+        return eligibleForRefundRepository.save(entry);
+    }
 }

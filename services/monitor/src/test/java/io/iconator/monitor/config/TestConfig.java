@@ -16,5 +16,10 @@ public class TestConfig {
     public BaseMonitor baseMonitor(SaleTierRepository saleTierRepository) {
         return new BaseMonitor(saleTierRepository);
     }
+
+    @Bean
+    public MonitorAppConfig monitorAppConfig() {
+        return new MonitorAppConfig();
+    }
 }
 

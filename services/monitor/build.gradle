@@ -17,6 +17,8 @@ dependencies {
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
 
+    compile 'com.github.rholder:guava-retrying:2.0.0'
+
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

@@ -3,12 +3,15 @@ package io.iconator.monitor;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -18,17 +21,17 @@ import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
+import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.utils.Convert;
 import org.web3j.utils.Convert.Unit;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -39,9 +42,6 @@ public class EthereumMonitor extends BaseMonitor {
     private final static Logger LOG = LoggerFactory.getLogger(EthereumMonitor.class);
 
     private final Web3j web3j;
-    private final FxService fxService;
-    private final InvestorRepository investorRepository;
-    private final PaymentLogRepository paymentLogRepository;
     private boolean started = false;
     private Map<String, String> monitoredAddresses = new HashMap<>(); // public key -> address
 
@@ -52,98 +52,14 @@ public class EthereumMonitor extends BaseMonitor {
                            InvestorRepository investorRepository,
                            PaymentLogRepository paymentLogRepository,
                            SaleTierRepository saleTierRepository,
+                           EligibleForRefundRepository eligibleForRefundRepository,
                            ICOnatorMessageService messageService) {
-        super(saleTierRepository);
-        this.fxService = fxService;
+
+        super(saleTierRepository, investorRepository, paymentLogRepository,
+                eligibleForRefundRepository, fxService);
+
         this.web3j = web3j;
-        this.investorRepository = investorRepository;
-        this.paymentLogRepository = paymentLogRepository;
         this.messageService = messageService;
-    }
-
-    private void fundsReceived(String hash, String address, BigInteger wei, Long blockHeight, Long timestamp) {
-        LOG.debug("Detected funds received: wei {}, fromAddress {}, transaction hash {}, blockHeight {}.",
-                wei, address, hash, blockHeight);
-        // Get exchange rate
-        BigDecimal USDperETH;
-        try {
-            USDperETH = fxService.getUSDperETH(blockHeight);
-            LOG.debug("FX Service USDperETH {}, hash {}, address {}", USDperETH.toPlainString(), hash, address);
-        } catch (Exception e) {
-            LOG.error("Could not fetch exchange rate for ether block {}. {} {}",
-                    blockHeight, e.getMessage(), e.getCause());
-            return;
-        }
-        BigDecimal ethers = Convert.fromWei(new BigDecimal(wei), Unit.ETHER);
-        BigDecimal usdReceived = ethers.multiply(USDperETH);
-        BigDecimal amountTokens = BigDecimal.ZERO;
-
-        // Fetch email
-        String publicKey = monitoredAddresses.get(address);
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey);
-        String email = oInvestor.map((investor) -> investor.getEmail()).orElseGet(() -> {
-            LOG.error("Could not fetch email address for public key {} / address {}.", monitoredAddresses.get(address), address);
-            return null;
-        });
-
-        try {
-            LOG.debug("USD {} to be converted to tokens, hash {}", usdReceived.toPlainString(), hash);
-            Date dateTimestamp = timestamp != null ? new Date(Instant.ofEpochMilli(timestamp).getEpochSecond()) : null;
-
-//            ConversionResult result = calcTokensAndUpdateTiers(usdReceived, dateTimestamp);
-//            if (result.hasOverflow()) {
-//                // TODO: 2018-03-30 Claude:
-//                // Handle overflow of payment which could not be converted into tokens due to last tier being full.
-//            }
-//            amountTokens = result.getTokens();
-
-            PaymentLog paymentLog = new PaymentLog(hash, new Date(), dateTimestamp,
-                    CurrencyType.ETH, new BigDecimal(wei), USDperETH, usdReceived, email, amountTokens);
-            Optional<PaymentLog> oSavedPaymentLog = ofNullable(paymentLogRepository.save(paymentLog));
-            oSavedPaymentLog.ifPresent(p -> {
-                final String etherscanLink = "https://etherscan.io/tx/" + hash;
-
-                FundsReceivedEmailMessage fundsReceivedEmailMessage = new FundsReceivedEmailMessage(
-                        build(oInvestor.get()),
-                        new BigDecimal(wei),
-                        CurrencyType.ETH,
-                        etherscanLink,
-                        // TODO: 05.03.18 Guil:
-                        // calculate the tokens amount!
-                        null
-                );
-
-                messageService.send(fundsReceivedEmailMessage);
-
-                LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / Tokens Amount {}",
-                        ethers,
-                        p.getPaymentAmount(),
-                        p.getFxRate(),
-                        p.getEmail(),
-                        p.getCreateDate(),
-                        address,
-                        p.getTokenAmount());
-
-            });
-
-        } catch (DataIntegrityViolationException e) {
-            LOG.info("Pay-in already exists on the database: {} ETH / {} USD / {} FX / {} / Block: {} / Address: {}",
-                    ethers,
-                    usdReceived,
-                    USDperETH,
-                    email,
-                    blockHeight,
-                    address);
-        } catch (Exception e) {
-            LOG.error("Could not save pay-in: {} / {} USD / {} FX / {} / Block: {} / Address: {}",
-                    ethers,
-                    usdReceived,
-                    USDperETH,
-                    email,
-                    blockHeight,
-                    address);
-        }
-
     }
 
     /**
@@ -183,21 +99,14 @@ public class EthereumMonitor extends BaseMonitor {
             web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(
                     new DefaultBlockParameterNumber(startBlock))
                     .subscribe(tx -> {
-                        if (monitoredAddresses.get(tx.getTo()) != null) {
-                            // Money was paid to a monitored address
-                            BigInteger timestamp = null;
-                            try {
-                                Request<?, EthBlock> ethBlockRequest = web3j.ethGetBlockByNumber(new DefaultBlockParameterNumber(tx.getBlockNumber()), false);
-                                EthBlock blockRequest = ethBlockRequest.send();
-                                timestamp = blockRequest.getBlock().getTimestamp();
-                            } catch (Exception e) {
-                                LOG.error("Not able to fetch the block timestamp.");
-                            }
+
+                        if (monitoredAddresses.containsKey(tx.getTo())
+                                && isTransactionUnprocessed(tx.getHash())) {
 
                             try {
-                                fundsReceived(tx.getHash(), tx.getTo(), tx.getValue(), tx.getBlockNumber().longValue(), timestamp.longValue());
+                                processTransaction(tx);
                             } catch (Throwable e) {
-                                LOG.error("Error in fundsReceived:", e);
+                                LOG.error("Error while processing transaction.", e);
                             }
                         }
 
@@ -213,4 +122,153 @@ public class EthereumMonitor extends BaseMonitor {
         }
     }
 
+    private void processTransaction(Transaction tx) {
+        final String txIdentifier = tx.getHash();
+        final String receivingAddress = tx.getTo();
+        final BigInteger wei = tx.getValue();
+        final long blockHeight = tx.getBlockNumber().longValue();
+
+        LOG.debug("Detected funds received: wei {}, receiving address {}, transaction hash {}, " +
+                "blockHeight {}.", wei, receivingAddress, txIdentifier, blockHeight);
+
+        Investor investor;
+        try {
+            String publicKey = monitoredAddresses.get(receivingAddress);
+            investor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey).get();
+        } catch (NoSuchElementException e) {
+            LOG.error("Couldn't fetch investor for receiver address {}. Can't process transaction " +
+                    "without knowing the associated investor. Transaction {} must be refunded",
+                    receivingAddress, txIdentifier, e);
+            handleMissingInvestor(wei, txIdentifier);
+            return;
+        }
+
+        Date timestamp;
+        try {
+            Request<?, EthBlock> ethBlockRequest = web3j.ethGetBlockByNumber(
+                    new DefaultBlockParameterNumber(tx.getBlockNumber()),
+                    false);
+            EthBlock blockRequest = ethBlockRequest.send();
+            timestamp = new Date(blockRequest.getBlock().getTimestamp().longValue());
+        } catch (Exception e) {
+            LOG.error("Failed fetching block timestamp for transaction {}. Setting timestamp to " +
+                    "current time for the entry in the payment log.", txIdentifier);
+            timestamp = new Date();
+        }
+
+        BigDecimal USDperETH, usdReceived, ethers;
+        try {
+            USDperETH = fxService.getUSDperETH(blockHeight);
+            LOG.debug("FX Service USDperETH {}, hash {}, address {}", USDperETH.toPlainString(), txIdentifier, receivingAddress);
+            ethers = Convert.fromWei(new BigDecimal(wei), Unit.ETHER);
+            usdReceived = ethers.multiply(USDperETH);
+        } catch (USDETHFxException e) {
+            LOG.error("Couldn't get US dollar price per Ether for transaction {}. " +
+                    "Transaction must be refunded.", txIdentifier, e);
+            handleMissingFxRate(wei, txIdentifier, investor);
+            return;
+        } catch (RuntimeException e) {
+            LOG.error("Failed to fetch payment amount in US dollars for transaction {}. " +
+                    "Transaction must be refunded.", txIdentifier, e);
+            handleFailedConversionToUsd(wei, txIdentifier, investor);
+            return;
+        }
+
+        LOG.debug("USD {} to be converted to tokens, for transaction {}",
+                usdReceived.toPlainString(), txIdentifier);
+        PaymentLog paymentLog = paymentLogRepository.save(
+                new PaymentLog(
+                        txIdentifier,
+                        new Date(),
+                        timestamp,
+                        CurrencyType.ETH,
+                        new BigDecimal(wei),
+                        USDperETH,
+                        usdReceived,
+                        investor,
+                        BigDecimal.ZERO));
+
+        ConversionResult conversionResult;
+        try {
+            conversionResult = convertToTokensAndUpdateTiers(usdReceived, timestamp);
+        } catch (Throwable e) {
+            LOG.error("Failed to convert payment to tokens for transaction {}. " +
+                    "Transaction must be refunded.", txIdentifier, e);
+            handleFailedTokenConversion(wei, txIdentifier, investor);
+            return;
+        }
+        BigDecimal tokenAmount = new BigDecimal(conversionResult.getTokens());
+        paymentLog.setTokenAmount(tokenAmount);
+        if (conversionResult.hasOverflow()) {
+            LOG.info("Final tier is full. Overflow will be refunded for Transaction {}", txIdentifier);
+            handleFinalTierOverflow(conversionResult.getOverflow(), USDperETH, txIdentifier, investor);
+        }
+
+        final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;
+
+        messageService.send(new FundsReceivedEmailMessage(
+                build(investor),
+                new BigDecimal(wei),
+                CurrencyType.ETH,
+                etherscanLink,
+                tokenAmount));
+
+        LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
+                        "Tokens Amount {}",
+                ethers,
+                paymentLog.getPaymentAmount(),
+                paymentLog.getFxRate(),
+                investor.getEmail(),
+                paymentLog.getCreateDate(),
+                receivingAddress,
+                paymentLog.getTokenAmount());
+    }
+
+    private void handleMissingFxRate(BigInteger wei, String txIdentifier, Investor investor) {
+        eligibleForRefundInWei(
+                EligibleForRefund.RefundReason.MISSING_FX_RATE,
+                wei,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleMissingInvestor(BigInteger wei, String txIdentifier) {
+        eligibleForRefundInWei(
+                EligibleForRefund.RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
+                wei,
+                txIdentifier,
+                null);
+    }
+
+    private void handleFailedConversionToUsd(BigInteger wei, String txIdentifier, Investor investor) {
+        eligibleForRefundInSatoshi(
+                EligibleForRefund.RefundReason.FAILED_CONVERSION_TO_USD,
+                wei,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleFailedTokenConversion(BigInteger wei, String txIdentifier, Investor investor) {
+        eligibleForRefundInSatoshi(
+                EligibleForRefund.RefundReason.TOKEN_CONVERSION_FAILED,
+                wei,
+                txIdentifier,
+                investor);
+    }
+
+    private void handleFinalTierOverflow(BigDecimal usd, BigDecimal usdPerEth, String txIdentifier,
+                                         Investor investor) {
+
+        BigInteger wei = convertUsdToWei(usd, usdPerEth);
+        eligibleForRefundInSatoshi(
+                EligibleForRefund.RefundReason.FINAL_TIER_OVERFLOW,
+                wei,
+                txIdentifier,
+                investor);
+    }
+
+    private static BigInteger convertUsdToWei(BigDecimal usd, BigDecimal usdPerEth) {
+        BigDecimal ethers = usd.divide(usdPerEth, new MathContext(34, RoundingMode.DOWN));
+        return Convert.toWei(ethers, Unit.ETHER).toBigInteger();
+    }
 }

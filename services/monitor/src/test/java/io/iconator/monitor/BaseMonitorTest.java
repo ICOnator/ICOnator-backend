@@ -14,12 +14,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
+import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -62,6 +66,7 @@ public class BaseMonitorTest {
         saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
         saleTierRepository.save(createTier(2, T2_START_DATE, T2_END_DATE, T2_DISCOUNT, 2000L, false));
         saleTierRepository.save(createTier(3, T3_START_DATE, T3_END_DATE, T3_DISCOUNT, 3000L, false));
+        saleTierRepository.flush();
     }
 
     @After
@@ -74,7 +79,12 @@ public class BaseMonitorTest {
         final BigDecimal currency = new BigDecimal(200);
         final BigInteger expectedTokensSold = BigInteger.valueOf(400);
         final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = baseMonitor.calcTokensAndUpdateTiers(currency, blockTime);
+        ConversionResult result = null;
+        try {
+            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(expectedTokensSold));
 
@@ -104,7 +114,12 @@ public class BaseMonitorTest {
     public void testBuyTokensFillingUpFirstTier() {
         final BigDecimal currency = BigDecimal.valueOf(500L);
         final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = baseMonitor.calcTokensAndUpdateTiers(currency, blockTime);
+        ConversionResult result = null;
+        try {
+            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(T1_MAX));
 
@@ -135,7 +150,12 @@ public class BaseMonitorTest {
         final BigDecimal currency = BigDecimal.valueOf(500L + 160L);
         final BigInteger tokensFromT2 = BigInteger.valueOf(200L);
         final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = baseMonitor.calcTokensAndUpdateTiers(currency, blockTime);
+        ConversionResult result = null;
+        try {
+            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(T1_MAX.add(tokensFromT2)));
 
@@ -162,11 +182,61 @@ public class BaseMonitorTest {
     }
 
     @Test
+    public void testMultipleBuyTokensReachingIntoSecondTier() {
+        final BigDecimal currency1 = BigDecimal.valueOf(400L);
+        final BigDecimal currency2 = BigDecimal.valueOf(100L + 20L);
+        final BigInteger tokensFromT2 = BigInteger.valueOf(25L);
+        final Date blockTime1 = Date.valueOf("2018-01-02");
+        final Date blockTime2 = Date.valueOf("2018-01-03");
+
+        BigDecimal overflow = BigDecimal.ZERO;
+        BigInteger tokens = BigInteger.ZERO;
+        try {
+            ConversionResult result = baseMonitor.convertToTokensAndUpdateTiers(currency1, blockTime1);
+            overflow = overflow.add(result.getOverflow());
+            tokens = tokens.add(result.getTokens());
+            result = baseMonitor.convertToTokensAndUpdateTiers(currency2, blockTime2);
+            overflow = overflow.add(result.getOverflow());
+            tokens = tokens.add(result.getTokens());
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(0, overflow.compareTo(BigDecimal.ZERO));
+        assertEquals(0, tokens.compareTo(T1_MAX.add(tokensFromT2)));
+
+        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        if (oActiveTier.isPresent()) {
+            assertTier(oActiveTier.get(), T2_NO, blockTime2, T2_END_DATE, tokensFromT2, true);
+        } else {
+            fail("Should have found active tier, but didn't.");
+        }
+
+        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime2, T1_MAX, false);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
+        }
+
+        oTier = saleTierRepository.findByTierNo(T3_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
+        }
+    }
+
+    @Test
     public void testBuyTokensOverflowingThirdTier() {
         final BigDecimal currency = BigDecimal.valueOf(500L + 1600L + 2790L);
         final BigDecimal expectedOverflow = BigDecimal.valueOf(90L);
         final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = baseMonitor.calcTokensAndUpdateTiers(currency, blockTime);
+        ConversionResult result = null;
+        try {
+            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
         assertEquals(0, result.getOverflow().compareTo(expectedOverflow));
         assertEquals(0, result.getTokens().compareTo(T1_MAX.add(T2_MAX).add(T3_MAX)));
 
@@ -197,10 +267,43 @@ public class BaseMonitorTest {
         }
     }
 
-    @Test
-    public void testRoundingBehavior() {
-
-    }
+//    @Test
+//    public void testTransactional() {
+//        try {
+//            doSomething();
+//        } catch (OptimisticLockException e) {
+//            return;
+//        } catch (Exception e) {
+//            fail("Other exception than OptimisticLockException was thrown.");
+//        }
+//        fail("Should have thrown an OptimisticLockException, but didn't");
+//    }
+//
+//    @Transactional(propagation = Propagation.REQUIRES_NEW,
+//            rollbackFor = OptimisticLockException.class,
+//            isolation = Isolation.SERIALIZABLE)
+//    public void doSomething() throws OptimisticLockException, InterruptedException {
+//        CountDownLatch latch = new CountDownLatch(1);
+//        Runnable r = () -> {
+//            doSomethingInBetween();
+//            latch.countDown();
+//        };
+//
+//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
+//        tier.setDiscount(BigDecimal.ZERO);
+//        new Thread(r).start();
+//        latch.await();
+//        tier.setTokensSold(BigInteger.ZERO);
+//    }
+//
+//    @Transactional(propagation = Propagation.REQUIRES_NEW,
+//            rollbackFor = OptimisticLockException.class,
+//            isolation = Isolation.SERIALIZABLE)
+//    public void doSomethingInBetween() throws OptimisticLockException{
+//        saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
+//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
+//        tier.setTokensSold(BigInteger.TEN);
+//    }
 
     private void assertTier(SaleTier tier, int tierNo, Date startDate, Date endDate,
                             BigInteger tokensSold, boolean isActive) {
