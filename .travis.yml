@@ -1,6 +1,8 @@
 language: java
 jdk:
 - oraclejdk8
+services:
+- docker
 deploy:
   - provider: releases
     api_key:
