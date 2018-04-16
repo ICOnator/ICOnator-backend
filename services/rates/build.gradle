@@ -36,8 +36,8 @@ dependencies {
 }
 
 docker {
-    name "iconator/${jar.baseName}"
-    tags "${dockerVersion}"
+    name dockerImageName.isEmpty() ? "iconator/${jar.baseName}" : "iconator/${jar.baseName}-${dockerImageName}"
+    tags dockerVersion.isEmpty() ? "latest" : "${dockerVersion}"
     files bootJar.archivePath
     dockerfile file('../../docker/Dockerfile')
     buildArgs(['JAR_FILE': "${bootJar.archiveName}", 'JAR_FILE_NAME': "${bootJar.archiveName}"])

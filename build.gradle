@@ -38,7 +38,8 @@ subprojects {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
-    ext.dockerVersion = project.hasProperty('dockerVersion') ? project['dockerVersion'] : '0.0.1'
+    ext.dockerVersion = project.hasProperty('dockerVersion') ? project['dockerVersion'] : ''
+    ext.dockerImageName = project.hasProperty('dockerImageName') ? project['dockerImageName'] : ''
 
 }
 

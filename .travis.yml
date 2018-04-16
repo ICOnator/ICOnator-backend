@@ -1,20 +1,32 @@
 language: java
 jdk:
 - oraclejdk8
-services:
-- docker
 deploy:
-  provider: releases
-  api_key:
-    secure: XLxDaYYF45g0jz1GP7gP0jdarUq+eAbKoWCimFc7iFBslE8G4YBTYdvQ5JK/ejPgB/U7p69ClyMNDd+TmAFJNOBsDa+yq50A5zoNKp9VOpQYs63sWmnHjAb4zysDpz76ojmcpFY3G9gq2uiDhdh4uOc/UvL/WMC5GHI5ZEv915MsEDsn/V5nHduXHwO+f+1GO5J+b8ilAz1mz9vqqUcW/1bcr+VJ42S+TXUbsvy+cl9pSyqpX9GQ3vHsubJb0LHDqbWvEri7RphddwekjUscK4bWZ9WbL1/rudy2WOSP7ivX3f1PZMAp4cQevIEG2x9ZGbQBsSIwBeM6Y4nyRpwOVnN/stqkQdlpuqatwMbusLbzWSXY73wsKFJQyX3eHAuBbUYcBSSnAvRcNMJp9I7c6L82qDjf7ScvTWjuvv+jveUMsxLXE8e/8GmknHCh7ClAUjwq7agjmvCe5e2vKrp5oSNIQzw/UAkAZDg06NMkyOJ3dFv9CXBQhvTpkUhTFEy2dQWuydAahz8tvRCevK6K5Kr69MRzkWp59RfK0v36sEnTDFqir9TG4EKenU4cPwKhNIjn+cauAd4WUJWIlbahioiw+2Eg3sM8XaCCKW14iZeU6XldNOpXAh0kDGtY4V6o8CnYgph72t+HYDQbMja8IxUj+U8I6tWLWc7eMyKYyEk=
-  file:
-  - services/core/build/libs/core-exec.jar
-  - services/email/build/libs/email-exec.jar
-  - services/monitor/build/libs/monitor-exec.jar
-  - services/rates/build/libs/rates-exec.jar
-  skip_cleanup: true
-  on:
-    tags: true
+  - provider: releases
+    api_key:
+      secure: XLxDaYYF45g0jz1GP7gP0jdarUq+eAbKoWCimFc7iFBslE8G4YBTYdvQ5JK/ejPgB/U7p69ClyMNDd+TmAFJNOBsDa+yq50A5zoNKp9VOpQYs63sWmnHjAb4zysDpz76ojmcpFY3G9gq2uiDhdh4uOc/UvL/WMC5GHI5ZEv915MsEDsn/V5nHduXHwO+f+1GO5J+b8ilAz1mz9vqqUcW/1bcr+VJ42S+TXUbsvy+cl9pSyqpX9GQ3vHsubJb0LHDqbWvEri7RphddwekjUscK4bWZ9WbL1/rudy2WOSP7ivX3f1PZMAp4cQevIEG2x9ZGbQBsSIwBeM6Y4nyRpwOVnN/stqkQdlpuqatwMbusLbzWSXY73wsKFJQyX3eHAuBbUYcBSSnAvRcNMJp9I7c6L82qDjf7ScvTWjuvv+jveUMsxLXE8e/8GmknHCh7ClAUjwq7agjmvCe5e2vKrp5oSNIQzw/UAkAZDg06NMkyOJ3dFv9CXBQhvTpkUhTFEy2dQWuydAahz8tvRCevK6K5Kr69MRzkWp59RfK0v36sEnTDFqir9TG4EKenU4cPwKhNIjn+cauAd4WUJWIlbahioiw+2Eg3sM8XaCCKW14iZeU6XldNOpXAh0kDGtY4V6o8CnYgph72t+HYDQbMja8IxUj+U8I6tWLWc7eMyKYyEk=
+    file:
+    - services/core/build/libs/core-exec.jar
+    - services/email/build/libs/email-exec.jar
+    - services/monitor/build/libs/monitor-exec.jar
+    - services/rates/build/libs/rates-exec.jar
+    skip_cleanup: true
+    on:
+      tags: true
+      all_branches: true
+      condition: "$TRAVIS_TAG =~ ^release-.*$"
+  - provider: script
+    script: export ICONATOR_DOCKER_VERSION=$TRAVIS_TAG && sh docker/docker_push.sh
+    skip_cleanup: true
+    on:
+      tags: true
+      all_branches: true
+      condition: "$TRAVIS_TAG =~ ^release-.*$"
+  - provider: script
+    script: export ICONATOR_DOCKER_IMAGE_NAME=master && sh docker/docker_push.sh
+    skip_cleanup: true
+    on:
+      branch: master
 notifications:
   slack:
     secure: f33PFQnTCfuFT8sEd1SrDdSiXP7h6U8seVHw+oXOmsDF307uiY+ZEVlCPpA4ijxAirgda0zz/eVc3ez1zZmGScV3aiLXUog3VJHiBlddkooeCGXajYCRqoHLKI92oGbFhHWZxaEeDlNwOkGiWF1jplODrUP1OiFIRaUFpaKnJPfe1K4oM653qW30fFgi4JcLkkPffc6rPVOaiMugP7Hg1OOLeKal0SXnKxxiZbcS+hjfe2e5nLzl6Smu6gk73FeZl8tttC6XqpbMltv4/6pJrtdr6uakCSHWPtvYWLtEHmXrm1ucH1Ri0DHoZsws+R+nxVmc9QCNfOGP7wQr8D88E6C1Zx+J6x9T0cJL9dE7aNmxXkMScr6eFSLjla3FZZf/L6czl6VC+8slOup/Pd0i8wblvoZDkcpHNx989Iyej4oCZP521wrsWJk4U81zqaDnKvZMMgWaySm5EWl7DoGsapdH2ZimYrdZkXIB8i6/pRcNuq+7svqwUnkE4yPW88Q+hJ8xR5pZ9CRVPqSw2StqDOtKE4BHjI5tdhSfG6NDQh1vEW5RXGNxfDaNb1wPI6x6lXj5DQfqp0vXjVqh6o/lQQwX9pbXy/Q8hCN8Zm+VL+b0Tvj7DQF/mBu08JwqQ2gW+hOfUBAuGbsGlyZG4VWXy74tmGCcQ9m98b3Tzt+cz4U=
