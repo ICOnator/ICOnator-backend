@@ -6,9 +6,8 @@ bootJar.enabled = false
 
 dependencies {
     compile project(':commons:model')
-    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compile project(':commons:sql-repository')
     testCompile project(':commons:test-utils')
     testCompile 'com.h2database:h2'
-    testCompile 'org.apache.commons:commons-math3:3.5'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

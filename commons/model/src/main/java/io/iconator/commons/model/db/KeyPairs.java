@@ -21,12 +21,21 @@ public class KeyPairs {
     @Column(name = "public_eth", unique = true, nullable = false)
     private String publicEth;
 
+    @Column(name = "available", nullable = false)
+    private Boolean available = true;
+
     public KeyPairs() {
     }
 
     public KeyPairs(String publicBtc, String publicEth) {
         this.publicBtc = publicBtc;
         this.publicEth = publicEth;
+    }
+
+    public KeyPairs(String publicBtc, String publicEth, Boolean available) {
+        this.publicBtc = publicBtc;
+        this.publicEth = publicEth;
+        this.available = available;
     }
 
     public long getId() {
@@ -40,4 +49,14 @@ public class KeyPairs {
     public String getPublicEth() {
         return publicEth;
     }
+
+    public Boolean getAvailable() {
+        return available;
+    }
+
+    public KeyPairs setAvailable(Boolean available) {
+        this.available = available;
+        return this;
+    }
+
 }

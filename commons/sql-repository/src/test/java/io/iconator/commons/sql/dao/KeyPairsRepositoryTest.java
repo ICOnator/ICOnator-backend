@@ -4,6 +4,8 @@ import io.iconator.commons.model.db.KeyPairs;
 import io.iconator.commons.sql.dao.config.TestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,6 +19,8 @@ import static org.junit.Assert.assertTrue;
 @ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
 public class KeyPairsRepositoryTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(KeyPairsRepositoryTest.class);
 
     @Autowired
     private KeyPairsRepository keyPairsRepository;
