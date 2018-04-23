@@ -5,7 +5,14 @@ bootJar {
     launchScript()
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/ethereum/maven/' }
+}
+
 dependencies {
+    compile 'io.iconator:testrpcj:1.0.0'
     compile project(':services:core')
     compile project(':services:email')
     compile project(':services:monitor')

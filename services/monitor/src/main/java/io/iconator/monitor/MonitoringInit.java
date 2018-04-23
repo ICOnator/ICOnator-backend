@@ -8,6 +8,8 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -19,6 +21,10 @@ import static java.util.Optional.ofNullable;
 public class MonitoringInit {
 
     private final static Logger LOG = LoggerFactory.getLogger(MonitoringInit.class);
+
+    private final static int WAIT_FOR_ETH_MILLIS = 60000;
+    private final static int WAIT_ETH_RETRY_MILLIS = 2000;
+    private final static int NR_RETRIES = WAIT_FOR_ETH_MILLIS / WAIT_ETH_RETRY_MILLIS;
 
     @Autowired
     private MonitorAppConfig appConfig;
@@ -35,15 +41,27 @@ public class MonitoringInit {
     @Autowired
     private ICOnatorMessageService messageService;
 
-    @PostConstruct
-    private void init() throws Exception {
-        try {
-            initMonitors();
-        } catch (HttpHostConnectException e) {
-            LOG.error("Could not connect to ethereum full node on {}: {}",
-                    appConfig.getEthereumNodeUrl(), e.getMessage());
-            System.exit(1);
-        }
+    @EventListener({ContextRefreshedEvent.class})
+    void contextRefreshedEvent() {
+        new Thread(() -> {
+            for(int i=0;i<NR_RETRIES;i++)
+                try {
+                    initMonitors();
+                    LOG.debug("started monitor successfully");
+                    return; //everything is fine, exit thread
+                } catch (Throwable t) {
+                    LOG.info("Could not connect to ethereum full node on {}: {}. Trying again in {} msec.",
+                            appConfig.getEthereumNodeUrl(), t.getMessage(), WAIT_ETH_RETRY_MILLIS);
+                    try {
+                        Thread.sleep(WAIT_ETH_RETRY_MILLIS);
+                    } catch (InterruptedException e) {
+                        //try hard
+                    }
+                }
+            LOG.error("Could not connect to ethereum full node on {}. Giving up",
+                    appConfig.getEthereumNodeUrl());
+            //giving up, exit thread
+        }).start();
     }
 
     private void initMonitors() throws Exception {
