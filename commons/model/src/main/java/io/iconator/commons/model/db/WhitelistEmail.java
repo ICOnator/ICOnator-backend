@@ -15,18 +15,18 @@ public class WhitelistEmail {
     @Column(name = "id", updatable = false)
     private long id;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
     @Temporal(TemporalType.DATE)
-    @Column(name = "joined_date")
-    private Date joinedDate;
+    @Column(name = "subscription_date")
+    private Date subscriptionDate;
 
     public WhitelistEmail() {}
 
-    public WhitelistEmail(String email, Date joinedDate) {
+    public WhitelistEmail(String email, Date subscriptionDate) {
         this.email = email;
-        this.joinedDate = joinedDate;
+        this.subscriptionDate = subscriptionDate;
     }
 
     public String getEmail() {
@@ -37,11 +37,11 @@ public class WhitelistEmail {
         this.email = email;
     }
 
-    public Date getJoinedDate() {
-        return joinedDate;
+    public Date getSubscriptionDate() {
+        return subscriptionDate;
     }
 
-    public void setJoinedDate(Date joinedDate) {
-        this.joinedDate = joinedDate;
+    public void setSubscriptionDate(Date subscriptionDate) {
+        this.subscriptionDate = subscriptionDate;
     }
 }

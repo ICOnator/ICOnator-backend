@@ -9,5 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface WhitelistEmailRepository extends JpaRepository<WhitelistEmail, Long> {
+
     Optional<WhitelistEmail> findByEmail(String email);
+
 }
