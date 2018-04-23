@@ -9,6 +9,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven { url 'https://dl.bintray.com/ethereum/maven/' }
+    maven { url 'https://tomp2p.net/dev/mnv/' }
 }
 
 dependencies {
