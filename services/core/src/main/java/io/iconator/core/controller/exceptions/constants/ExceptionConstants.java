@@ -26,4 +26,7 @@ public class ExceptionConstants {
     public final static String  AVAILABLE_KEY_PAIR_NOT_FOUND_REASON = "Not found an available address on the key pair pool.";
     public final static int     AVAILABLE_KEY_PAIR_NOT_FOUND_CODE = 7;
 
+    public final static String  RECAPTCHA_INVALID_REASON = "Recaptcha response code could not be validated.";
+    public final static int     RECAPTCHA_INVALID_CODE = 8;
+
 }

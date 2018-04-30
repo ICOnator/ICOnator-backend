@@ -1,7 +1,9 @@
 package io.iconator.core.controller;
 
+import io.iconator.commons.recaptcha.RecaptchaClientService;
 import io.iconator.core.controller.exceptions.BaseException;
 import io.iconator.core.controller.exceptions.ConfirmationTokenNotFoundException;
+import io.iconator.core.controller.exceptions.RecaptchaInvalidException;
 import io.iconator.core.controller.exceptions.UnexpectedException;
 import io.iconator.core.dto.AddressResponse;
 import io.iconator.core.dto.RegisterRequest;
@@ -22,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
+import static java.util.Optional.ofNullable;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -61,19 +65,28 @@ public class RegisterController {
     @Autowired
     private BitcoinAddressService bitcoinAddressService;
 
+    @Autowired
+    private RecaptchaClientService recaptchaClientService;
+
     public RegisterController() {
 
     }
 
     @RequestMapping(value = "/register", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest,
-                                      @Context HttpServletRequest httpServletRequest)
+    public ResponseEntity<?> register(@RequestParam(value = "g-recaptcha-response", required = false) String recaptchaResponseToken,
+                                      @Valid @RequestBody RegisterRequest registerRequest,
+                                      @Context HttpServletRequest requestContext)
             throws BaseException {
         // Get IP address from request
-        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
-        if (ipAddress == null)
-            ipAddress = httpServletRequest.getRemoteAddr();
+        String ipAddress = getIPAddress(requestContext);
+
+        // Verify captcha
+        boolean recaptchaVerified = recaptchaClientService.verify(ipAddress, recaptchaResponseToken);
+        if (!recaptchaVerified) {
+            throw new RecaptchaInvalidException();
+        }
+
         LOG.info("/register called from {} with email: {}", ipAddress, registerRequest.getEmail());
 
         try {
@@ -115,12 +128,11 @@ public class RegisterController {
 
     @RequestMapping(value = "/register/{emailConfirmationToken}/validate", method = GET)
     public ResponseEntity<?> isConfirmationTokenValid(@Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @PathVariable("emailConfirmationToken") String emailConfirmationToken,
-                                                      @Context HttpServletRequest httpServletRequest)
+                                                      @Context HttpServletRequest requestContext)
             throws BaseException {
         // Get IP address from request
-        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
-        if (ipAddress == null)
-            ipAddress = httpServletRequest.getRemoteAddr();
+        String ipAddress = getIPAddress(requestContext);
+
         LOG.info("/validate called from {} with token {}", ipAddress, emailConfirmationToken);
 
         Optional<Investor> oInvestor = Optional.empty();
@@ -148,6 +160,14 @@ public class RegisterController {
 
     private Investor createInvestor(String email, String randomUUID, String ipAddress) {
         return new Investor(new Date(), email, randomUUID, ipAddress);
+    }
+
+    private String getIPAddress(HttpServletRequest requestContext) {
+        String ipAddress = requestContext.getHeader("X-Real-IP");
+        if (ipAddress == null) {
+            ipAddress = requestContext.getRemoteAddr();
+        }
+        return ipAddress;
     }
 
 }

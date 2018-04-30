@@ -13,7 +13,7 @@ import static org.springframework.boot.SpringApplication.run;
 @SpringBootApplication
 @EnableJpaRepositories({"io.iconator.commons.sql.dao"})
 @EntityScan({"io.iconator.commons.model.db"})
-@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.commons.auth", "io.iconator.core"})
+@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.commons.auth", "io.iconator.commons.recaptcha", "io.iconator.core"})
 public class CoreApplication {
 
     static { ConfigNaming.set("core.application"); }
