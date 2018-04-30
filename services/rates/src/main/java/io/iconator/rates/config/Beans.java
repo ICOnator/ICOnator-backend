@@ -1,9 +1,9 @@
 package io.iconator.rates.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import info.blockchain.api.blockexplorer.BlockExplorer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.randomWait;
-
-;
 
 @Configuration
 public class Beans {
