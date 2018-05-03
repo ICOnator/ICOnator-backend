@@ -23,7 +23,7 @@ public interface KeyPairsRepository extends JpaRepository<KeyPairs, Long> {
     long getFreshKeyID();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<KeyPairs> findFirstOptionalByAvailableOrderByIdDesc(Boolean used);
+    Optional<KeyPairs> findFirstOptionalByAvailableOrderByIdAsc(Boolean used);
 
     @Override
     @Lock(LockModeType.PESSIMISTIC_WRITE)

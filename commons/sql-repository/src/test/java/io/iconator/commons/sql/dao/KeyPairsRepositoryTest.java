@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Optional;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
@@ -32,6 +33,23 @@ public class KeyPairsRepositoryTest {
         assertTrue(kp.isPresent());
         assertTrue(kp.get().getPublicBtc() != null);
         assertTrue(kp.get().getPublicEth() != null);
+    }
+
+    @Test
+    public void testFindOptionalById() {
+        Optional<KeyPairs> optionalKeyPairs = keyPairsRepository.findById(1L);
+        System.out.println("Id returned: " + optionalKeyPairs.get().getId());
+        assertTrue(optionalKeyPairs.isPresent());
+        assertEquals(1, optionalKeyPairs.get().getId());
+        assertEquals(true, optionalKeyPairs.get().getAvailable());
+    }
+
+    @Test
+    public void testFindFirstOptionalByAvailableOrderByIdDesc() {
+        Optional<KeyPairs> optionalFindFirstAvailable = keyPairsRepository.findFirstOptionalByAvailableOrderByIdAsc(new Boolean(true));
+        assertTrue(optionalFindFirstAvailable.isPresent());
+        assertEquals(1, optionalFindFirstAvailable.get().getId());
+        assertEquals(true, optionalFindFirstAvailable.get().getAvailable());
     }
 
 }
