@@ -27,7 +27,7 @@ public class KeyPairsRepositoryService {
     public Optional<KeyPairs> getFreshKey() {
         try {
             return this.keyPairsRepository
-                    .findFirstOptionalByAvailableOrderByIdDesc(new Boolean(true))
+                    .findFirstOptionalByAvailableOrderByIdAsc(new Boolean(true))
                     .map((k) -> k.setAvailable(new Boolean(false)))
                     .map((k) -> this.keyPairsRepository.save(k));
         } catch (Exception e) {
