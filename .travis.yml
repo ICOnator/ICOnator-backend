@@ -16,14 +16,14 @@ deploy:
     on:
       tags: true
       all_branches: true
-      condition: "$TRAVIS_TAG =~ ^release-.*$"
+      condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
   - provider: script
     script: export ICONATOR_DOCKER_VERSION=$TRAVIS_TAG && sh docker/docker_push.sh
     skip_cleanup: true
     on:
       tags: true
       all_branches: true
-      condition: "$TRAVIS_TAG =~ ^release-.*$"
+      condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
   - provider: script
     script: export ICONATOR_DOCKER_IMAGE_NAME=master && sh docker/docker_push.sh
     skip_cleanup: true
