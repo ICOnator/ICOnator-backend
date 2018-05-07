@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/ICOnator/ICOnator-backend.svg?token=eUVyeGxidafMUjk8JWFo&branch=master)](https://travis-ci.com/ICOnator/ICOnator-backend.svg?token=eUVyeGxidafMUjk8JWFo&branch=master)
+[![Build Status](https://travis-ci.org/ICOnator/ICOnator-backend.svg?branch=master)](https://travis-ci.org/ICOnator/ICOnator-backend)
 
 # ICOnator
 
