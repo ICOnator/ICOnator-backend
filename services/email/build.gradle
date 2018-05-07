@@ -15,6 +15,7 @@ dependencies {
     compile project(':commons:mail-service')
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
+    compile project(':commons:security-actuator')
 
     compile 'org.springframework.boot:spring-boot-starter-actuator'
 

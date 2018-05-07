@@ -16,6 +16,7 @@ dependencies {
     compile project(':commons:amqp-service')
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
+    compile project(':commons:security-actuator')
 
     compile 'com.github.rholder:guava-retrying:2.0.0'
 

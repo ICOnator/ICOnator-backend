@@ -18,6 +18,7 @@ dependencies {
     compile project(':commons:model')
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
+    compile project(':commons:security-actuator')
 
     compile 'org.apache.commons:commons-lang3:3.5'
     compile 'org.apache.commons:commons-math3:3.5'
