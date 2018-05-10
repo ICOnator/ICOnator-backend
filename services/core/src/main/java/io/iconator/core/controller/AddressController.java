@@ -1,5 +1,14 @@
 package io.iconator.core.controller;
 
+import io.iconator.commons.amqp.model.SetWalletAddressMessage;
+import io.iconator.commons.amqp.model.SummaryEmailMessage;
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.bitcoin.BitcoinAddressService;
+import io.iconator.commons.ethereum.EthereumAddressService;
+import io.iconator.commons.model.db.Investor;
+import io.iconator.commons.model.db.KeyPairs;
+import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.commons.sql.dao.KeyPairsRepository;
 import io.iconator.core.controller.exceptions.AuthorizationHeaderMissingException;
 import io.iconator.core.controller.exceptions.AvailableKeyPairNotFoundException;
 import io.iconator.core.controller.exceptions.BaseException;
@@ -12,15 +21,7 @@ import io.iconator.core.controller.exceptions.WalletAddressAlreadySetException;
 import io.iconator.core.dto.AddressRequest;
 import io.iconator.core.dto.AddressResponse;
 import io.iconator.core.utils.Constants;
-import io.iconator.commons.amqp.model.SetWalletAddressMessage;
-import io.iconator.commons.amqp.model.SummaryEmailMessage;
-import io.iconator.commons.amqp.service.ICOnatorMessageService;
-import io.iconator.commons.bitcoin.BitcoinAddressService;
-import io.iconator.commons.ethereum.EthereumAddressService;
-import io.iconator.commons.model.db.Investor;
-import io.iconator.commons.model.db.KeyPairs;
-import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.KeyPairsRepository;
+import io.iconator.core.utils.IPAddressUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,16 +72,13 @@ public class AddressController {
             produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<AddressResponse> address(@Valid @RequestBody AddressRequest addressRequest,
                                                    @Valid @Size(max = Constants.UUID_CHAR_MAX_SIZE) @RequestHeader(value = "Authorization") String authorizationHeader,
-                                                   @Context HttpServletRequest httpServletRequest)
+                                                   @Context HttpServletRequest requestContext)
             throws BaseException {
         // Get token
         String emailConfirmationToken = getEmailConfirmationToken(authorizationHeader);
 
         // Get IP address from request
-        String ipAddress = httpServletRequest.getHeader("X-Real-IP");
-        if (ipAddress == null) {
-            ipAddress = httpServletRequest.getRemoteAddr();
-        }
+        String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         LOG.info("/address called from {} with token {}, address {}, refundBTC {} refundETH {}",
                 ipAddress,

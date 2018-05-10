@@ -15,6 +15,7 @@ import io.iconator.commons.bitcoin.BitcoinAddressService;
 import io.iconator.commons.ethereum.EthereumAddressService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.core.utils.IPAddressUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +80,7 @@ public class RegisterController {
                                       @Context HttpServletRequest requestContext)
             throws BaseException {
         // Get IP address from request
-        String ipAddress = getIPAddress(requestContext);
+        String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         // Verify captcha
         boolean recaptchaVerified = recaptchaClientService.verify(ipAddress, recaptchaResponseToken);
@@ -131,7 +132,7 @@ public class RegisterController {
                                                       @Context HttpServletRequest requestContext)
             throws BaseException {
         // Get IP address from request
-        String ipAddress = getIPAddress(requestContext);
+        String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         LOG.info("/validate called from {} with token {}", ipAddress, emailConfirmationToken);
 
@@ -160,14 +161,6 @@ public class RegisterController {
 
     private Investor createInvestor(String email, String randomUUID, String ipAddress) {
         return new Investor(new Date(), email, randomUUID, ipAddress);
-    }
-
-    private String getIPAddress(HttpServletRequest requestContext) {
-        String ipAddress = requestContext.getHeader("X-Real-IP");
-        if (ipAddress == null) {
-            ipAddress = requestContext.getRemoteAddr();
-        }
-        return ipAddress;
     }
 
 }
