@@ -4,31 +4,31 @@ jdk:
 services:
 - docker
 deploy:
-  - provider: releases
-    api_key:
-      secure: cnm97Hjiemox19I+ZE6VzD3qWYh//IgZQwIq5hyylm2pbr8jY+0Vot1gSVsNZ3ul1d1hVCsDVxuAsGLb8mjNHsOKmwklq6ASQhpfPU5UJG4ygtxiMf6CHxq6H3ypLd4XKvEILrTm/3XXYDXGaXe85f8lnRNL4KUDAHoTOudgLIG+ZnHGgxGyeKz/rvsXRtjFhmhnDn3y0hsZdPX+1cH1cecRU8YguD4aEBsuazvQ2I/eGICLU2D8kByFCTAuWcXVgj/pke8kGZWjb1VLw+SjSK3FtrOvocUPpJsUqFBDNJWrZTsOwxYVCs2dQUUCa1XcBRXH7bZ8sJ0VYwvPwQpF45hv9dZZHRNzKIUmNTf6dUVv5EPFewtByGQoClZvKD/fXSIvge3qZfKxBshCZEs8CASEVRIHhz2IlJQ4sVaXrzt3g3rqH8vdL59zi92UKuFtmi9HlO4Q67TIC+TM5rdZj+FttSx7WAWZ2fpB++vJx4fUHsLt8KdhbHGw49q4QanVAZj/lzRmNixIR57iU9JmhBT/grkEwdIE8yCe1TP2XBrBAeo0FzKOjEwSoRxAGXSxgXRWZF/jj6qFhE0o97eaw/ozqrrjDlorOglg9GTY+Vhz8u5j0t209zSQ2wjVU8SfwU+6FjKvH5CT8vnF+Yss93J9ytthbnGzKWF4Fo0uZmo=
-    file:
-    - services/core/build/libs/core-exec.jar
-    - services/email/build/libs/email-exec.jar
-    - services/monitor/build/libs/monitor-exec.jar
-    - services/rates/build/libs/rates-exec.jar
-    skip_cleanup: true
-    on:
-      tags: true
-      all_branches: true
-      condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
-  - provider: script
-    script: export ICONATOR_DOCKER_VERSION=$TRAVIS_TAG && sh docker/docker_push.sh
-    skip_cleanup: true
-    on:
-      tags: true
-      all_branches: true
-      condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
-  - provider: script
-    script: export ICONATOR_DOCKER_IMAGE_NAME=master && sh docker/docker_push.sh
-    skip_cleanup: true
-    on:
-      branch: master
+- provider: releases
+  api_key:
+    secure: cnm97Hjiemox19I+ZE6VzD3qWYh//IgZQwIq5hyylm2pbr8jY+0Vot1gSVsNZ3ul1d1hVCsDVxuAsGLb8mjNHsOKmwklq6ASQhpfPU5UJG4ygtxiMf6CHxq6H3ypLd4XKvEILrTm/3XXYDXGaXe85f8lnRNL4KUDAHoTOudgLIG+ZnHGgxGyeKz/rvsXRtjFhmhnDn3y0hsZdPX+1cH1cecRU8YguD4aEBsuazvQ2I/eGICLU2D8kByFCTAuWcXVgj/pke8kGZWjb1VLw+SjSK3FtrOvocUPpJsUqFBDNJWrZTsOwxYVCs2dQUUCa1XcBRXH7bZ8sJ0VYwvPwQpF45hv9dZZHRNzKIUmNTf6dUVv5EPFewtByGQoClZvKD/fXSIvge3qZfKxBshCZEs8CASEVRIHhz2IlJQ4sVaXrzt3g3rqH8vdL59zi92UKuFtmi9HlO4Q67TIC+TM5rdZj+FttSx7WAWZ2fpB++vJx4fUHsLt8KdhbHGw49q4QanVAZj/lzRmNixIR57iU9JmhBT/grkEwdIE8yCe1TP2XBrBAeo0FzKOjEwSoRxAGXSxgXRWZF/jj6qFhE0o97eaw/ozqrrjDlorOglg9GTY+Vhz8u5j0t209zSQ2wjVU8SfwU+6FjKvH5CT8vnF+Yss93J9ytthbnGzKWF4Fo0uZmo=
+  file:
+  - services/core/build/libs/core-exec.jar
+  - services/email/build/libs/email-exec.jar
+  - services/monitor/build/libs/monitor-exec.jar
+  - services/rates/build/libs/rates-exec.jar
+  skip_cleanup: true
+  on:
+    tags: true
+    all_branches: true
+    condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
+- provider: script
+  script: export ICONATOR_DOCKER_VERSION=$TRAVIS_TAG && sh docker/docker_push.sh
+  skip_cleanup: true
+  on:
+    tags: true
+    all_branches: true
+    condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
+- provider: script
+  script: export ICONATOR_DOCKER_IMAGE_NAME=master && sh docker/docker_push.sh
+  skip_cleanup: true
+  on:
+    branch: master
 notifications:
   slack:
-    secure: SFHG4G55XN6uEcMWiHDTvt3EX+kuZAW/7k4pTnROrRtbTg9G9IZVo8Mm2uPmO7la2kjbGP7lDDAVYiHO+LdF5Z6uR4xhwebUu7OOk8+GMYXqrd1WyAnZJecIiBC0fYLKIvEXwe7vHtqV9LN2i5L5WQE3P5wKySn6JEZcZOe61VePzKnHY+T/CjJ7OB/f1rODpqDqgs6b2fOub0nIfaByGN/LL6y4cfK3WK4bQxMvq7sM6fiV496DXvNaJQb89K5hruaa11cVqu2Fiv67npl2eAaHEENG5iE1RZqjnRLBADwpQcKugblemP3I6iYnuvbB+EN3s6L7VsefS2SZv+NOYhEmaOp6tojSGeYlwwdMfFjSHRwMC7Ci572rLkj0XAKyzo21tCj5MYhK9ZBZYvdM3L4ZFpxQWMZG3pN1fZgUaU1y10yqNGyGkJjh/V+dcYgsxPf0zkNp2KIZ7QWrd2Py4/uXU+SVGMn/Y9T6gAM3nzYyu7x+og/jMJiibmBYUy2fUvlxjKUa5UxzhAkGJTU/64/YYxvxnZZ/l2RA8IIBXnnIQZ+vaVLmBcXjglVaJ+Kl8/6I5bh3KHyxGTfBe3jrF4d0uK86XtmPHJ6INBWIHcarMKOPv1QRXjsJp+Ctpqe8LS9289x/vEUgjRPPhG9zCw9UKdOFh49Uaeac9m5iaAw=
+    secure: T3+yguHXqE6qG3gGtmmEAM8jbvfF5eANJzsb1jGfZTtxKbn8hLNh+qcY+p36kpg4HiY9oxUtVp+6h2h5MknzRfePMJoZhVlvB+WRowDqgQUdzKMpciHggjSn+p6IcurrWSjpQ5+uUl+jE5LG48Oqtf07d14Y/YHLnv0eo40Yy6p1jDkvAP3I4mb3Rd27moP5nsK24xHPEPH1600BmiatXUwDAP/iXbLG4gD3vJTgq7TuMCVXGR+KxEWvme7mXEJQbFZVAOdXTgOTld6DIJopcPO3DQlHkmb5Blu9DFevwMvDqpfHW2h3Q8KDuqFqrUGtogyKzTPDRVDKp23JhaY1rZSFaEtWBECrEfzCaCby1OlU+FTHcfuupxSosGc/WtqKraaLYuGHnEI8b+GAGe4v0KYFWR9sTj8r8HwE1yJO6NvZVtbawTHbBuy8E08ocZgJB+GOLjiDijqtekh9wLQG+kfHBTdOQLSf3CeGM8HTPTVDHAtrbMIeBZAAqd6NY574uKjM5eTw0F/JRp/ibEbYNm+BSJZy7AImKMIVFbD9geV3OxOjeM6zVPtGPNNObAW0JW3WNvhR74Qnq8T6XOhHHIs52TdtjZW6eJ8aSGrJs128kPBwLD28GWMs7L+PEnDnY9CvjmZEMY61niglYedm9AbmlOtGtkJzVT/P+l+8sqo=
