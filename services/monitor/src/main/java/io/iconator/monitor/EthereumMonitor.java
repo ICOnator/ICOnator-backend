@@ -9,13 +9,12 @@ import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
@@ -31,11 +30,13 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static java.time.temporal.ChronoUnit.MINUTES;
-import static java.util.Optional.ofNullable;
 
 public class EthereumMonitor extends BaseMonitor {
 
@@ -51,11 +52,11 @@ public class EthereumMonitor extends BaseMonitor {
                            Web3j web3j,
                            InvestorRepository investorRepository,
                            PaymentLogRepository paymentLogRepository,
-                           SaleTierRepository saleTierRepository,
+                           TokenConversionService tokenConversionService,
                            EligibleForRefundRepository eligibleForRefundRepository,
                            ICOnatorMessageService messageService) {
 
-        super(saleTierRepository, investorRepository, paymentLogRepository,
+        super(tokenConversionService, investorRepository, paymentLogRepository,
                 eligibleForRefundRepository, fxService);
 
         this.web3j = web3j;
@@ -188,9 +189,9 @@ public class EthereumMonitor extends BaseMonitor {
                         investor,
                         BigDecimal.ZERO));
 
-        ConversionResult conversionResult;
+        TokenConversionService.ConversionResult conversionResult;
         try {
-            conversionResult = convertToTokensAndUpdateTiers(usdReceived, timestamp);
+            conversionResult = tokenConversionService.convertToTokensAndUpdateTiers(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convert payment to tokens for transaction {}. " +
                     "Transaction must be refunded.", txIdentifier, e);

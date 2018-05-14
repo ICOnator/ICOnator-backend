@@ -2,43 +2,37 @@ package io.iconator.monitor;
 
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.BaseMonitor.ConversionResult;
 import io.iconator.monitor.config.TestConfig;
-import org.junit.After;
-import org.junit.Before;
+import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.TokenConversionService.ConversionResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ContextConfiguration(classes = {TestConfig.class})
+@ContextConfiguration(classes = {TestConfig.class, TokenConversionService.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
-public class BaseMonitorTest {
+public class TokenConversionServiceTest {
 
     private final static BigDecimal T1_DISCOUNT = new BigDecimal("0.5");
-    private final static BigDecimal T2_DISCOUNT = new BigDecimal("0.2");
-    private final static BigDecimal T3_DISCOUNT = new BigDecimal("0.1");
+//    private final static BigDecimal T2_DISCOUNT = new BigDecimal("0.2");
+//    private final static BigDecimal T3_DISCOUNT = new BigDecimal("0.1");
 
     private final static int T1_NO = 1;
     private final static int T2_NO = 2;
@@ -56,23 +50,10 @@ public class BaseMonitorTest {
     private final static BigInteger T3_MAX = BigInteger.valueOf(3000L);
 
     @Autowired
-    private BaseMonitor baseMonitor;
+    private TokenConversionService tokenConversionService;
 
     @Autowired
     private SaleTierRepository saleTierRepository;
-
-    @Before
-    public void setUpTiers() {
-        saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
-        saleTierRepository.save(createTier(2, T2_START_DATE, T2_END_DATE, T2_DISCOUNT, 2000L, false));
-        saleTierRepository.save(createTier(3, T3_START_DATE, T3_END_DATE, T3_DISCOUNT, 3000L, false));
-        saleTierRepository.flush();
-    }
-
-    @After
-    public void tearDownTiers() {
-        saleTierRepository.deleteAll();
-    }
 
     @Test
     public void testBuyTokensNotExceedingFirstTier() {
@@ -81,7 +62,7 @@ public class BaseMonitorTest {
         final Date blockTime = Date.valueOf("2018-01-02");
         ConversionResult result = null;
         try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+            result = tokenConversionService.convertToTokensAndUpdateTiers(currency, blockTime);
         } catch (Throwable e) {
             fail(e.getMessage());
         }
@@ -116,7 +97,7 @@ public class BaseMonitorTest {
         final Date blockTime = Date.valueOf("2018-01-02");
         ConversionResult result = null;
         try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+            result = tokenConversionService.convertToTokensAndUpdateTiers(currency, blockTime);
         } catch (Throwable e) {
             fail(e.getMessage());
         }
@@ -152,7 +133,7 @@ public class BaseMonitorTest {
         final Date blockTime = Date.valueOf("2018-01-02");
         ConversionResult result = null;
         try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+            result = tokenConversionService.convertToTokensAndUpdateTiers(currency, blockTime);
         } catch (Throwable e) {
             fail(e.getMessage());
         }
@@ -192,10 +173,10 @@ public class BaseMonitorTest {
         BigDecimal overflow = BigDecimal.ZERO;
         BigInteger tokens = BigInteger.ZERO;
         try {
-            ConversionResult result = baseMonitor.convertToTokensAndUpdateTiers(currency1, blockTime1);
+            ConversionResult result = tokenConversionService.convertToTokensAndUpdateTiers(currency1, blockTime1);
             overflow = overflow.add(result.getOverflow());
             tokens = tokens.add(result.getTokens());
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency2, blockTime2);
+            result = tokenConversionService.convertToTokensAndUpdateTiers(currency2, blockTime2);
             overflow = overflow.add(result.getOverflow());
             tokens = tokens.add(result.getTokens());
         } catch (Throwable e) {
@@ -233,7 +214,7 @@ public class BaseMonitorTest {
         final Date blockTime = Date.valueOf("2018-01-02");
         ConversionResult result = null;
         try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
+            result = tokenConversionService.convertToTokensAndUpdateTiers(currency, blockTime);
         } catch (Throwable e) {
             fail(e.getMessage());
         }
@@ -267,43 +248,40 @@ public class BaseMonitorTest {
         }
     }
 
-//    @Test
-//    public void testTransactional() {
-//        try {
-//            doSomething();
-//        } catch (OptimisticLockException e) {
-//            return;
-//        } catch (Exception e) {
-//            fail("Other exception than OptimisticLockException was thrown.");
-//        }
-//        fail("Should have thrown an OptimisticLockException, but didn't");
-//    }
-//
-//    @Transactional(propagation = Propagation.REQUIRES_NEW,
-//            rollbackFor = OptimisticLockException.class,
-//            isolation = Isolation.SERIALIZABLE)
-//    public void doSomething() throws OptimisticLockException, InterruptedException {
-//        CountDownLatch latch = new CountDownLatch(1);
-//        Runnable r = () -> {
-//            doSomethingInBetween();
-//            latch.countDown();
-//        };
-//
-//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
-//        tier.setDiscount(BigDecimal.ZERO);
-//        new Thread(r).start();
-//        latch.await();
-//        tier.setTokensSold(BigInteger.ZERO);
-//    }
-//
-//    @Transactional(propagation = Propagation.REQUIRES_NEW,
-//            rollbackFor = OptimisticLockException.class,
-//            isolation = Isolation.SERIALIZABLE)
-//    public void doSomethingInBetween() throws OptimisticLockException{
-//        saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
-//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
-//        tier.setTokensSold(BigInteger.TEN);
-//    }
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    public void testSimpleConcurrentConversions() throws InterruptedException {
+        int nrThreads = 10;
+        BigDecimal currency = BigDecimal.valueOf(nrThreads);
+        BigDecimal expectedTokensSold = tokenConversionService.convertCurrencyToTokens(currency, T1_DISCOUNT);
+        runConcurrent(() -> {
+            try {
+                tokenConversionService.convertToTokensAndUpdateTiers(BigDecimal.ONE, new java.util.Date());
+            } catch (Throwable throwable) {
+                fail("Error while converting.");
+            }
+        }, nrThreads);
+
+        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
+        if (oTier.isPresent()) {
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold.toBigInteger(), true);
+        } else {
+            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
+        }
+    }
+
+    private static void runConcurrent(Runnable runnable, int threadCount) throws InterruptedException {
+        List<Thread> threadList = new ArrayList<>();
+        for (int i = 0; i < threadCount; i++) {
+            threadList.add(new Thread(runnable));
+        }
+        for (int i = 0; i < threadCount; i++) {
+            threadList.get(i).start();
+        }
+        for (int i = 0; i < threadCount; i++) {
+            threadList.get(i).join();
+        }
+    }
 
     private void assertTier(SaleTier tier, int tierNo, Date startDate, Date endDate,
                             BigInteger tokensSold, boolean isActive) {
@@ -313,18 +291,5 @@ public class BaseMonitorTest {
         assertEquals(endDate, tier.getEndDate());
         assertEquals(0, tokensSold.compareTo(tier.getTokensSold()));
         assertEquals(isActive, tier.isActive());
-    }
-
-    private SaleTier createTier(int tierNo, Date startDate, Date endDate, BigDecimal discount,
-                                long tokenMax, boolean active) {
-
-        return new SaleTier(
-                tierNo,
-                "test tier",
-                startDate,
-                endDate,
-                discount,
-                BigInteger.valueOf(tokenMax),
-                active);
     }
 }

@@ -10,8 +10,8 @@ import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
@@ -24,7 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
@@ -55,11 +58,11 @@ public class BitcoinMonitor extends BaseMonitor {
                           PeerGroup peerGroup,
                           InvestorRepository investorRepository,
                           PaymentLogRepository paymentLogRepository,
-                          SaleTierRepository saleTierRepository,
+                          TokenConversionService tokenConversionService,
                           EligibleForRefundRepository eligibleForRefundRepository,
                           ICOnatorMessageService messageService) {
 
-        super(saleTierRepository, investorRepository, paymentLogRepository,
+        super(tokenConversionService, investorRepository, paymentLogRepository,
                 eligibleForRefundRepository, fxService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
@@ -238,9 +241,9 @@ public class BitcoinMonitor extends BaseMonitor {
                         BigDecimal.ZERO)
         );
 
-        ConversionResult conversionResult;
+        TokenConversionService.ConversionResult conversionResult;
         try {
-            conversionResult = convertToTokensAndUpdateTiers(usdReceived, timestamp);
+            conversionResult = tokenConversionService.convertToTokensAndUpdateTiers(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convert payment to tokens for transaction output {}. " +
                     "Transaction Output must be refunden.", txoIdentifier, e);

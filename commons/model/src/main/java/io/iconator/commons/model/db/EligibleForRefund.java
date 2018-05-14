@@ -17,7 +17,7 @@ public class EligibleForRefund {
         FINAL_TIER_OVERFLOW,
         MISSING_FX_RATE,
         TOKEN_CONVERSION_FAILED,
-        FAILED_CONVERSION_TO_USD;
+        FAILED_CONVERSION_TO_USD
     }
 
     @Id
