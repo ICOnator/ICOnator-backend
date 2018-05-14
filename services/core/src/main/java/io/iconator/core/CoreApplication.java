@@ -13,10 +13,19 @@ import static org.springframework.boot.SpringApplication.run;
 @SpringBootApplication
 @EnableJpaRepositories({"io.iconator.commons.sql.dao"})
 @EntityScan({"io.iconator.commons.model.db"})
-@ComponentScan({"io.iconator.commons.baseservice", "io.iconator.commons.auth", "io.iconator.commons.recaptcha", "io.iconator.core"})
+@ComponentScan({
+        "io.iconator.commons.baseservice",
+        "io.iconator.commons.auth",
+        "io.iconator.commons.recaptcha",
+        "io.iconator.commons.countryfilter",
+        "io.iconator.core"
+})
 public class CoreApplication {
 
-    static { ConfigNaming.set("core.application"); }
+    static {
+        ConfigNaming.set("core.application");
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(CoreApplication.class);
 
     public static void main(String[] args) {
@@ -24,7 +33,7 @@ public class CoreApplication {
             run(CoreApplication.class, args);
         } catch (Throwable t) {
             //ignore silent exception
-            if(!t.getClass().toString().endsWith("SilentExitException")) {
+            if (!t.getClass().toString().endsWith("SilentExitException")) {
                 LOG.error("cannot execute core", t);
             }
         }

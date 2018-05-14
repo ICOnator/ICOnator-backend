@@ -3,7 +3,6 @@ package io.iconator.local;
 import io.iconator.commons.baseservice.ConfigNaming;
 import io.iconator.core.CoreApplication;
 import io.iconator.email.EmailApplication;
-import io.iconator.monitor.MonitorApplication;
 import io.iconator.rates.RatesApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,12 +11,16 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
 public class ICOnatorLocalDevApplication {
-    static{ConfigNaming.set(
-            "core.application",
-            "email.application",
-            "monitor.application",
-            "rates.application",
-            "application"); }
+
+    static {
+        ConfigNaming.set(
+                "core.application",
+                "email.application",
+                "monitor.application",
+                "rates.application",
+                "application");
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ICOnatorLocalDevApplication.class);
 
     public static void main(String[] args) throws Exception {
@@ -27,7 +30,7 @@ public class ICOnatorLocalDevApplication {
             new SpringApplicationBuilder().sources(
                     CoreApplication.class,
                     EmailApplication.class,
-                    MonitorApplication.class,
+                    //MonitorApplication.class,
                     RatesApplication.class,
                     io.iconator.testrpcj.TestBlockchain.class).run(args);
         } catch (Throwable t) {

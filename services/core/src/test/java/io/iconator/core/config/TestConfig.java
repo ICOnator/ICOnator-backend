@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
-@EntityScan(basePackages = {"io.iconator.commons.model"})
+@EntityScan(basePackages = {"io.iconator.commons.model", "io.iconator.commons.countryfilter"})
 public class TestConfig {
 }

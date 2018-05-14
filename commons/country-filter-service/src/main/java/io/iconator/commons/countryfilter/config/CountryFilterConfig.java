@@ -2,6 +2,7 @@ package io.iconator.commons.countryfilter.config;
 
 import com.axlabs.ip2asn2cc.Ip2Asn2Cc;
 import com.axlabs.ip2asn2cc.exception.RIRNotDownloadedException;
+import com.axlabs.ip2asn2cc.model.FilterPolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -12,7 +13,7 @@ public class CountryFilterConfig {
 
     @Bean
     public Ip2Asn2Cc ip2Asn2Cc(CountryFilterConfigHolder countryFilterConfigHolder) throws RIRNotDownloadedException {
-        return new Ip2Asn2Cc(countryFilterConfigHolder.getDisallowedCountries());
+        return new Ip2Asn2Cc(countryFilterConfigHolder.getDisallowCountries(), FilterPolicy.EXCLUDE_COUNTRY_CODES);
     }
 
 }

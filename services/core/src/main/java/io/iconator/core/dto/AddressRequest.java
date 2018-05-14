@@ -1,10 +1,12 @@
 package io.iconator.core.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.iconator.core.utils.Constants;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AddressRequest {
 
     @NotNull

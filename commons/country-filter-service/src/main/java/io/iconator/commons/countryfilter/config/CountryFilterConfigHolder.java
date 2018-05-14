@@ -11,14 +11,14 @@ public class CountryFilterConfigHolder {
     @Value("${io.iconator.commons.country-filter.enabled}")
     private boolean enabled;
 
-    @Value("#{'${io.iconator.commons.country-filter.disallowed}'.split(',')}")
-    private List<String> disallowedCountries;
+    @Value("#{'${io.iconator.commons.country-filter.disallow}'.split(',')}")
+    private List<String> disallowCountries;
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    public List<String> getDisallowedCountries() {
-        return disallowedCountries;
+    public List<String> getDisallowCountries() {
+        return disallowCountries;
     }
 }
