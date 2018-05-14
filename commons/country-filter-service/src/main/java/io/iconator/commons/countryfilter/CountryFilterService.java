@@ -8,15 +8,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class CountryFilterService {
 
+    @Autowired(required = false)
     private Ip2Asn2Cc ip2Asn2Cc;
-    private CountryFilterConfigHolder countryFilterConfigHolder;
 
     @Autowired
-    public CountryFilterService(Ip2Asn2Cc ip2Asn2Cc,
-                                CountryFilterConfigHolder countryFilterConfigHolder) {
-        this.ip2Asn2Cc = ip2Asn2Cc;
-        this.countryFilterConfigHolder = countryFilterConfigHolder;
-    }
+    private CountryFilterConfigHolder countryFilterConfigHolder;
 
     public boolean isIPAllowed(String ipAddress) {
         return countryFilterConfigHolder.isEnabled() ? this.ip2Asn2Cc.checkIP(ipAddress) : true;
