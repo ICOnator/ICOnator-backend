@@ -8,7 +8,6 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.protocol.exceptions.TransactionTimeoutException;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
@@ -29,13 +28,12 @@ public class EthereumTestPaymentService {
         this.web3j = web3j;
     }
 
-    public String pay(String paymentToETHAddress, BigDecimal amount)
-            throws IOException, TransactionTimeoutException, InterruptedException {
+    public String pay(String paymentToETHAddress, BigDecimal amount) throws Exception {
         LOG.debug("ETH: Sending funds to {}, amount {}.", paymentToETHAddress, amount.toPlainString());
         BigDecimal amountInWei = Convert.toWei(amount, Convert.Unit.ETHER);
         TransactionReceipt transactionReceipt = Transfer.sendFunds(
                 web3j, credentials, paymentToETHAddress,
-                amountInWei, Convert.Unit.WEI);
+                amountInWei, Convert.Unit.WEI).send();
 
         return transactionReceipt.getTransactionHash();
 

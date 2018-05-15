@@ -12,8 +12,8 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'org.springframework.boot:spring-boot-devtools'
 
-    compile 'org.ethereum:ethereumj-core:1.5.+'
-    compile 'org.web3j:core:2.3.0'
+    compile 'org.ethereum:ethereumj-core:1.7.2-RELEASE'
+    compile 'org.web3j:core:3.4.0'
 
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

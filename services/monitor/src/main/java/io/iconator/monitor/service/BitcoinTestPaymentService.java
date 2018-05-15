@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.web3j.crypto.CipherException;
-import org.web3j.protocol.exceptions.TransactionTimeoutException;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,8 +60,7 @@ public class BitcoinTestPaymentService {
     }
 
     public String pay(String paymentToBTCAddress, BigDecimal amount)
-            throws IOException, TransactionTimeoutException, InterruptedException,
-            ExecutionException, InsufficientMoneyException {
+            throws InterruptedException, ExecutionException, InsufficientMoneyException {
 
         LOG.debug("BTC: Sending funds to {}, amount {}.", paymentToBTCAddress, amount.toPlainString());
 
