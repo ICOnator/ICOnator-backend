@@ -41,6 +41,5 @@ public class KeyGeneration {
             KeyPairs keyPair = new KeyPairs(bitcoinKeys.getPublicKeyAsHexString(), ethereumKeys.getPublicKeyAsHexString());
             keyPairsRepository.saveAndFlush(keyPair);
         }
-        keyPairsRepository.createFreshKeySequence();
     }
 }

@@ -4,11 +4,11 @@ import io.iconator.commons.amqp.model.SetWalletAddressMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinAddressService;
+import io.iconator.commons.db.services.KeyPairsRepositoryService;
 import io.iconator.commons.ethereum.EthereumAddressService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KeyPairs;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.KeyPairsRepository;
 import io.iconator.core.controller.exceptions.AuthorizationHeaderMissingException;
 import io.iconator.core.controller.exceptions.AvailableKeyPairNotFoundException;
 import io.iconator.core.controller.exceptions.BaseException;
@@ -40,7 +40,6 @@ import javax.ws.rs.core.Context;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-import static java.util.Optional.ofNullable;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -53,7 +52,7 @@ public class AddressController {
     private InvestorRepository investorRepository;
 
     @Autowired
-    private KeyPairsRepository keyPairsRepository;
+    private KeyPairsRepositoryService keyPairsRepositoryService;
 
     @Autowired
     private EthereumAddressService ethereumAddressService;
@@ -119,14 +118,12 @@ public class AddressController {
         checkWalletAndRefundAddressesOrThrowException(walletAddress, refundEthereumAddress, refundBitcoinAddress);
 
         // Generating the keys
-        long freshKeyId = keyPairsRepository.getFreshKeyID();
-        //TOOD make this fool proof
-        KeyPairs keyPairs = keyPairsRepository.findById(freshKeyId).get();
+        Optional<KeyPairs> oKeyPairs = keyPairsRepositoryService.getFreshKey();
 
-        if (!ofNullable(keyPairs).isPresent()) {
-            LOG.error("Pool of addresses not initialized!");
-            throw new AvailableKeyPairNotFoundException();
-        }
+        KeyPairs keyPairs = oKeyPairs.orElseThrow(() -> {
+            LOG.error("Pool of addresses not initialized.");
+            return new AvailableKeyPairNotFoundException();
+        });
 
         // Persist the updated investor
         try {

@@ -27,15 +27,6 @@ public class KeyPairsRepositoryTest {
     private KeyPairsRepository keyPairsRepository;
 
     @Test
-    public void testGetFresh() {
-        long freshKeyID = keyPairsRepository.getFreshKeyID();
-        Optional<KeyPairs> kp = keyPairsRepository.findById(freshKeyID);
-        assertTrue(kp.isPresent());
-        assertTrue(kp.get().getPublicBtc() != null);
-        assertTrue(kp.get().getPublicEth() != null);
-    }
-
-    @Test
     public void testFindOptionalById() {
         Optional<KeyPairs> optionalKeyPairs = keyPairsRepository.findById(1L);
         System.out.println("Id returned: " + optionalKeyPairs.get().getId());

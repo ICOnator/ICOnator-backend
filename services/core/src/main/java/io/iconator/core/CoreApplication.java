@@ -16,6 +16,7 @@ import static org.springframework.boot.SpringApplication.run;
 @ComponentScan({
         "io.iconator.commons.baseservice",
         "io.iconator.commons.auth",
+        "io.iconator.commons.db.services",
         "io.iconator.commons.recaptcha",
         "io.iconator.commons.countryfilter",
         "io.iconator.core"
