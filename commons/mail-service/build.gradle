@@ -17,7 +17,9 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
     // qr-code library
+    compile 'com.github.kenglxn.QRGen:core:2.3.0'
     compile 'com.github.kenglxn.QRGen:javase:2.3.0'
+
     compile 'commons-io:commons-io:2.6'
 
     testCompile 'org.springframework.boot:spring-boot-starter-test'
