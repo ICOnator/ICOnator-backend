@@ -7,6 +7,7 @@ bootJar.enabled = false
 dependencies {
     // Database drivers
     runtime 'org.postgresql:postgresql'
+    runtime 'org.mariadb.jdbc:mariadb-java-client'
     runtime 'com.h2database:h2'
 
     compile 'org.springframework.boot:spring-boot-starter-data-jpa'
