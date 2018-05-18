@@ -47,3 +47,6 @@ subprojects {
 configure([project(':commons'), project(':services')]) {
     jar.enabled = false
 }
+
+task stage(dependsOn: ['build', 'clean'])
+build.mustRunAfter clean
