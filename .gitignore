@@ -158,6 +158,4 @@ reports/
 *.project
 **/generated_database_schema.sql
 .vscode/settings.json
-gradle/wrapper/gradle-wrapper.jar
-gradle/wrapper/gradle-wrapper.properties
 gradlew.bat
