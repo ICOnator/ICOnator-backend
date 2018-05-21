@@ -60,7 +60,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                       </tr>
                       <!-- logo -->
                       <tr>
-                        <td align="center" style="line-height: 0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px; height: 80px; width: 160px" src="logo.png" th:src="|cid:logo|" alt="logo" /></td>
+                        <td align="center" style="line-height: 0px;"><img th:style="'display:block; line-height:0px; font-size:0px; border:0px; height: ' + ${logoHeight} + 'px; width: ' + ${logoWidth} + 'px'" src="logo.png" th:src="|cid:${logo}|" alt="logo" /></td>
                       </tr>
                       <!-- end logo -->
                       <tr>
@@ -130,7 +130,11 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
       <td height="20"></td>
     </tr>
     <tr>
-      <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> ICOnator © 2018. All Rights Reserved. </td>
+      <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> © <span th:text="${year}" /> <span th:text="${entityName}" />. All Rights Reserved.</td>
+    </tr>
+    <!-- powered by ICOnator Project -->
+    <tr>
+      <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> Powered by the <a href="https://iconator.io">ICOnator Project</a></td>
     </tr>
     <tr>
       <td height="40"></td>

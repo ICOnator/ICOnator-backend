@@ -3,8 +3,31 @@ package io.iconator.commons.mailservice.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Optional;
+
 @Configuration
 public class MailServiceConfigHolder {
+
+    @Value("${io.iconator.commons.mail.service.logo.url:#{null}}")
+    private Optional<String> logoUrl;
+
+    @Value("${io.iconator.commons.mail.service.logo.content-type:#{null}}")
+    private Optional<String> logoContentType;
+
+    @Value("${io.iconator.commons.mail.service.logo.width:#{null}}")
+    private Optional<Integer> logoWidth;
+
+    @Value("${io.iconator.commons.mail.service.logo.height:#{null}}")
+    private Optional<Integer> logoHeight;
+
+    @Value("${io.iconator.commons.mail.service.token-sale.name}")
+    private String tokenSaleName;
+
+    @Value("${io.iconator.commons.mail.service.footer.entity.name}")
+    private String entityName;
+
+    @Value("${io.iconator.commons.mail.service.footer.year}")
+    private String year;
 
     @Value("${io.iconator.commons.mail.service.confirmationEmailSubject}")
     private String confirmationEmailSubject;
@@ -59,6 +82,34 @@ public class MailServiceConfigHolder {
 
     @Value("${io.iconator.commons.mail.service.sendfrom}")
     private String sendfrom;
+
+    public Optional<String> getLogoUrl() {
+        return logoUrl;
+    }
+
+    public Optional<String> getLogoContentType() {
+        return logoContentType;
+    }
+
+    public Optional<Integer> getLogoWidth() {
+        return logoWidth;
+    }
+
+    public Optional<Integer> getLogoHeight() {
+        return logoHeight;
+    }
+
+    public String getTokenSaleName() {
+        return tokenSaleName;
+    }
+
+    public String getEntityName() {
+        return entityName;
+    }
+
+    public String getYear() {
+        return year;
+    }
 
     public String getConfirmationEmailSubject() {
         return confirmationEmailSubject;

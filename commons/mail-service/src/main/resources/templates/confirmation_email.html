@@ -52,7 +52,7 @@ img[class="img1"] { width: 100% !important; }
                 </tr>
                 <!-- logo -->
                 <tr>
-                  <td align="center" style="line-height: 0px;"><img style="display:block; line-height:0px; font-size:0px; border:0px; height: 80px; width: 160px" src="logo.png" th:src="|cid:${logo}|" alt="logo" /></td>
+                  <td align="center" style="line-height: 0px;"><img th:style="'display:block; line-height:0px; font-size:0px; border:0px; height: ' + ${logoHeight} + 'px; width: ' + ${logoWidth} + 'px'" src="logo.png" th:src="|cid:${logo}|" alt="logo" /></td>
                 </tr>
                 <!-- end logo -->
                 <tr>
@@ -63,7 +63,7 @@ img[class="img1"] { width: 100% !important; }
                     <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
                       <!-- title -->
                       <tr>
-                        <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:36px; color:#3b3b3b; font-weight: bold; letter-spacing:4px;">You are a few clicks away from the ICOnator Demo token sale.</td>
+                        <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:36px; color:#3b3b3b; font-weight: bold; letter-spacing:4px;">You are a few clicks away from the <span th:text="${tokenSaleName}" />.</td>
                       </tr>
                       <!-- end title -->
                         <tr>
@@ -116,47 +116,16 @@ img[class="img1"] { width: 100% !important; }
           </tr>
           <!-- copyright -->
           <tr>
-            <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> © 2018 ICOnator.io. All Rights Reserved. </td>
+            <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> © <span th:text="${year}" /> <span th:text="${entityName}" />. All Rights Reserved.</td>
+          </tr>
+          <!-- powered by ICOnator Project -->
+          <tr>
+            <td align="center" style="font-family: 'Open Sans', Arial, sans-serif; font-size:13px; color:#808E8E;line-height:28px;"> Powered by the <a href="https://iconator.io">ICOnator Project</a></td>
           </tr>
           <!-- end copyright -->
           <tr>
             <td height="25"></td>
           </tr>
-          <!-- social -->
-          <!--
-          <tr>
-            <td align="center">
-              <table align="center" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/fb.png" alt="img" /> </a>
-                  </td>
-                  <td width="20"></td>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/tw.png" alt="img" /> </a>
-                  </td>
-                  <td width="20"></td>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/gg.png" alt="img" /> </a>
-                  </td>
-                  <td width="20"></td>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/in.png" alt="img" /> </a>
-                  </td>
-                  <td width="20"></td>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/bh.png" alt="img" /> </a>
-                  </td>
-                  <td width="20"></td>
-                  <td align="center" style="line-height:0xp;">
-                    <a href="#"> <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="images/db.png" alt="img" /> </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          -->
-          <!-- end social -->
           <tr>
             <td height="35"></td>
           </tr>
