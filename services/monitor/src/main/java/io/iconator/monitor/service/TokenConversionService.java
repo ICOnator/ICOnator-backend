@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.OptimisticLockException;
-import javax.persistence.PersistenceException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -73,8 +72,7 @@ public class TokenConversionService {
             throw new IllegalArgumentException("Amount must not be null.");
         }
 
-        // Retry as long as there are  which will probably stem from concurrent
-        // reads/writes to the tiers.
+        // Retry as long as there are database locking exceptions.
         Retryer<ConversionResult> retryer = RetryerBuilder.<ConversionResult>newBuilder()
                 .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                 .retryIfExceptionOfType(OptimisticLockException.class)
@@ -104,7 +102,7 @@ public class TokenConversionService {
     protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal amount, Date blockTime) {
         BigDecimal remainingAmount = amount;
         BigInteger tokensTotal = BigInteger.ZERO;
-        Optional<SaleTier> oCurrentTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oCurrentTier = saleTierRepository.findActiveTierByDate(blockTime);
 
         while (oCurrentTier.isPresent() && remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
@@ -123,10 +121,16 @@ public class TokenConversionService {
                         tokensDecimal.subtract(new BigDecimal(tokensToCurrentTier)),
                         currentTier.getDiscount());
 
+                // End current tiers active time.
                 currentTier.setEndDate(blockTime);
-                currentTier.setInactive();
                 currentTier = saleTierRepository.save(oCurrentTier.get());
-                oCurrentTier = getNextTierAndSetActive(blockTime, currentTier);
+
+                // Start next tiers active time if present.
+                oCurrentTier = saleTierRepository.findByTierNo(currentTier.getTierNo() + 1);
+                oCurrentTier.ifPresent(t -> {
+                    t.setStartDate(blockTime);
+                    saleTierRepository.save(t);
+                });
             } else {
                 // All tokens can be retrieved from the same tier.
                 currentTier.setTokensSold(currentTier.getTokensSold().add(tokens));
@@ -136,22 +140,6 @@ public class TokenConversionService {
             }
         }
         return new ConversionResult(tokensTotal, remainingAmount);
-    }
-
-    /**
-     * Assumes that the tiers' numbers (tierNo) are consecutive and increment by 1.
-     * TODO 20.05.18 Claude:
-     * Use start date to find next tier instead of using tiers' numbers.
-     */
-    private Optional<SaleTier> getNextTierAndSetActive(Date blockTime, SaleTier currentTier) {
-        Optional<SaleTier> oNextTier = saleTierRepository.findByTierNo(currentTier.getTierNo() + 1);
-        if (oNextTier.isPresent()) {
-            SaleTier nextTier = oNextTier.get();
-            nextTier.setStartDate(blockTime);
-            nextTier.setActive();
-            oNextTier = Optional.ofNullable(saleTierRepository.save(nextTier));
-        }
-        return oNextTier;
     }
 
     private boolean tokensFillOrExceedTiersCap(BigInteger tokens, SaleTier tier) {

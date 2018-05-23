@@ -42,14 +42,11 @@ public class SaleTier {
     @Column(name = "token_max")
     private BigInteger tokenMax;
 
-    @Column(name = "is_active")
-    private boolean isActive;
-
     protected SaleTier() {
     }
 
     public SaleTier(int tierNo, String description, Date startDate, Date endDate,
-                    BigDecimal discount, BigInteger tokenMax, boolean isActive) {
+                    BigDecimal discount, BigInteger tokenMax) {
         this.tierNo = tierNo;
         this.description = description;
         this.startDate = startDate;
@@ -57,7 +54,6 @@ public class SaleTier {
         this.discount = discount;
         this.tokenMax = tokenMax;
         this.tokensSold = BigInteger.ZERO;
-        this.isActive = isActive;
     }
 
     public int getTierNo() {
@@ -114,17 +110,5 @@ public class SaleTier {
 
     public void setTokenMax(BigInteger tokenMax) {
         this.tokenMax = tokenMax;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive() {
-        isActive = true;
-    }
-
-    public void setInactive() {
-        isActive = false;
     }
 }

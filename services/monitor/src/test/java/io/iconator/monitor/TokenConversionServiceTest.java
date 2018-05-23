@@ -69,23 +69,23 @@ public class TokenConversionServiceTest {
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(expectedTokensSold));
 
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oActiveTier = saleTierRepository.findActiveTierByDate(blockTime);
         if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold, true);
+            assertTier(oActiveTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold);
         } else {
             fail("Should have found active tier, but didn't.");
         }
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T2_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T2_NO, T2_START_DATE, T2_END_DATE, BigInteger.ZERO, false);
+            assertTier(oTier.get(), T2_NO, T2_START_DATE, T2_END_DATE, BigInteger.ZERO);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T2_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T3_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
+            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T3_NO));
         }
@@ -104,23 +104,23 @@ public class TokenConversionServiceTest {
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(T1_MAX));
 
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oActiveTier = saleTierRepository.findActiveTierByDate(blockTime);
         if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, BigInteger.ZERO, true);
+            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, BigInteger.ZERO);
         } else {
             fail("Should have found active tier, but didn't.");
         }
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T1_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T3_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
+            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T3_NO));
         }
@@ -140,23 +140,24 @@ public class TokenConversionServiceTest {
         assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
         assertEquals(0, result.getTokens().compareTo(T1_MAX.add(tokensFromT2)));
 
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oActiveTier = saleTierRepository.findActiveTierByDate(blockTime);
+
         if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, tokensFromT2, true);
+            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, tokensFromT2);
         } else {
             fail("Should have found active tier, but didn't.");
         }
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T1_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T3_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
+            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T3_NO));
         }
@@ -185,23 +186,23 @@ public class TokenConversionServiceTest {
         assertEquals(0, overflow.compareTo(BigDecimal.ZERO));
         assertEquals(0, tokens.compareTo(T1_MAX.add(tokensFromT2)));
 
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oActiveTier = saleTierRepository.findActiveTierByDate(blockTime2);
         if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime2, T2_END_DATE, tokensFromT2, true);
+            assertTier(oActiveTier.get(), T2_NO, blockTime2, T2_END_DATE, tokensFromT2);
         } else {
             fail("Should have found active tier, but didn't.");
         }
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime2, T1_MAX, false);
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime2, T1_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T1_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T3_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
+            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T3_NO));
         }
@@ -221,28 +222,29 @@ public class TokenConversionServiceTest {
         assertEquals(0, result.getOverflow().compareTo(expectedOverflow));
         assertEquals(0, result.getTokens().compareTo(T1_MAX.add(T2_MAX).add(T3_MAX)));
 
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
+        Optional<SaleTier> oActiveTier = saleTierRepository.findActiveTierByDate(blockTime);
+
         if (oActiveTier.isPresent()) {
             fail("There shouldn't be any active tear anymore, but was.");
         }
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T1_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T2_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T2_NO, blockTime, blockTime, T2_MAX, false);
+            assertTier(oTier.get(), T2_NO, blockTime, blockTime, T2_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T2_NO));
         }
 
         oTier = saleTierRepository.findByTierNo(T3_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, blockTime, blockTime, T3_MAX, false);
+            assertTier(oTier.get(), T3_NO, blockTime, blockTime, T3_MAX);
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T3_NO));
         }
@@ -254,9 +256,10 @@ public class TokenConversionServiceTest {
         int nrThreads = 10;
         BigDecimal currency = BigDecimal.valueOf(nrThreads);
         BigDecimal expectedTokensSold = tokenConversionService.convertCurrencyToTokens(currency, T1_DISCOUNT);
+        final Date blockTime = Date.valueOf("2018-01-02");
         runConcurrent(() -> {
             try {
-                tokenConversionService.convertToTokensAndUpdateTiers(BigDecimal.ONE, new java.util.Date());
+                tokenConversionService.convertToTokensAndUpdateTiers(BigDecimal.ONE, blockTime);
             } catch (Throwable throwable) {
                 fail("Error while converting.");
             }
@@ -264,7 +267,7 @@ public class TokenConversionServiceTest {
 
         Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
         if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold.toBigInteger(), true);
+            assertTier(oTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold.toBigInteger());
         } else {
             fail(String.format("Should have found tier %d, but didn't.", T1_NO));
         }
@@ -284,12 +287,11 @@ public class TokenConversionServiceTest {
     }
 
     private void assertTier(SaleTier tier, int tierNo, Date startDate, Date endDate,
-                            BigInteger tokensSold, boolean isActive) {
+                            BigInteger tokensSold) {
 
         assertEquals(tierNo, tier.getTierNo());
         assertEquals(startDate, tier.getStartDate());
         assertEquals(endDate, tier.getEndDate());
         assertEquals(0, tokensSold.compareTo(tier.getTokensSold()));
-        assertEquals(isActive, tier.isActive());
     }
 }
