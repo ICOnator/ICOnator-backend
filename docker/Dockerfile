@@ -10,3 +10,5 @@ ENV EXEC_COMMAND="java -Djava.security.egd=file:/dev/./urandom -jar ${JAR_FILE_N
 ADD ${JAR_FILE} ${JAR_FILE_NAME}
 
 ENTRYPOINT [ "sh", "-c", "${EXEC_COMMAND}" ]
+
+CMD []
