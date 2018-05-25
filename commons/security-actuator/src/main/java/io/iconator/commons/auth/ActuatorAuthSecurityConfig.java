@@ -29,7 +29,11 @@ public class ActuatorAuthSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable().authorizeRequests()
                 .antMatchers("/actuator/**").hasRole(ROLE)
-                .and().antMatcher("/actuator/**").httpBasic();
+                .antMatchers("/cloudfoundryapplication/**").hasRole(ROLE)
+                .and()
+                .antMatcher("/actuator/**")
+                .antMatcher("/cloudfoundryapplication/**")
+                .httpBasic();
     }
 
     @Override
