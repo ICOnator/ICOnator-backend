@@ -1,0 +1,31 @@
+apply plugin: 'org.unbroken-dome.test-sets'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'com.palantir.docker'
+
+bootJar {
+    launchScript()
+    baseName += "-exec"
+}
+jar.enabled = true
+
+dependencies {
+
+    compile project(':commons:amqp-service')
+    compile project(':commons:sql-repository')
+    compile project(':commons:services-base')
+    compile project(':commons:security-actuator')
+
+    compile 'javax.ws.rs:jsr311-api:1.1.1'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+docker {
+    name dockerImageName.isEmpty() ? "iconator/${jar.baseName}" : "iconator/${jar.baseName}-${dockerImageName}"
+    tags dockerVersion.isEmpty() ? "latest" : "${dockerVersion}"
+    files bootJar.archivePath
+    dockerfile file('../../docker/Dockerfile')
+    buildArgs(['JAR_FILE': "${bootJar.archiveName}", 'JAR_FILE_NAME': "${bootJar.archiveName}"])
+}
