@@ -139,6 +139,7 @@ public class TokenConversionService {
                 saleTierRepository.save(oCurrentTier.get());
             }
         }
+        saleTierRepository.flush();
         return new ConversionResult(tokensTotal, remainingAmount);
     }
 

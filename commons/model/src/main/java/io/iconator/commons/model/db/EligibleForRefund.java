@@ -1,7 +1,6 @@
 package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
-import io.iconator.commons.model.Unit;
 
 import javax.persistence.*;
 import java.math.BigInteger;
@@ -16,8 +15,10 @@ public class EligibleForRefund {
         NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
         FINAL_TIER_OVERFLOW,
         MISSING_FX_RATE,
-        TOKEN_CONVERSION_FAILED,
-        FAILED_CONVERSION_TO_USD
+        FAILED_CONVERSION_TO_TOKENS,
+        FAILED_CONVERSION_TO_USD,
+        MISSING_BLOCK_TIMESTAMP,
+        FAILED_CREATING_PAYMENTLOG
     }
 
     @Id
@@ -32,17 +33,12 @@ public class EligibleForRefund {
     @Column(name = "amount")
     private BigInteger amount;
 
-    @Column(name = "unit")
-    @Enumerated(EnumType.STRING)
-    private Unit unit;
-
     @Column(name = "currency")
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "investor", nullable = true)
-    private Investor investor;
+    @Column(name = "inverstor_id")
+    private long investorId;
 
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
@@ -50,14 +46,60 @@ public class EligibleForRefund {
     protected EligibleForRefund() {
     }
 
-    public EligibleForRefund(RefundReason refundReason, BigInteger amount, Unit unit,
-                             CurrencyType currency, Investor investor, String txIdentifier) {
+    public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
+                             long investorId, String txIdentifier) {
         this.refundReason = refundReason;
         this.amount = amount;
-        this.unit = unit;
         this.currency = currency;
-        this.investor = investor;
+        this.investorId = investorId;
         this.txIdentifier = txIdentifier;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public RefundReason getRefundReason() {
+        return refundReason;
+    }
+
+    public void setRefundReason(RefundReason refundReason) {
+        this.refundReason = refundReason;
+    }
+
+    public BigInteger getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigInteger amount) {
+        this.amount = amount;
+    }
+
+    public CurrencyType getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(CurrencyType currency) {
+        this.currency = currency;
+    }
+
+    public long getInvestorId() {
+        return investorId;
+    }
+
+    public void setInvestorId(long investorId) {
+        this.investorId = investorId;
+    }
+
+    public String getTxIdentifier() {
+        return txIdentifier;
+    }
+
+    public void setTxIdentifier(String txIdentifier) {
+        this.txIdentifier = txIdentifier;
+    }
 }

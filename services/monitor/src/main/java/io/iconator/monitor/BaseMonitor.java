@@ -3,7 +3,9 @@ package io.iconator.monitor;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.Unit;
 import io.iconator.commons.model.db.EligibleForRefund;
+import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
+import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
@@ -12,7 +14,12 @@ import io.iconator.monitor.service.TokenConversionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityExistsException;
+import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 
 @Component
@@ -43,29 +50,37 @@ public class BaseMonitor {
             && !eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
     }
 
-    protected EligibleForRefund eligibleForRefundInSatoshi(EligibleForRefund.RefundReason reason,
-                                                        BigInteger amount,
-                                                        String txoIdentifier,
-                                                        Investor investor) {
+    protected void eligibleForRefund(BigInteger amount,
+                                                  CurrencyType currencyType,
+                                                  String txoIdentifier,
+                                                  RefundReason reason,
+                                                  Investor investor) {
 
-        Unit unit = Unit.SATOSHI;
-        CurrencyType currency = CurrencyType.BTC;
-        EligibleForRefund entry =
-                new EligibleForRefund(reason, amount, unit, currency, investor, txoIdentifier);
-
-        return eligibleForRefundRepository.save(entry);
+        EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType, investor.getId(), txoIdentifier);
+        try {
+            LOG.info("Creating refund entry for transaction {}.", txoIdentifier);
+            saveEligibleForRefund(eligibleForRefund);
+        } catch (Exception e) {
+            if (eligibleForRefundRepository.existsByTxIdentifier(txoIdentifier)) {
+                LOG.info("Couldn't create refund entry because it already existed. " +
+                        "I.e. transaction was already processed.", e);
+            } else {
+                LOG.error("Failed creating refund entry.", e);
+            }
+        }
     }
 
-    protected EligibleForRefund eligibleForRefundInWei(EligibleForRefund.RefundReason reason,
-                                                           BigInteger amount,
-                                                           String txoIdentifier,
-                                                           Investor investor) {
+    @Transactional(rollbackFor = Exception.class,
+            isolation = Isolation.READ_COMMITTED,
+            propagation = Propagation.REQUIRES_NEW)
+    protected PaymentLog savePaymentLog(PaymentLog log) {
+        return paymentLogRepository.saveAndFlush(log);
+    }
 
-        Unit unit = Unit.WEI;
-        CurrencyType currency = CurrencyType.ETH;
-        EligibleForRefund entry =
-                new EligibleForRefund(reason, amount, unit, currency, investor, txoIdentifier);
-
-        return eligibleForRefundRepository.save(entry);
+    @Transactional(rollbackFor = Exception.class,
+            isolation = Isolation.READ_COMMITTED,
+            propagation = Propagation.REQUIRES_NEW)
+    protected EligibleForRefund saveEligibleForRefund(EligibleForRefund eligibleForRefund) {
+        return eligibleForRefundRepository.save(eligibleForRefund);
     }
 }

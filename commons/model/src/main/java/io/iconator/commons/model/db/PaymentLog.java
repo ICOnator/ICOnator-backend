@@ -37,9 +37,8 @@ public class PaymentLog {
     @Column(name = "usd_amount", nullable = false)
     private BigDecimal usdValue;
 
-    @OneToOne()
-    @JoinColumn(name = "investor", nullable = false)
-    private Investor investor;
+    @Column(name = "investor_id", nullable = false)
+    private long investorId;
 
     @Column(name = "token_amount", nullable = false)
     private BigDecimal tokenAmount;
@@ -49,7 +48,7 @@ public class PaymentLog {
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
                       BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
-                      Investor investor, BigDecimal tokenAmount) {
+                      long investorId, BigDecimal tokenAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -57,7 +56,7 @@ public class PaymentLog {
         this.paymentAmount = paymentAmount;
         this.fxRate = fxRate;
         this.usdValue = usdValue;
-        this.investor = investor;
+        this.investorId = investorId;
         this.tokenAmount = tokenAmount;
     }
 
@@ -101,7 +100,11 @@ public class PaymentLog {
         this.tokenAmount = amount;
     }
 
-    public Investor getInvestor() {
-        return investor;
+    public long getInvestorId() {
+        return investorId;
+    }
+
+    public void setInvestorId(long investorId) {
+        this.investorId = investorId;
     }
 }
