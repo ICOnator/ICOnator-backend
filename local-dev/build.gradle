@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.iconator:testrpcj:1.0.0'
+    compile 'io.iconator:testrpcj:1.0.10'
     compile project(':services:core')
     compile project(':services:email')
     compile project(':services:monitor')
