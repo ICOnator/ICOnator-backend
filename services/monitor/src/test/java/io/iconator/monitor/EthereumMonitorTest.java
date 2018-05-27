@@ -7,10 +7,12 @@ import io.iconator.testrpcj.jsonrpc.TypeConverter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -22,7 +24,6 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
-import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigDecimal;
 
@@ -30,14 +31,16 @@ import java.math.BigDecimal;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
-//@ComponentScan("io.iconator.testrpcj")
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class EthereumMonitorTest {
+
+    private final static Logger LOG = LoggerFactory.getLogger(EthereumMonitorTest.class);
 
     @Autowired
     private EthereumMonitor ethereumMonitor;
 
     private static TestBlockchain testBlockchain;
+
     @BeforeClass
     public static void setup() {
         testBlockchain = new TestBlockchain().start();
@@ -46,20 +49,22 @@ public class EthereumMonitorTest {
     @Test
     public void connect() throws Exception {
         String addr = Hex.toHexString(TestBlockchain.ACCOUNT_1.getPubKey());
-        System.out.println("public key:" + addr);
+        LOG.info("Public Key: " + addr);
+
         //ethereumMonitor.addMonitoredEtherPublicKey(addr);
         //ethereumMonitor.start((long) 0);
-        Web3j web3j = Web3j.build(new HttpService("http://localhost:8545/rpc"));
+
+        Web3j web3j = Web3j.build(new HttpService("http://127.0.0.1:8545/rpc"));
 
         web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(
                 new DefaultBlockParameterNumber(0))
                 .subscribe(tx -> {
 
-                    System.out.println("A:"+tx.getTo());
-                    System.out.println("B:"+tx.getHash());
+                    LOG.info("To:" + tx.getTo());
+                    LOG.info("From:" + tx.getHash());
 
                 }, throwable -> {
-                    System.out.println("Error during scanning of txs: " + throwable);
+                    LOG.info("Error during scanning of txs: " + throwable);
                 });
 
         Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
@@ -70,8 +75,9 @@ public class EthereumMonitorTest {
                 TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress()),
                 BigDecimal.valueOf(0.22222),
                 Convert.Unit.ETHER).send();
-        System.out.println("output: " + r.isStatusOK());
-        System.out.println("output: " + r.isStatusOK());
+
+        LOG.info("output: " + r.isStatusOK());
+
         Thread.sleep(20000);
     }
 }

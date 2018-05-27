@@ -158,4 +158,5 @@ reports/
 *.project
 **/generated_database_schema.sql
 .vscode/settings.json
+*.dat
 gradlew.bat

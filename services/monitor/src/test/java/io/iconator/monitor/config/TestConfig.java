@@ -47,7 +47,7 @@ public class TestConfig {
                                        PaymentLogRepository paymentLogRepository,
                                        EligibleForRefundRepository eligibleForRefundRepository,
                                        FxService fxService) {
-        Web3j web3j = Web3j.build(new HttpService("http://localhost:8545/rpc"));
+        Web3j web3j = Web3j.build(new HttpService("http://127.0.0.1:8545/rpc"));
         return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository, saleTierRepository,
                 eligibleForRefundRepository, new ICOnatorMessageService() {
             @Override
