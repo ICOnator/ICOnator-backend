@@ -42,7 +42,7 @@ public class EthereumMonitorTest {
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
-    public static void setup() {
+    public static void setup() throws Exception {
         testBlockchain = new TestBlockchain().start();
     }
 
