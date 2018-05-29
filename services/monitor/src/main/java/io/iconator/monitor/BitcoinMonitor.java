@@ -10,8 +10,8 @@ import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
@@ -24,7 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
@@ -55,11 +58,11 @@ public class BitcoinMonitor extends BaseMonitor {
                           PeerGroup peerGroup,
                           InvestorRepository investorRepository,
                           PaymentLogRepository paymentLogRepository,
-                          SaleTierRepository saleTierRepository,
+                          TokenConversionService tokenConversionService,
                           EligibleForRefundRepository eligibleForRefundRepository,
                           ICOnatorMessageService messageService) {
 
-        super(saleTierRepository, investorRepository, paymentLogRepository,
+        super(tokenConversionService, investorRepository, paymentLogRepository,
                 eligibleForRefundRepository, fxService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
@@ -172,8 +175,7 @@ public class BitcoinMonitor extends BaseMonitor {
         try {
             txoIdentifier = BitcoinUtils.getTransactionOutputIdentifier(utxo);
         } catch (RuntimeException e) {
-            LOG.error("Failed fetching identifier for transaction output. " +
-                    "Can't process transaction without its identifier.", e);
+            LOG.error("Failed fetching identifier for transaction output.", e);
             return;
         }
 
@@ -191,10 +193,9 @@ public class BitcoinMonitor extends BaseMonitor {
             String publicKey = monitoredAddresses.get(receivingAddress);
             investor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey).get();
         } catch (NoSuchElementException e) {
-            LOG.error("Couldn't fetch investor for receiver address {}. Can't process transaction " +
-                    "without knowing the associated investor. Transaction output {} must be refunded",
-                    receivingAddress, txoIdentifier, e);
-            handleMissingInvestor(satoshi, txoIdentifier);
+            LOG.error("Couldn't fetch investor for transaction {}.", txoIdentifier, e);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier,
+                    RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS, null);
             return;
         }
 
@@ -202,10 +203,9 @@ public class BitcoinMonitor extends BaseMonitor {
         try {
             timestamp = BitcoinUtils.getTimestampOfTransaction(utxo.getParentTransaction(), bitcoinBlockStore);
         } catch (RuntimeException e) {
-            LOG.error("Failed fetching timestamp for transaction output {}. Can't process " +
-                    "bitcoin transaction without transaction timestamp. Transaction output must " +
-                    "be refunded.",
-                    txoIdentifier, e);
+            LOG.error("Failed fetching block timestamp for transaction {}.", txoIdentifier);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier,
+                    RefundReason.MISSING_BLOCK_TIMESTAMP, investor);
             return;
         }
 
@@ -214,44 +214,55 @@ public class BitcoinMonitor extends BaseMonitor {
             USDperBTC = fxService.getUSDPerBTC(timestamp);
             usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
         } catch (USDBTCFxException e) {
-            LOG.error("Couldn't get US dollar price per Bitcoin for transaction output {}. " +
-                    "Transaction Output must be refunded.", txoIdentifier, e);
-            handleMissingFxRate(satoshi, txoIdentifier, investor);
+            LOG.error("Couldn't get USD to Ether exchange rate for transaction {}.", txoIdentifier, e);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.MISSING_FX_RATE, investor);
             return;
         } catch (RuntimeException e) {
-            LOG.error("Failed to fetch payment amount in US dollars for transaction output {}. " +
-                    "Transaction Output must be refunded.", txoIdentifier, e);
-            handleFailedConversionToUsd(satoshi, txoIdentifier, investor);
+            LOG.error("Failed to fetch payment amount in US dollars for transaction {}.", txoIdentifier, e);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         }
 
-        PaymentLog paymentLog = paymentLogRepository.save(
-                new PaymentLog(
-                        txoIdentifier,
-                        new Date(),
-                        timestamp,
-                        CurrencyType.BTC,
-                        new BigDecimal(satoshi),
-                        USDperBTC,
-                        usdReceived,
-                        investor,
-                        BigDecimal.ZERO)
-        );
-
-        ConversionResult conversionResult;
+        LOG.debug("USD {} to be converted to tokens, for transaction {}", usdReceived.toPlainString(), txoIdentifier);
+        PaymentLog paymentLog = new PaymentLog(
+                txoIdentifier,
+                new Date(),
+                timestamp,
+                CurrencyType.ETH,
+                new BigDecimal(satoshi),
+                USDperBTC,
+                usdReceived,
+                investor.getId(),
+                BigDecimal.ZERO);
         try {
-            conversionResult = convertToTokensAndUpdateTiers(usdReceived, timestamp);
+            savePaymentLog(paymentLog);
+        } catch (Exception e) {
+            if (paymentLogRepository.existsByTxIdentifier(txoIdentifier)) {
+                LOG.info("Couldn't create payment log entry because an entry already existed for " +
+                        "transaction {}. I.e. transaction was already processed.", txoIdentifier);
+            } else {
+                LOG.error("Failed creating payment log for transaction {}.", txoIdentifier, e);
+                eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CREATING_PAYMENTLOG, investor);
+            }
+            return;
+        }
+
+        TokenConversionService.ConversionResult conversionResult;
+        try {
+            conversionResult = tokenConversionService.convertToTokensAndUpdateTiers(usdReceived, timestamp);
         } catch (Throwable e) {
-            LOG.error("Failed to convert payment to tokens for transaction output {}. " +
-                    "Transaction Output must be refunden.", txoIdentifier, e);
-            handleFailedTokenConversion(satoshi, txoIdentifier, investor);
+            LOG.error("Failed to convert payment to tokens for transaction {}. " +
+                    "Deleting PaymentLog created for this transaction", txoIdentifier, e);
+            paymentLogRepository.delete(paymentLog);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
         BigDecimal tokenAmount = new BigDecimal(conversionResult.getTokens());
         paymentLog.setTokenAmount(tokenAmount);
         if (conversionResult.hasOverflow()) {
-            LOG.info("Final tier is full. Overflow will be refunded for Transaction Output {}", txoIdentifier);
-            handleFinalTierOverflow(conversionResult.getOverflow(), USDperBTC, txoIdentifier, investor);
+            LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
+            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(conversionResult.getOverflow(), USDperBTC);
+            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         }
 
         final String blockChainInfoLink = "https://blockchain.info/tx/" +
@@ -273,48 +284,5 @@ public class BitcoinMonitor extends BaseMonitor {
                 paymentLog.getCreateDate(),
                 receivingAddress,
                 paymentLog.getTokenAmount());
-    }
-
-    private void handleMissingInvestor(BigInteger satoshi, String txIdentifier) {
-        eligibleForRefundInSatoshi(
-                RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
-                satoshi,
-                txIdentifier,
-                null);
-    }
-
-    private void handleMissingFxRate(BigInteger satoshi, String txIdentifier, Investor investor) {
-        eligibleForRefundInSatoshi(
-                RefundReason.MISSING_FX_RATE,
-                satoshi,
-                txIdentifier,
-                investor);
-    }
-
-    private void handleFailedConversionToUsd(BigInteger satoshi, String txIdentifier, Investor investor) {
-        eligibleForRefundInSatoshi(
-                RefundReason.FAILED_CONVERSION_TO_USD,
-                satoshi,
-                txIdentifier,
-                investor);
-    }
-
-    private void handleFailedTokenConversion(BigInteger satoshi, String txIdentifier, Investor investor) {
-        eligibleForRefundInSatoshi(
-                RefundReason.TOKEN_CONVERSION_FAILED,
-                satoshi,
-                txIdentifier,
-                investor);
-    }
-
-    private void handleFinalTierOverflow(BigDecimal usd, BigDecimal usdPerBtc, String txIdentifier,
-                                         Investor investor) {
-
-        BigInteger satoshi = BitcoinUtils.convertUsdToSatoshi(usd, usdPerBtc);
-        eligibleForRefundInSatoshi(
-                RefundReason.FINAL_TIER_OVERFLOW,
-                satoshi,
-                txIdentifier,
-                investor);
     }
 }

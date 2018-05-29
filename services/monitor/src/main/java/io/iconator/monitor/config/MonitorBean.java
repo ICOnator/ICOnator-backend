@@ -6,10 +6,10 @@ import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.TokenConversionService;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
@@ -107,11 +107,11 @@ public class MonitorBean {
                                            Web3j web3j,
                                            InvestorRepository investorRepository,
                                            PaymentLogRepository paymentLogRepository,
-                                           SaleTierRepository saleTierRepository,
+                                           TokenConversionService tokenConversionService,
                                            EligibleForRefundRepository eligibleForRefundRepository,
                                            ICOnatorMessageService messageService) {
         return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository,
-                saleTierRepository, eligibleForRefundRepository, messageService);
+                tokenConversionService, eligibleForRefundRepository, messageService);
     }
 
     @Bean
@@ -123,12 +123,12 @@ public class MonitorBean {
                                          PeerGroup peerGroup,
                                          InvestorRepository investorRepository,
                                          PaymentLogRepository paymentLogRepository,
-                                         SaleTierRepository saleTierRepository,
+                                         TokenConversionService tokenConversionService,
                                          EligibleForRefundRepository eligibleForRefundRepository,
                                          ICOnatorMessageService messageService) {
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogRepository, saleTierRepository,
+                investorRepository, paymentLogRepository, tokenConversionService,
                 eligibleForRefundRepository, messageService);
     }
 

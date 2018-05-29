@@ -1,7 +1,7 @@
 package io.iconator.core.controller;
 
-import io.iconator.core.service.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.core.service.SaleTierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,13 +21,8 @@ public class TierController {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterController.class);
 
-    private SaleTierService saleTierService;
-
     @Autowired
-    TierController(SaleTierService saleTierService) {
-        assert saleTierService != null;
-        this.saleTierService = saleTierService;
-    }
+    private SaleTierService saleTierService;
 
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody

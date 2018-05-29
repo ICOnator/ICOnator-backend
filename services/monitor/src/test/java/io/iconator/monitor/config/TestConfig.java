@@ -8,11 +8,10 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.BaseMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.iconator.monitor.service.TokenConversionService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,24 +30,29 @@ public class TestConfig {
     }
 
     @Bean
-    public BaseMonitor baseMonitor(SaleTierRepository saleTierRepository,
+    public TokenConversionService tokenConversionService() {
+        return new TokenConversionService();
+    }
+
+    @Bean
+    public BaseMonitor baseMonitor(TokenConversionService tokenConversionService,
                                    InvestorRepository investorRepository,
                                    PaymentLogRepository paymentLogRepository,
                                    EligibleForRefundRepository eligibleForRefundRepository,
                                    FxService fxService) {
 
-        return new BaseMonitor(saleTierRepository, investorRepository, paymentLogRepository,
+        return new BaseMonitor(tokenConversionService, investorRepository, paymentLogRepository,
                 eligibleForRefundRepository, fxService);
     }
 
     @Bean
-    public EthereumMonitor ethereumMonitor(SaleTierRepository saleTierRepository,
+    public EthereumMonitor ethereumMonitor(TokenConversionService tokenConversionService,
                                        InvestorRepository investorRepository,
                                        PaymentLogRepository paymentLogRepository,
                                        EligibleForRefundRepository eligibleForRefundRepository,
                                        FxService fxService) {
         Web3j web3j = Web3j.build(new HttpService("http://127.0.0.1:8545/rpc"));
-        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository, saleTierRepository,
+        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository, tokenConversionService,
                 eligibleForRefundRepository, new ICOnatorMessageService() {
             @Override
             public void send(ConfirmationEmailMessage confirmationEmailMessage) {
