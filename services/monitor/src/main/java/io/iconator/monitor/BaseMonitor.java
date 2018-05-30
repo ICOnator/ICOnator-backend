@@ -1,7 +1,6 @@
 package io.iconator.monitor;
 
 import io.iconator.commons.model.CurrencyType;
-import io.iconator.commons.model.Unit;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
@@ -18,8 +17,6 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityExistsException;
-import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 
 @Component
@@ -47,14 +44,14 @@ public class BaseMonitor {
 
     protected boolean isTransactionUnprocessed(String txIdentifier) {
         return !paymentLogRepository.existsByTxIdentifier(txIdentifier)
-            && !eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
+                && !eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
     }
 
     protected void eligibleForRefund(BigInteger amount,
-                                                  CurrencyType currencyType,
-                                                  String txoIdentifier,
-                                                  RefundReason reason,
-                                                  Investor investor) {
+                                     CurrencyType currencyType,
+                                     String txoIdentifier,
+                                     RefundReason reason,
+                                     Investor investor) {
 
         EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType, investor.getId(), txoIdentifier);
         try {

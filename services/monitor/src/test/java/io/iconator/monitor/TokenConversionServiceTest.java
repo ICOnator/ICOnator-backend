@@ -2,7 +2,7 @@ package io.iconator.monitor;
 
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.TestConfig;
+import io.iconator.monitor.config.BaseMonitorTestConfig;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.TokenConversionService.ConversionResult;
 import org.junit.Test;
@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {TestConfig.class, TokenConversionService.class})
+@ContextConfiguration(classes = {BaseMonitorTestConfig.class, TokenConversionService.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class TokenConversionServiceTest {

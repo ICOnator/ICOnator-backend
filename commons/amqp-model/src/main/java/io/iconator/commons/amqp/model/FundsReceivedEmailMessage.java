@@ -30,6 +30,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
     }
 
     public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
+        super(investor);
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
         this.linkToTransaction = linkToTransaction;

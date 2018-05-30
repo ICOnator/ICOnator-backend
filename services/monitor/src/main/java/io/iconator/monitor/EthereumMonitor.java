@@ -48,12 +48,12 @@ public class EthereumMonitor extends BaseMonitor {
     private ICOnatorMessageService messageService;
 
     public EthereumMonitor(FxService fxService,
-                           Web3j web3j,
                            InvestorRepository investorRepository,
                            PaymentLogRepository paymentLogRepository,
                            TokenConversionService tokenConversionService,
                            EligibleForRefundRepository eligibleForRefundRepository,
-                           ICOnatorMessageService messageService) {
+                           ICOnatorMessageService messageService,
+                           Web3j web3j) {
 
         super(tokenConversionService, investorRepository, paymentLogRepository,
                 eligibleForRefundRepository, fxService);
@@ -134,7 +134,7 @@ public class EthereumMonitor extends BaseMonitor {
         Investor investor;
         try {
             String publicKey = monitoredAddresses.get(receivingAddress);
-            investor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey).get();
+            investor = investorRepository.findOptionalByPayInEtherPublicKey(publicKey).get();
         } catch (NoSuchElementException e) {
             LOG.error("Couldn't fetch investor for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
@@ -212,6 +212,7 @@ public class EthereumMonitor extends BaseMonitor {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
             BigInteger overflowWei = convertUsdToWei(conversionResult.getOverflow(), USDperETH);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            return;
         }
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;

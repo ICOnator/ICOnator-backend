@@ -10,7 +10,11 @@ import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
-import org.bitcoinj.core.*;
+import org.bitcoinj.core.BlockChain;
+import org.bitcoinj.core.CheckpointManager;
+import org.bitcoinj.core.Context;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
@@ -110,8 +114,8 @@ public class MonitorBean {
                                            TokenConversionService tokenConversionService,
                                            EligibleForRefundRepository eligibleForRefundRepository,
                                            ICOnatorMessageService messageService) {
-        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository,
-                tokenConversionService, eligibleForRefundRepository, messageService);
+        return new EthereumMonitor(fxService, investorRepository, paymentLogRepository,
+                tokenConversionService, eligibleForRefundRepository, messageService, web3j);
     }
 
     @Bean

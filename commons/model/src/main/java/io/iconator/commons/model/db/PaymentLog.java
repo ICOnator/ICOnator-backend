@@ -2,7 +2,10 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -28,7 +31,7 @@ public class PaymentLog {
     @Column(name = "currency", nullable = false)
     private CurrencyType currency;
 
-    @Column(name = "payment_amount", nullable = false)
+    @Column(name = "payment_amount", precision = 37, scale = 18, nullable = false)
     private BigDecimal paymentAmount;
 
     @Column(name = "fx_rate", nullable = false)
@@ -40,7 +43,7 @@ public class PaymentLog {
     @Column(name = "investor_id", nullable = false)
     private long investorId;
 
-    @Column(name = "token_amount", nullable = false)
+    @Column(name = "token_amount", precision = 37, scale = 18, nullable = false)
     private BigDecimal tokenAmount;
 
     public PaymentLog() {

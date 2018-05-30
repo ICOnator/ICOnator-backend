@@ -13,8 +13,15 @@ import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
-import org.bitcoinj.core.*;
+import org.bitcoinj.core.Address;
+import org.bitcoinj.core.BlockChain;
+import org.bitcoinj.core.Context;
+import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.PeerGroup;
+import org.bitcoinj.core.TransactionConfidence;
 import org.bitcoinj.core.TransactionConfidence.Listener;
+import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
@@ -30,7 +37,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.BUILDING;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.IN_CONFLICT;
 
 public class BitcoinMonitor extends BaseMonitor {
 
@@ -182,7 +191,7 @@ public class BitcoinMonitor extends BaseMonitor {
         String receivingAddress;
         try {
             receivingAddress = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters).toBase58();
-        } catch (RuntimeException e)  {
+        } catch (RuntimeException e) {
             LOG.error("Couldn't fetch receiver address for transaction output {}. " +
                     "Can't process transaction without reciever address.", txoIdentifier, e);
             return;
@@ -275,7 +284,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 blockChainInfoLink,
                 tokenAmount));
 
-        LOG.info("Pay-in received and saved: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
+        LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",
                 utxo.getValue().toFriendlyString(),
                 paymentLog.getPaymentAmount(),
