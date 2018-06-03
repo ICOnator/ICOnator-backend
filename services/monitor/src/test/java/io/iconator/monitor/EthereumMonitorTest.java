@@ -1,15 +1,15 @@
 package io.iconator.monitor;
 
 
+import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.EthereumMonitorTestConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import io.iconator.testrpcj.TestBlockchain;
 import io.iconator.testrpcj.jsonrpc.TypeConverter;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +20,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
@@ -28,6 +32,10 @@ import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,11 +64,41 @@ public class EthereumMonitorTest {
     @Autowired
     private MockICOnatorMessageService mockICOnatorMessageService;
 
+    @Autowired
+    private SaleTierRepository saleTierRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
     public static void setup() throws Exception {
         testBlockchain = new TestBlockchain().start();
+    }
+
+    @Before
+    public void setUpTier() {
+
+        Date from = Date.from(Instant.EPOCH);
+        Date to = new Date();
+
+        // Set up and commit transaction manually, because so far it was the only way that the
+        // saved tier also shows up in other threads (e.g. when queried in the
+        // TokenConversionService).
+        DefaultTransactionDefinition td = new DefaultTransactionDefinition();
+        td.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        TransactionStatus ts = transactionManager.getTransaction(td);
+
+        saleTierRepository.saveAndFlush(
+                new SaleTier(4, "4", from, to, BigDecimal.ZERO, BigInteger.valueOf(1000L)));
+
+        transactionManager.commit(ts);
+    }
+
+    @After
+    public void deleteTiers() {
+        saleTierRepository.deleteAll();
     }
 
     @Ignore

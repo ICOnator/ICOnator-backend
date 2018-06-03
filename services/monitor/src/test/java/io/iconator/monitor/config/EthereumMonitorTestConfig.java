@@ -12,8 +12,12 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
+
+import javax.persistence.EntityManagerFactory;
 
 @Configuration
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
@@ -62,6 +66,13 @@ public class EthereumMonitorTestConfig {
     @Bean
     public MonitorAppConfig monitorAppConfig() {
         return new MonitorAppConfig();
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(emf);
+        return transactionManager;
     }
 
 }
