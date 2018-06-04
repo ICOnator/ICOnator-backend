@@ -1,9 +1,6 @@
 package io.iconator.monitor.utils;
 
-import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
-import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
-import io.iconator.commons.amqp.model.SetWalletAddressMessage;
-import io.iconator.commons.amqp.model.SummaryEmailMessage;
+import io.iconator.commons.amqp.model.*;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 
 import java.util.ArrayList;
@@ -15,6 +12,8 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
     private List<SummaryEmailMessage> summaryEmailMessages = new ArrayList<>();
     private List<FundsReceivedEmailMessage> fundsReceivedEmailMessages = new ArrayList<>();
     private List<SetWalletAddressMessage> newPayInAddressesMessages = new ArrayList<>();
+    private List<KycStartEmailMessage> kycStartEmailMessages = new ArrayList<>();
+    private List<KycReminderEmailMessage> kycReminderEmailMessages = new ArrayList<>();
 
     @Override
     public void send(ConfirmationEmailMessage confirmationEmailMessage) {
@@ -36,6 +35,16 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
         newPayInAddressesMessages.add(newPayInAddressesMessage);
     }
 
+    @Override
+    public void send(KycStartEmailMessage kycStartEmailMessage) {
+        kycStartEmailMessages.add(kycStartEmailMessage);
+    }
+
+    @Override
+    public void send(KycReminderEmailMessage kycReminderEmailMessage) {
+        kycReminderEmailMessages.add(kycReminderEmailMessage);
+    }
+
     public List<ConfirmationEmailMessage> getConfirmationEmailMessages() {
         return confirmationEmailMessages;
     }
@@ -50,5 +59,13 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
 
     public List<SetWalletAddressMessage> getNewPayInAddressesMessages() {
         return newPayInAddressesMessages;
+    }
+
+    public List<KycStartEmailMessage> getKycStartEmailMessages() {
+        return kycStartEmailMessages;
+    }
+
+    public List<KycReminderEmailMessage> getKycReminderEmailMessages() {
+        return kycReminderEmailMessages;
     }
 }
