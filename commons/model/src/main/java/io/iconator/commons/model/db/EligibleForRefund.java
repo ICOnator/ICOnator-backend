@@ -2,13 +2,7 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigInteger;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -36,7 +30,7 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private RefundReason refundReason;
 
-    @Column(name = "amount", precision = 37, scale = 18)
+    @Column(name = "amount", precision = 34, scale = 0)
     private BigInteger amount;
 
     @Column(name = "currency")

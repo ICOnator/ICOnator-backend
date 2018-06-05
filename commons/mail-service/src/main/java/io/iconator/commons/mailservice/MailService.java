@@ -18,6 +18,7 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Optional;
 
 @Service
@@ -64,7 +65,7 @@ public class MailService {
 
     public void sendFundsReceivedEmail(Investor investor, BigDecimal amountFundsReceived,
                                        CurrencyType currencyType, String linkToTransaction,
-                                       BigDecimal tokenAmount)
+                                       BigInteger tokenAmount)
             throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),

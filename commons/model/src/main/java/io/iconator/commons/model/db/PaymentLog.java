@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -31,7 +32,7 @@ public class PaymentLog {
     @Column(name = "currency", nullable = false)
     private CurrencyType currency;
 
-    @Column(name = "payment_amount", precision = 37, scale = 18, nullable = false)
+    @Column(name = "payment_amount", nullable = false, precision = 34)
     private BigDecimal paymentAmount;
 
     @Column(name = "fx_rate", nullable = false)
@@ -43,15 +44,15 @@ public class PaymentLog {
     @Column(name = "investor_id", nullable = false)
     private long investorId;
 
-    @Column(name = "token_amount", precision = 37, scale = 18, nullable = false)
-    private BigDecimal tokenAmount;
+    @Column(name = "token_amount", nullable = false, precision = 34, scale = 0)
+    private BigInteger tokenAmount;
 
     public PaymentLog() {
     }
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
                       BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
-                      long investorId, BigDecimal tokenAmount) {
+                      long investorId, BigInteger tokenAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -95,11 +96,11 @@ public class PaymentLog {
         return usdValue;
     }
 
-    public BigDecimal getTokenAmount() {
+    public BigInteger getTokenAmount() {
         return tokenAmount;
     }
 
-    public void setTokenAmount(BigDecimal amount) {
+    public void setTokenAmount(BigInteger amount) {
         this.tokenAmount = amount;
     }
 

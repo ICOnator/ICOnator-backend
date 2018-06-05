@@ -5,6 +5,7 @@ import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
 import io.iconator.commons.model.CurrencyType;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
@@ -15,13 +16,13 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
 
     private String linkToTransaction;
 
-    private BigDecimal tokenAmount;
+    private BigInteger tokenAmount;
 
     public FundsReceivedEmailMessage() {
         super();
     }
 
-    public FundsReceivedEmailMessage(BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
+    public FundsReceivedEmailMessage(BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigInteger tokenAmount) {
         super();
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
@@ -29,7 +30,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
         this.tokenAmount = tokenAmount;
     }
 
-    public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
+    public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigInteger tokenAmount) {
         super(investor);
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
@@ -49,7 +50,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
         return linkToTransaction;
     }
 
-    public BigDecimal getTokenAmount() {
+    public BigInteger getTokenAmount() {
         return tokenAmount;
     }
 }

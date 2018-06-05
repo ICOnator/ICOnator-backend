@@ -36,10 +36,10 @@ public class SaleTier {
     @Column(name = "discount")
     private BigDecimal discount;
 
-    @Column(name = "tokens_sold")
+    @Column(name = "tokens_sold", precision = 34, scale = 0)
     private BigInteger tokensSold;
 
-    @Column(name = "token_max")
+    @Column(name = "token_max", precision = 34, scale = 0)
     private BigInteger tokenMax;
 
     protected SaleTier() {

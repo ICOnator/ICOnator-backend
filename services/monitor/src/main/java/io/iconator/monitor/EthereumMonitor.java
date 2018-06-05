@@ -182,7 +182,7 @@ public class EthereumMonitor extends BaseMonitor {
                 USDperETH,
                 usdReceived,
                 investor.getId(),
-                BigDecimal.ZERO);
+                BigInteger.ZERO);
         try {
             savePaymentLog(paymentLog);
         } catch (Exception e) {
@@ -206,8 +206,8 @@ public class EthereumMonitor extends BaseMonitor {
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
-        BigDecimal tokenAmount = new BigDecimal(conversionResult.getTokens());
-        paymentLog.setTokenAmount(tokenAmount);
+
+        paymentLog.setTokenAmount(conversionResult.getTokens());
         if (conversionResult.hasOverflow()) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
             BigInteger overflowWei = convertUsdToWei(conversionResult.getOverflow(), USDperETH);
@@ -222,7 +222,7 @@ public class EthereumMonitor extends BaseMonitor {
                 new BigDecimal(wei),
                 CurrencyType.ETH,
                 etherscanLink,
-                tokenAmount));
+                conversionResult.getTokens()));
 
         LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",

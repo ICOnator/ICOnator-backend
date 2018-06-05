@@ -13,15 +13,8 @@ import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
-import org.bitcoinj.core.Address;
-import org.bitcoinj.core.BlockChain;
-import org.bitcoinj.core.Context;
-import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.PeerGroup;
-import org.bitcoinj.core.TransactionConfidence;
+import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
-import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
@@ -37,9 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.BUILDING;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.IN_CONFLICT;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
 
 public class BitcoinMonitor extends BaseMonitor {
 
@@ -242,7 +233,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 USDperBTC,
                 usdReceived,
                 investor.getId(),
-                BigDecimal.ZERO);
+                BigInteger.ZERO);
         try {
             savePaymentLog(paymentLog);
         } catch (Exception e) {
@@ -266,8 +257,7 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
-        BigDecimal tokenAmount = new BigDecimal(conversionResult.getTokens());
-        paymentLog.setTokenAmount(tokenAmount);
+        paymentLog.setTokenAmount(conversionResult.getTokens());
         if (conversionResult.hasOverflow()) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(conversionResult.getOverflow(), USDperBTC);
@@ -282,7 +272,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 new BigDecimal(satoshi),
                 CurrencyType.BTC,
                 blockChainInfoLink,
-                tokenAmount));
+                conversionResult.getTokens()));
 
         LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",

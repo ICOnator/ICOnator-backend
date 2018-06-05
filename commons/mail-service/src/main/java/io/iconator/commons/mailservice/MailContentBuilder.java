@@ -21,6 +21,7 @@ import javax.annotation.PostConstruct;
 import javax.mail.MessagingException;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
@@ -140,7 +141,7 @@ public class MailContentBuilder {
 
     public void buildFundsReceivedEmail(Optional<MimeMessageHelper> oMessage,
                                         BigDecimal amountFundsReceived, CurrencyType currencyType,
-                                        String link, BigDecimal amountTokens, String tokenSymbol) {
+                                        String link, BigInteger amountTokens, String tokenSymbol) {
         if (oMessage.isPresent()) {
             try {
                 Context context = new Context();

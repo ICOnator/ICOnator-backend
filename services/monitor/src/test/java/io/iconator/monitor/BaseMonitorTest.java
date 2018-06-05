@@ -13,6 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 
 import static junit.framework.TestCase.fail;
@@ -37,7 +38,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigDecimal.ZERO); // token amount
+                BigInteger.ZERO); // token amount
 
         baseMonitor.savePaymentLog(paymentLog1);
 
@@ -50,7 +51,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigDecimal.ZERO); // token amount
+                BigInteger.ZERO); // token amount
 
         try {
             baseMonitor.savePaymentLog(paymentLog2);
@@ -72,7 +73,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigDecimal.ZERO); // token amount
+                BigInteger.ZERO); // token amount
         try {
             baseMonitor.savePaymentLog(paymentLog1);
         } catch (Exception e) {

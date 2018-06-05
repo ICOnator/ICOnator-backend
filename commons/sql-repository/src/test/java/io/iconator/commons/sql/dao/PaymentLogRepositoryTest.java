@@ -13,6 +13,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 import java.util.Optional;
 
@@ -70,7 +71,7 @@ public class PaymentLogRepositoryTest {
                 new BigDecimal(2),
                 new BigDecimal(3),
                 investor.getId(),
-                new BigDecimal(100));
+                BigInteger.valueOf(100L));
     }
 
 }
