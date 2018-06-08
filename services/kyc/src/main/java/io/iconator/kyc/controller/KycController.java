@@ -25,7 +25,6 @@ import javax.ws.rs.core.Context;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -42,6 +41,8 @@ public class KycController {
     @Autowired
     private InvestorService investorService;
 
+    private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
+
     @RequestMapping(value = "/kyc/{investorId}/start", method = POST)
     public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
                                       @RequestBody String kycLink,
@@ -55,7 +56,9 @@ public class KycController {
         try {
             kycUri = new URI(kycLink);
         } catch(URISyntaxException e) {
-            return ResponseEntity.ok(kycLink + " is not a valid URI.");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
 
         try {
@@ -64,9 +67,13 @@ public class KycController {
             if(!isKycComplete) {
                 //KYC process with this investor started but not yet completed
                 //TODO check for start email and no of emails sent
-                response = ResponseEntity.ok("KYC for investor with ID " + investorId + " started but not yet complete.");
+                response = ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("KYC for investor with ID " + investorId + " started but not yet complete.");
             } else {
-                response = ResponseEntity.ok("KYC for investor with ID " + investorId + " already complete.");
+                response = ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("KYC for investor with ID " + investorId + " already complete.");
             }
         } catch(InvestorNotFoundException e) {
             // KYC Process not yet started
@@ -90,15 +97,21 @@ public class KycController {
             boolean isKycComplete = kycInfo.isKycComplete();
             if(isKycComplete) {
                 // KYC is already complete
-                response = ResponseEntity.ok("KYC of investor with ID " + investorId + " already complete.");
+                response = ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("KYC of investor with ID " + investorId + " already complete.");
             } else {
                 // Complete KYC
                 kycInfoService.setKycComplete(investorId, true);
-                response = ResponseEntity.ok("KYC of investor with ID " + investorId + " completed.");
+                response = ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body("KYC status of investor with ID " + investorId + " set to completed.");
             }
         } catch(InvestorNotFoundException e) {
             // KYC Process not yet started
-            response = ResponseEntity.ok("KYC process of investor with ID " + investorId + " not yet started.");
+            response = ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
 
         return response;
@@ -114,10 +127,14 @@ public class KycController {
 
         try {
             KycInfo kycInfo = kycInfoService.getKycInfoByInvestorId(investorId);
-            response = ResponseEntity.ok(kycInfo);
+            response = ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(kycInfo);
         } catch(InvestorNotFoundException e) {
             LOG.info("No KYC data about investor with ID {}.", investorId);
-            response = ResponseEntity.notFound().build();
+            response = ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
 
         return response;
@@ -126,29 +143,30 @@ public class KycController {
     private ResponseEntity<?> initiateKyc(long investorId, URI kycUri) {
         ResponseEntity response;
 
-        boolean investorExists = true;
-        Investor investor = null;
+        Investor investor;
 
         try {
             investor = investorService.getInvestorByInvestorId(investorId);
         } catch(InvestorNotFoundException e) {
             LOG.info("Investor with ID {} does not exist.", investorId);
-            investorExists = false;
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
 
-        if(investorExists) {
-            try {
-                kycInfoService.saveKycInfo(investorId, kycUri);
-                KycStartEmailMessage kycStartEmail = new KycStartEmailMessage(build(investor), kycUri.toASCIIString());
-                messageService.send(kycStartEmail);
-                // TODO create email templates and send email from mail-service
-                response = ResponseEntity.ok("Started KYC process for investor " + investorId);
-            } catch(KycInfoNotSavedException e) {
-                LOG.error("KYC Info not saved.", e);
-                response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            }
-        } else {
-            response = ResponseEntity.notFound().build();
+        try {
+            kycInfoService.saveKycInfo(investorId, kycUri);
+            KycStartEmailMessage kycStartEmail = messageFactory.makeKycStartEmailMessage(investor, kycUri);
+            messageService.send(kycStartEmail);
+            // TODO listener for mail sent successfully message on amqp
+            response = ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("Started KYC process for investor " + investorId);
+        } catch(KycInfoNotSavedException e) {
+            LOG.error("KYC Info not saved.", e);
+            response = ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
         }
 
         return response;
