@@ -41,6 +41,9 @@ public class MailServiceConfigHolder {
     @Value("${io.iconator.commons.mail.service.kycStartEmailSubject}")
     private String kycStartEmailSubject;
 
+    @Value("${io.iconator.commons.mail.service.kycReminderEmailSubject}")
+    private String kycReminderEmailSubject;
+
     @Value("${io.iconator.commons.mail.service.token-symbol}")
     private String tokenSymbol;
 
@@ -128,6 +131,10 @@ public class MailServiceConfigHolder {
 
     public String getKycStartEmailSubject() {
         return kycStartEmailSubject;
+    }
+
+    public String getKycReminderEmailSubject() {
+        return kycReminderEmailSubject;
     }
 
     public String getTokenSymbol() {

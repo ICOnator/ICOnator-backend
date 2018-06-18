@@ -91,6 +91,18 @@ public class MailService {
         }
     }
 
+    public void sendKycReminderEmail(Investor investor, String kycUrl) throws EmailNotSentException, EmailNotPreparedException {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),
+                this.mailServiceConfigHolder.getKycReminderEmailSubject(), MailType.KYC_REMINDER_EMAIL);
+        this.mailContentBuilder.buildKycReminderEmail(oMessage, kycUrl);
+        if (this.mailServiceConfigHolder.isEnabled()) {
+            sendMail(oMessage, MailType.KYC_REMINDER_EMAIL);
+        } else {
+            LOG.info("Skip sending {} email to {}", MailType.KYC_REMINDER_EMAIL, investor.getEmail());
+        }
+    }
+
     public void sendAdminMail(String content) throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(this.mailServiceConfigHolder.getAdmin());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, this.mailServiceConfigHolder.getAdmin(),
@@ -112,6 +124,7 @@ public class MailService {
                 }
                 LOG.info("Sending email type {} to {}", emailType, recipient);
                 this.javaMailService.send(oMessage.get().getMimeMessage());
+                // TODO: publish email sent message to amqp
             } else {
                 throw new Exception();
             }

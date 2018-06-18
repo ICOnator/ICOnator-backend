@@ -1,5 +1,6 @@
 package io.iconator.kyc.controller;
 
+import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
@@ -66,10 +67,14 @@ public class KycController {
             boolean isKycComplete = kycInfo.isKycComplete();
             if(!isKycComplete) {
                 //KYC process with this investor started but not yet completed
-                //TODO check for start email and no of emails sent
-                response = ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("KYC for investor with ID " + investorId + " started but not yet complete.");
+                if(kycInfo.isStartKycEmailSent()) {
+                    // sending reminder
+                    response = remindKyc(investorId, kycUri);
+                } else {
+                    response = ResponseEntity
+                            .status(HttpStatus.BAD_REQUEST)
+                            .body("KYC for investor with ID " + investorId + " started but start email not yet sent.");
+                }
             } else {
                 response = ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
@@ -142,7 +147,6 @@ public class KycController {
 
     private ResponseEntity<?> initiateKyc(long investorId, URI kycUri) {
         ResponseEntity response;
-
         Investor investor;
 
         try {
@@ -166,6 +170,31 @@ public class KycController {
             LOG.error("KYC Info not saved.", e);
             response = ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+
+        return response;
+    }
+
+    private ResponseEntity<?> remindKyc(long investorId, URI kycUri) {
+        ResponseEntity response;
+        Investor investor;
+
+        try {
+            investor = investorService.getInvestorByInvestorId(investorId);
+
+            KycReminderEmailMessage kycReminderEmailMessage = messageFactory.makeKycReminderEmailMessage(investor, kycUri);
+            messageService.send(kycReminderEmailMessage);
+
+            kycInfoService.increaseNumberOfRemindersSent(investorId);
+
+            response = ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("KYC for investor with ID " + investorId + " started but not yet complete. Sending Reminder.");
+        } catch(InvestorNotFoundException e) {
+            LOG.info("Investor with ID {} does not exist.", investorId);
+            response = ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
                     .body(e.getMessage());
         }
 

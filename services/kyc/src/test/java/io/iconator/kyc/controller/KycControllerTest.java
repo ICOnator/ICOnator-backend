@@ -1,6 +1,7 @@
 package io.iconator.kyc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
@@ -27,7 +28,6 @@ import java.util.Date;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -85,7 +85,7 @@ public class KycControllerTest {
                 .andReturn();
 
         verify(mockKycInfoService).saveKycInfo(INVESTOR_ID, new URI(KYC_LINK));
-        verify(mockMessageService).send(isA(KycStartEmailMessage.class));
+        verify(mockMessageService).send(eq(message));
 
         assertThat(result.getResponse().getContentAsString())
                 .isEqualTo("Started KYC process for investor " + INVESTOR_ID);
@@ -121,6 +121,7 @@ public class KycControllerTest {
 
     @Test
     public void testStartAlreadyStartedKyc() throws Exception {
+        // KYC not completed, Start Email not yet sent
         KycInfo testKycInfo1 = createKycInfo(false);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo1);
@@ -132,21 +133,42 @@ public class KycControllerTest {
                 .andDo(print())
                 .andReturn();
 
-        assertThat(result1.getResponse().getContentAsString()).contains("started but not yet complete.");
+        assertThat(result1.getResponse().getContentAsString()).contains("started but start email not yet sent.");
 
 
-        KycInfo testKycInfo2 = createKycInfo(true);
+        // KYC not completed, Start Email sent
+        Investor investor = new Investor(new Date(), "test@test.com", "1234");
+        KycInfo testKycInfo2 = createKycInfo(false).setStartKycEmailSent(true);
+        KycReminderEmailMessage message = new KycReminderEmailMessage(build(investor), KYC_LINK);
 
+        when(mockInvestorService.getInvestorByInvestorId(INVESTOR_ID)).thenReturn(investor);
+        when(mockMessageFactory.makeKycReminderEmailMessage(eq(investor), eq(new URI(KYC_LINK)))).thenReturn(message);
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo2);
 
         MvcResult result2 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(KYC_LINK))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        verify(mockMessageService).send(eq(message));
+        assertThat(result2.getResponse().getContentAsString()).contains("Sending Reminder.");
+
+
+        // already completed KYC
+        KycInfo testKycInfo3 = createKycInfo(true);
+
+        when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo3);
+
+        MvcResult result3 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(KYC_LINK))
                 .andExpect(status().isBadRequest())
                 .andDo(print())
                 .andReturn();
 
-        assertThat(result2.getResponse().getContentAsString()).contains("already complete.");
+        assertThat(result3.getResponse().getContentAsString()).contains("already complete.");
     }
 
     @Test
