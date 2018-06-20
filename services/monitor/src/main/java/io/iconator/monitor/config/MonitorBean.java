@@ -96,18 +96,28 @@ public class MonitorBean {
             peerGroup.addAddress(Inet4Address.getByName("192.41.136.217"));
             // 212-51-140-183.fiber7.init7.net.
             peerGroup.addAddress(Inet4Address.getByName("212.51.140.183"));
-            // 217.108.5.85.dynamic.wline.res.cust.swisscom.ch.
-            peerGroup.addAddress(Inet4Address.getByName("85.5.108.217"));
             // 212-51-159-248.fiber7.init7.net.
             peerGroup.addAddress(Inet4Address.getByName("212.51.159.248"));
-            // 6.178.76.83.dynamic.wline.res.cust.swisscom.ch.
-            peerGroup.addAddress(Inet4Address.getByName("83.76.178.6"));
-            // swillux.swill.org.
-            peerGroup.addAddress(Inet4Address.getByName("213.144.135.202"));
             // bitcoin.vable.ch.
             peerGroup.addAddress(Inet4Address.getByName("194.15.231.236"));
             // hosted-by.solarcom.ch.
             peerGroup.addAddress(Inet4Address.getByName("95.183.48.62"));
+            // no reverse DNS
+            peerGroup.addAddress(Inet4Address.getByName("193.234.225.156"));
+            // yodel.dconnolly.com.
+            peerGroup.addAddress(Inet4Address.getByName("176.9.154.110"));
+            // static.109.19.9.5.clients.your-server.de.
+            peerGroup.addAddress(Inet4Address.getByName("5.9.19.109"));
+
+            // These are the DNS seeds found on the bitcoin core client:
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.sipa.be"));
+            peerGroup.addAddress(Inet4Address.getByName("dnsseed.bluematt.me"));
+            peerGroup.addAddress(Inet4Address.getByName("dnsseed.bitcoin.dashjr.org"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoinstats.com"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.jonasschnelli.ch"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.btc.petertodd.org"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.sprovoost.nl"));
+
         } else if (chainNetworkParameters.equals(TestNet3Params.get())) {
             peerGroup.addPeerDiscovery(new DnsDiscovery(chainNetworkParameters));
         }
