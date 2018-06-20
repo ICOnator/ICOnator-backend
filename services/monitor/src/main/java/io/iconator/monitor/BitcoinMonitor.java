@@ -2,7 +2,10 @@ package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.bitcoin.BitcoinUnit;
+import io.iconator.commons.bitcoin.BitcoinUnitConverter;
 import io.iconator.commons.bitcoin.BitcoinUtils;
+import io.iconator.commons.bitcoin.exception.BitcoinUnitConversionNotImplementedException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
@@ -38,7 +41,7 @@ public class BitcoinMonitor extends BaseMonitor {
 
     private Wallet wallet;
     private final Context bitcoinContext;
-    private final PeerGroup peerGroup;
+    private final PeerGroup bitcoinPeerGroup;
     private final NetworkParameters bitcoinNetworkParameters;
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
@@ -55,7 +58,7 @@ public class BitcoinMonitor extends BaseMonitor {
                           SPVBlockStore bitcoinBlockStore,
                           Context bitcoinContext,
                           NetworkParameters bitcoinNetworkParameters,
-                          PeerGroup peerGroup,
+                          PeerGroup bitcoinPeerGroup,
                           InvestorRepository investorRepository,
                           PaymentLogRepository paymentLogRepository,
                           TokenConversionService tokenConversionService,
@@ -69,7 +72,7 @@ public class BitcoinMonitor extends BaseMonitor {
         this.bitcoinBlockStore = bitcoinBlockStore;
         this.bitcoinContext = bitcoinContext;
         this.bitcoinNetworkParameters = bitcoinNetworkParameters;
-        this.peerGroup = peerGroup;
+        this.bitcoinPeerGroup = bitcoinPeerGroup;
 
         this.messageService = messageService;
 
@@ -81,7 +84,7 @@ public class BitcoinMonitor extends BaseMonitor {
     private void walletSetUp() {
         this.wallet = new Wallet(this.bitcoinContext);
         this.bitcoinBlockchain.addWallet(wallet);
-        peerGroup.addWallet(wallet);
+        bitcoinPeerGroup.addWallet(wallet);
     }
 
     /**
@@ -100,7 +103,7 @@ public class BitcoinMonitor extends BaseMonitor {
     }
 
     public void start() throws InterruptedException {
-        peerGroup.start();
+        bitcoinPeerGroup.start();
 
         // Download block chain (blocking)
         final DownloadProgressTracker downloadListener = new DownloadProgressTracker() {
@@ -114,7 +117,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 LOG.info("Downloading chain: {}%", (int) pct);
             }
         };
-        peerGroup.startBlockChainDownload(downloadListener);
+        bitcoinPeerGroup.startBlockChainDownload(downloadListener);
         LOG.info("Downloading SPV blockchain...");
         downloadListener.await();
     }
@@ -209,10 +212,11 @@ public class BitcoinMonitor extends BaseMonitor {
             return;
         }
 
-        BigDecimal USDperBTC, usdReceived;
+        BigDecimal USDperBTC, usdReceived, coins;
         try {
             USDperBTC = fxService.getUSDPerBTC(timestamp);
             usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
+            coins = BitcoinUnitConverter.convert(new BigDecimal(satoshi), BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
         } catch (USDBTCFxException e) {
             LOG.error("Couldn't get USD to Ether exchange rate for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.MISSING_FX_RATE, investor);
@@ -221,6 +225,10 @@ public class BitcoinMonitor extends BaseMonitor {
             LOG.error("Failed to fetch payment amount in US dollars for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
+        } catch (BitcoinUnitConversionNotImplementedException e) {
+            LOG.error("Failed to convert satoshi to bitcoin for transaction {}.", txoIdentifier, e);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_FROM_SATOSHI_TO_COIN, investor);
+            return;
         }
 
         LOG.debug("USD {} to be converted to tokens, for transaction {}", usdReceived.toPlainString(), txoIdentifier);
@@ -228,7 +236,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 txoIdentifier,
                 new Date(),
                 timestamp,
-                CurrencyType.ETH,
+                CurrencyType.BTC,
                 new BigDecimal(satoshi),
                 USDperBTC,
                 usdReceived,

@@ -2,6 +2,9 @@ package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.ethereum.EthereumUnit;
+import io.iconator.commons.ethereum.EthereumUnitConverter;
+import io.iconator.commons.ethereum.exception.EthereumUnitConversionNotImplementedException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
@@ -160,7 +163,7 @@ public class EthereumMonitor extends BaseMonitor {
         try {
             USDperETH = fxService.getUSDperETH(blockHeight);
             LOG.debug("FX Service USDperETH {}, hash {}, address {}", USDperETH.toPlainString(), txIdentifier, receivingAddress);
-            ethers = Convert.fromWei(new BigDecimal(wei), org.web3j.utils.Convert.Unit.ETHER);
+            ethers = EthereumUnitConverter.convert(new BigDecimal(wei), EthereumUnit.WEI, EthereumUnit.ETHER);
             usdReceived = ethers.multiply(USDperETH);
         } catch (USDETHFxException e) {
             LOG.error("Couldn't get USD to Ether exchange rate for transaction {}.", txIdentifier, e);
@@ -169,6 +172,10 @@ public class EthereumMonitor extends BaseMonitor {
         } catch (RuntimeException e) {
             LOG.error("Failed to fetch payment amount in US dollars for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
+            return;
+        } catch (EthereumUnitConversionNotImplementedException e) {
+            LOG.error("Failed to convert wei to ethers for transaction {}.", txIdentifier, e);
+            eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_FROM_WEI_TO_ETHER, investor);
             return;
         }
 
@@ -219,7 +226,7 @@ public class EthereumMonitor extends BaseMonitor {
 
         messageService.send(new FundsReceivedEmailMessage(
                 build(investor),
-                new BigDecimal(wei),
+                ethers,
                 CurrencyType.ETH,
                 etherscanLink,
                 conversionResult.getTokens()));

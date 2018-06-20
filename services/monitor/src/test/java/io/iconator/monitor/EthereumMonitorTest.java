@@ -1,6 +1,9 @@
 package io.iconator.monitor;
 
 
+import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
@@ -9,7 +12,11 @@ import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import io.iconator.testrpcj.TestBlockchain;
 import io.iconator.testrpcj.jsonrpc.TypeConverter;
-import org.junit.*;
+import org.ethereum.crypto.ECKey;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +24,12 @@ import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
@@ -34,10 +40,12 @@ import org.web3j.utils.Convert;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +53,8 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {EthereumMonitorTestConfig.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Transactional(propagation = Propagation.SUPPORTS)
 public class EthereumMonitorTest {
 
     private final static Logger LOG = LoggerFactory.getLogger(EthereumMonitorTest.class);
@@ -67,9 +77,6 @@ public class EthereumMonitorTest {
     @Autowired
     private SaleTierRepository saleTierRepository;
 
-    @Autowired
-    private PlatformTransactionManager transactionManager;
-
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
@@ -78,22 +85,9 @@ public class EthereumMonitorTest {
     }
 
     @Before
-    public void setUpTier() {
-
-        Date from = Date.from(Instant.EPOCH);
-        Date to = new Date();
-
-        // Set up and commit transaction manually, because so far it was the only way that the
-        // saved tier also shows up in other threads (e.g. when queried in the
-        // TokenConversionService).
-        DefaultTransactionDefinition td = new DefaultTransactionDefinition();
-        td.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        TransactionStatus ts = transactionManager.getTransaction(td);
-
-        saleTierRepository.saveAndFlush(
-                new SaleTier(4, "4", from, to, BigDecimal.ZERO, BigInteger.valueOf(1000L)));
-
-        transactionManager.commit(ts);
+    public void setUp() {
+        createAndSaveTier();
+        createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
     }
 
     @After
@@ -101,16 +95,19 @@ public class EthereumMonitorTest {
         saleTierRepository.deleteAll();
     }
 
-    @Ignore
     @Test
     public void testPayment() throws Exception {
 
-        String account1PubKey = Hex.toHexString(TestBlockchain.ACCOUNT_1.getPubKey());
+        BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
+        BigDecimal usdPricePerETH = BigDecimal.ONE;
+        BigInteger tokenAmountToBeReceived = BigInteger.ONE;
+        CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
-        BigDecimal usdPerETH = new BigDecimal(1);
+
+        String account1PubKey = Hex.toHexString(TestBlockchain.ACCOUNT_1.getPubKey());
 
         when(fxService.getUSDperETH(eq(ethBlockNumber)))
-                .thenReturn(usdPerETH);
+                .thenReturn(usdPricePerETH);
 
         ethereumMonitor.addMonitoredEtherPublicKey(account1PubKey);
         ethereumMonitor.start((long) 0);
@@ -121,7 +118,7 @@ public class EthereumMonitorTest {
                 web3j,
                 credentials,
                 TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress()),
-                BigDecimal.valueOf(1.0),
+                fundsAmountToSendInETH,
                 Convert.Unit.ETHER).send();
 
         // TODO:
@@ -130,7 +127,57 @@ public class EthereumMonitorTest {
         // then remove the thread sleep.
         Thread.sleep(20000);
 
-        assertEquals(1, mockICOnatorMessageService.getFundsReceivedEmailMessages().size());
+        List<FundsReceivedEmailMessage> messages = mockICOnatorMessageService.getFundsReceivedEmailMessages();
+
+        assertEquals(1, messages.size());
+
+        assertTrue(matchReceivedMessage(messages, isTokenAmountReceivedEqualToCurrencyTypeSent(tokenAmountToBeReceived)));
+        assertTrue(matchReceivedMessage(messages, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
+        assertTrue(matchReceivedMessage(messages, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
+    }
+
+    private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tokenAmountSent) {
+        return p -> p.getTokenAmount() == tokenAmountSent;
+    }
+
+
+    public Predicate<FundsReceivedEmailMessage> isCurrencyTypeReceivedEqualToCurrencyTypeSent(CurrencyType currencySent) {
+        return p -> p.getCurrencyType() == currencySent;
+    }
+
+    public Predicate<FundsReceivedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
+        return p -> p.getAmountFundsReceived() == fundsSent;
+    }
+
+    private boolean matchReceivedMessage(List<FundsReceivedEmailMessage> messages, Predicate<FundsReceivedEmailMessage> predicate) {
+        return messages.stream().allMatch(predicate);
+    }
+
+    private Investor createAndSaveInvestor(ECKey key) {
+        return investorRepository.saveAndFlush(buildInvestor(key));
+    }
+
+    private Investor buildInvestor(ECKey key) {
+        return new Investor(
+                new Date(),
+                "email@email.com",
+                "emailConfirmationToken",
+                "walletAddress",
+                Hex.toHexString(key.getPubKey()),
+                "payInBitcoinPublicKey",
+                "refundEtherAddress",
+                "refundBitcoinAddress",
+                "127.0.0.1"
+
+
+        );
+    }
+
+    private void createAndSaveTier() {
+        Date from = Date.from(Instant.EPOCH);
+        Date to = new Date();
+        saleTierRepository.saveAndFlush(
+                new SaleTier(4, "4", from, to, BigDecimal.ZERO, BigInteger.valueOf(1000L)));
     }
 
 }
