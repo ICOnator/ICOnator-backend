@@ -277,7 +277,7 @@ public class BitcoinMonitor extends BaseMonitor {
 
         messageService.send(new FundsReceivedEmailMessage(
                 build(investor),
-                new BigDecimal(satoshi),
+                coins,
                 CurrencyType.BTC,
                 blockChainInfoLink,
                 conversionResult.getTokens()));
