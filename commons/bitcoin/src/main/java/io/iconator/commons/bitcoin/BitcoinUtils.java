@@ -1,5 +1,6 @@
 package io.iconator.commons.bitcoin;
 
+import io.iconator.commons.bitcoin.exception.BitcoinUnitConversionNotImplementedException;
 import org.bitcoinj.core.Block;
 import org.bitcoinj.core.StoredBlock;
 import org.bitcoinj.core.Transaction;
@@ -7,6 +8,7 @@ import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -60,15 +62,21 @@ public class BitcoinUtils {
     }
 
     public static BigDecimal convertSatoshiToUsd(BigInteger satoshi, BigDecimal USDperBTC) {
-        return new BigDecimal(satoshi)
-                .multiply(USDperBTC)
-                .divide(new BigDecimal("100000000"), new MathContext(34, RoundingMode.DOWN));
+        try {
+            return BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN)
+                    .multiply(USDperBTC);
+        } catch (BitcoinUnitConversionNotImplementedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static BigInteger convertUsdToSatoshi(BigDecimal usd, BigDecimal USDperBTC) {
-        return usd.multiply(new BigDecimal("100000000"))
-                .divide(USDperBTC, new MathContext(34, RoundingMode.DOWN))
-                .toBigInteger();
+        try {
+            BigDecimal coins = usd.divide(USDperBTC, MathContext.DECIMAL128);
+            return BitcoinUnitConverter.convert(coins, BitcoinUnit.COIN, BitcoinUnit.SATOSHI)
+                    .toBigInteger();
+        } catch (BitcoinUnitConversionNotImplementedException e) {
+            throw new RuntimeException(e);
+        }
     }
-
 }

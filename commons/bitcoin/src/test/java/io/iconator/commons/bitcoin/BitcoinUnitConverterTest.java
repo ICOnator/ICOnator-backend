@@ -21,4 +21,16 @@ public class BitcoinUnitConverterTest {
         }
         assertEquals(0, coin.compareTo(new BigDecimal("1.00000099")));
     }
+
+    @Test
+    public void testBitcoinToSatoshiConversion() {
+        BigDecimal satoshi = BigDecimal.ZERO;
+        try {
+            satoshi = BitcoinUnitConverter.convert(
+                    new BigDecimal("1.00000099"), BitcoinUnit.COIN, BitcoinUnit.SATOSHI);
+        } catch (BitcoinUnitConversionNotImplementedException e) {
+            fail();
+        }
+        assertEquals(0, satoshi.compareTo(new BigDecimal(100_000_099)));
+    }
 }
