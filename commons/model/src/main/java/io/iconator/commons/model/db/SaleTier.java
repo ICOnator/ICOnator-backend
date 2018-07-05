@@ -33,7 +33,7 @@ public class SaleTier {
     @Column(name = "end_date")
     private Date endDate;
 
-    @Column(name = "discount")
+    @Column(name = "discount", precision = 6, scale = 6)
     private BigDecimal discount;
 
     @Column(name = "tokens_sold", precision = 34, scale = 0)
