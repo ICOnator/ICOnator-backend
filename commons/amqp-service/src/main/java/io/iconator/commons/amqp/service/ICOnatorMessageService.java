@@ -1,9 +1,6 @@
 package io.iconator.commons.amqp.service;
 
-import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
-import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
-import io.iconator.commons.amqp.model.SetWalletAddressMessage;
-import io.iconator.commons.amqp.model.SummaryEmailMessage;
+import io.iconator.commons.amqp.model.*;
 
 public interface ICOnatorMessageService {
 
@@ -14,5 +11,9 @@ public interface ICOnatorMessageService {
     void send(FundsReceivedEmailMessage fundsReceivedEmailMessage);
 
     void send(SetWalletAddressMessage newPayInAddressesMessage);
+
+    void send(KycStartEmailMessage kycStartEmailMessage);
+
+    void send(KycReminderEmailMessage kycReminderEmailMessage);
 
 }
