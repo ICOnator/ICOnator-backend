@@ -12,6 +12,8 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
@@ -28,6 +30,9 @@ public class SaleTierRepositoryTest {
 
     @Autowired
     private SaleTierRepository tierRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @After
     public void deleteTiers() {
@@ -89,6 +94,19 @@ public class SaleTierRepositoryTest {
         } else {
            fail("Retrieved last tier was null but should be");
         }
+    }
+
+    @Test
+    public void testDiscountNumberFormat() {
+        SaleTier t = tierRepository.saveAndFlush(createTier(1, "2018-01-01", "2018-01-10", new BigDecimal("0.5239495"), 1000L));
+        entityManager.detach(t);
+        t = tierRepository.findByTierNo(1).get();
+        assertEquals(0, t.getDiscount().compareTo(new BigDecimal("0.523950")));
+
+        t = tierRepository.saveAndFlush(createTier(2, "2018-01-01", "2018-01-10", new BigDecimal("0.0009495"), 1000L));
+        entityManager.detach(t);
+        t = tierRepository.findByTierNo(2).get();
+        assertEquals(0, t.getDiscount().compareTo(new BigDecimal("0.000950")));
     }
 
     private SaleTier createTier(int tierNo, String start, String end, BigDecimal discount, long tokenMax) {

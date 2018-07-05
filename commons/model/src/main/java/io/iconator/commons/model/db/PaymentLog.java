@@ -32,13 +32,13 @@ public class PaymentLog {
     @Column(name = "currency", nullable = false)
     private CurrencyType currency;
 
-    @Column(name = "payment_amount", nullable = false, precision = 34)
+    @Column(name = "payment_amount", nullable = false, precision = 34, scale = 0)
     private BigDecimal paymentAmount;
 
     @Column(name = "fx_rate", nullable = false)
     private BigDecimal fxRate;
 
-    @Column(name = "usd_amount", nullable = false)
+    @Column(name = "usd_amount", nullable = false, precision = 34, scale = 6)
     private BigDecimal usdValue;
 
     @Column(name = "investor_id", nullable = false)

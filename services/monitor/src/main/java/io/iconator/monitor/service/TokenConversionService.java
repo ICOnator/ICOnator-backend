@@ -29,8 +29,6 @@ public class TokenConversionService {
 
     private final static Logger LOG = LoggerFactory.getLogger(TokenConversionService.class);
 
-    private static final MathContext MATH_CONTEXT = new MathContext(34, RoundingMode.DOWN);
-
     @Autowired
     private SaleTierRepository saleTierRepository;
 
@@ -39,7 +37,7 @@ public class TokenConversionService {
 
 
     public BigDecimal convertCurrencyToTokens(BigDecimal currency, BigDecimal discountRate) {
-        return currency.divide(BigDecimal.ONE.subtract(discountRate), MATH_CONTEXT);
+        return currency.divide(BigDecimal.ONE.subtract(discountRate), MathContext.DECIMAL128);
     }
 
     public BigDecimal convertTokensToCurrency(BigDecimal tokens, BigDecimal discountRate) {
@@ -99,29 +97,28 @@ public class TokenConversionService {
     @Transactional(rollbackFor = {Exception.class},
             isolation = Isolation.READ_COMMITTED,
             propagation = Propagation.REQUIRES_NEW)
-    protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal amount, Date blockTime) {
-        BigDecimal remainingAmount = amount;
+    protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal usd, Date blockTime) {
+        BigDecimal usdOverflow = usd;
         BigInteger tokensTotal = BigInteger.ZERO;
         Optional<SaleTier> oCurrentTier = saleTierRepository.findActiveTierByDate(blockTime);
 
-        while (oCurrentTier.isPresent() && remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
+        while (oCurrentTier.isPresent() && usdOverflow.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
 
-            BigDecimal tokensDecimal = convertCurrencyToTokens(remainingAmount, currentTier.getDiscount());
-            BigInteger tokens = tokensDecimal.toBigInteger();
+            BigDecimal tokensDecimal = convertCurrencyToTokens(usdOverflow, currentTier.getDiscount());
+            BigInteger tokensInteger = tokensDecimal.toBigInteger();
 
-            if (tokensFillOrExceedTiersCap(tokens, currentTier)) {
-                // Tokens must be distributed over multiple tiers
-                // Calculate the amount that is assigned to the current tier and what remains for
-                // the next tier.
-                BigInteger tokensToCurrentTier = currentTier.getTokenMax().subtract(currentTier.getTokensSold());
-                currentTier.setTokensSold(currentTier.getTokensSold().add(tokensToCurrentTier));
-                tokensTotal = tokensTotal.add(tokensToCurrentTier);
-                remainingAmount = convertTokensToCurrency(
-                        tokensDecimal.subtract(new BigDecimal(tokensToCurrentTier)),
-                        currentTier.getDiscount());
+            if (tokensFillOrExceedTiersCap(tokensInteger, currentTier)) {
+                // Tokens must be distributed over multiple tiers. Calculate the amount that is
+                // assigned to the current tier and how much currency is carried over to the next tier.
+                BigInteger availableTokensOnTier = currentTier.getTokenMax()
+                        .subtract(currentTier.getTokensSold());
+                BigDecimal tokenOverflow = tokensDecimal.subtract(new BigDecimal(availableTokensOnTier));
+                usdOverflow = convertTokensToCurrency(tokenOverflow, currentTier.getDiscount());
+                tokensTotal = tokensTotal.add(availableTokensOnTier);
 
-                // End current tiers active time.
+                // Update tokens sold on current tier and end its active time.
+                currentTier.setTokensSold(currentTier.getTokenMax());
                 currentTier.setEndDate(blockTime);
                 currentTier = saleTierRepository.save(oCurrentTier.get());
 
@@ -133,14 +130,14 @@ public class TokenConversionService {
                 });
             } else {
                 // All tokens can be retrieved from the same tier.
-                currentTier.setTokensSold(currentTier.getTokensSold().add(tokens));
-                tokensTotal = tokensTotal.add(tokens);
-                remainingAmount = BigDecimal.ZERO;
+                currentTier.setTokensSold(currentTier.getTokensSold().add(tokensInteger));
+                tokensTotal = tokensTotal.add(tokensInteger);
+                usdOverflow = BigDecimal.ZERO;
                 saleTierRepository.save(oCurrentTier.get());
             }
         }
         saleTierRepository.flush();
-        return new ConversionResult(tokensTotal, remainingAmount);
+        return new ConversionResult(tokensTotal, usdOverflow);
     }
 
     private boolean tokensFillOrExceedTiersCap(BigInteger tokens, SaleTier tier) {

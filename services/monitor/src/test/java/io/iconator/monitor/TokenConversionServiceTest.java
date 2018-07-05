@@ -13,9 +13,13 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import sun.tools.jstat.RawOutputFormatter;
+import sun.tools.jstat.Token;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +58,26 @@ public class TokenConversionServiceTest {
 
     @Autowired
     private SaleTierRepository saleTierRepository;
+
+    @Test
+    public void testConvertUsdToTokens() {
+        BigDecimal usd = new BigDecimal("1");
+        BigDecimal discount = new BigDecimal("0.250000", new MathContext(6, RoundingMode.HALF_EVEN));
+        BigDecimal tokens = tokenConversionService.convertCurrencyToTokens(usd, discount);
+        BigDecimal expectedResult = new BigDecimal("4")
+                .divide(new BigDecimal("3"), new MathContext(34, RoundingMode.DOWN));
+
+        assertEquals(0, tokens.compareTo(expectedResult));
+    }
+
+    @Test
+    public void testConvertTokensToUsd() {
+        BigDecimal tokens = new BigDecimal("3.333");
+        BigDecimal discount = new BigDecimal("0.333333", new MathContext(6, RoundingMode.HALF_EVEN));
+        BigDecimal usd = tokenConversionService.convertTokensToCurrency(tokens, discount);
+
+        assertEquals(0, usd.compareTo(new BigDecimal("2.222001111")));
+    }
 
     @Test
     public void testBuyTokensNotExceedingFirstTier() {
