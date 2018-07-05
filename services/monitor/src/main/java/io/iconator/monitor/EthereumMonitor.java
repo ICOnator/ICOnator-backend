@@ -4,6 +4,7 @@ import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.ethereum.EthereumUnit;
 import io.iconator.commons.ethereum.EthereumUnitConverter;
+import io.iconator.commons.ethereum.EthereumUtils;
 import io.iconator.commons.ethereum.exception.EthereumUnitConversionNotImplementedException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
@@ -24,13 +25,10 @@ import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
 import org.web3j.protocol.core.methods.response.Transaction;
-import org.web3j.utils.Convert;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -217,7 +215,7 @@ public class EthereumMonitor extends BaseMonitor {
         paymentLog.setTokenAmount(conversionResult.getTokens());
         if (conversionResult.hasOverflow()) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
-            BigInteger overflowWei = convertUsdToWei(conversionResult.getOverflow(), USDperETH);
+            BigInteger overflowWei = EthereumUtils.convertUsdToWei(conversionResult.getOverflow(), USDperETH);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
             return;
         }
@@ -240,10 +238,5 @@ public class EthereumMonitor extends BaseMonitor {
                 paymentLog.getCreateDate(),
                 receivingAddress,
                 paymentLog.getTokenAmount());
-    }
-
-    private static BigInteger convertUsdToWei(BigDecimal usd, BigDecimal usdPerEth) {
-        BigDecimal ethers = usd.divide(usdPerEth, new MathContext(34, RoundingMode.DOWN));
-        return Convert.toWei(ethers, org.web3j.utils.Convert.Unit.ETHER).toBigInteger();
     }
 }

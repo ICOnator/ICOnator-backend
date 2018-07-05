@@ -216,7 +216,7 @@ public class BitcoinMonitor extends BaseMonitor {
         try {
             USDperBTC = fxService.getUSDPerBTC(timestamp);
             usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
-            coins = BitcoinUnitConverter.convert(new BigDecimal(satoshi), BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
+            coins = BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
         } catch (USDBTCFxException e) {
             LOG.error("Couldn't get USD to Ether exchange rate for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.MISSING_FX_RATE, investor);
