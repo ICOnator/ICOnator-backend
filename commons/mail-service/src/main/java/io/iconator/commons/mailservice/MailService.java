@@ -65,7 +65,7 @@ public class MailService {
 
     public void sendFundsReceivedEmail(Investor investor, BigDecimal amountFundsReceived,
                                        CurrencyType currencyType, String linkToTransaction,
-                                       BigInteger tokenAmount)
+                                       BigDecimal tokenAmount)
             throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),

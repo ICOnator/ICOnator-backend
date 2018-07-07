@@ -142,7 +142,7 @@ public class MailContentBuilder {
 
     public void buildFundsReceivedEmail(Optional<MimeMessageHelper> oMessage,
                                         BigDecimal amountFundsReceived, CurrencyType currencyType,
-                                        String link, BigInteger amountTokens) {
+                                        String link, BigDecimal amountTokens) {
         if (oMessage.isPresent()) {
             try {
                 Context context = new Context();

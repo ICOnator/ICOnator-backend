@@ -12,6 +12,9 @@ import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
+/**
+ * Uses integers for token amounts because it is assumed that tokens are stored in their smallest unit.
+ */
 @Entity(name = "payment_log")
 public class PaymentLog {
 

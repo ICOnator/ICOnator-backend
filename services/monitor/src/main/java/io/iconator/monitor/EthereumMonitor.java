@@ -16,6 +16,8 @@ import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
+import io.iconator.monitor.token.TokenUnit;
+import io.iconator.monitor.token.TokenUnitConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -227,7 +229,7 @@ public class EthereumMonitor extends BaseMonitor {
                 ethers,
                 CurrencyType.ETH,
                 etherscanLink,
-                conversionResult.getTokens()));
+                TokenUnitConverter.convert(conversionResult.getTokens(), TokenUnit.SMALLEST, TokenUnit.MAIN)));
 
         LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",

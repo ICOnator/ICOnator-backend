@@ -4,6 +4,7 @@ import com.github.rholder.retry.*;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.token.TokenUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -35,23 +34,12 @@ public class TokenConversionService {
     @Autowired
     private MonitorAppConfig appConfig;
 
-
-    public BigDecimal convertCurrencyToTokens(BigDecimal currency, BigDecimal discountRate) {
-        return currency.divide(BigDecimal.ONE.subtract(discountRate), MathContext.DECIMAL128);
-    }
-
-    public BigDecimal convertTokensToCurrency(BigDecimal tokens, BigDecimal discountRate) {
-        return tokens.multiply(BigDecimal.ONE.subtract(discountRate));
-    }
-
     /**
+     * TODO [cmu, 07.06.18]: Update documentation. Mention the retrying behavior.
      * Converts the given amount of currency to tokens and updates the sale tiers accordingly.
      * E.g. if the converted amount of tokens overflows a tier's limit the tier is set inactive and
      * the next tier is activated.
-     * <p>
-     * Assumes a 1:1 exchange rate from currency to smallest unit of the token.
-     * <p>
-     * Converted amounts are rounded down to the next integer.
+     *
      *
      * @return the result of the conversion. The {@link ConversionResult} consists of
      * <ul>
@@ -60,14 +48,14 @@ public class TokenConversionService {
      * full.
      * </ul>
      */
-    public ConversionResult convertToTokensAndUpdateTiers(BigDecimal amount, Date blockTimestamp)
+    public ConversionResult convertToTokensAndUpdateTiers(BigDecimal usd, Date blockTime)
             throws Throwable {
 
-        if (blockTimestamp == null) {
+        if (blockTime == null) {
             throw new IllegalArgumentException("Block time stamp must not be null.");
         }
-        if (amount == null) {
-            throw new IllegalArgumentException("Amount must not be null.");
+        if (usd == null) {
+            throw new IllegalArgumentException("USD amount must not be null.");
         }
 
         // Retry as long as there are database locking exceptions.
@@ -81,7 +69,7 @@ public class TokenConversionService {
                 .build();
 
         Callable<ConversionResult> callable =
-                () -> convertToTokensAndUpdateTiersInternal(amount, blockTimestamp);
+                () -> convertToTokensAndUpdateTiersInternal(usd, blockTime);
 
         try {
             return retryer.call(callable);
@@ -98,14 +86,16 @@ public class TokenConversionService {
             isolation = Isolation.READ_COMMITTED,
             propagation = Propagation.REQUIRES_NEW)
     protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal usd, Date blockTime) {
-        BigDecimal usdOverflow = usd;
+        BigDecimal usdRemaining = usd;
         BigInteger tokensTotal = BigInteger.ZERO;
+        // TODO [cmu, 07.06.18]: Find active tier by date and token amount sold.
         Optional<SaleTier> oCurrentTier = saleTierRepository.findActiveTierByDate(blockTime);
 
-        while (oCurrentTier.isPresent() && usdOverflow.compareTo(BigDecimal.ZERO) > 0) {
+        while (oCurrentTier.isPresent() && usdRemaining.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
 
-            BigDecimal tokensDecimal = convertCurrencyToTokens(usdOverflow, currentTier.getDiscount());
+            BigDecimal tokensDecimal = TokenUtils.convertUsdToTokenUnits(usdRemaining, appConfig.getUsdPerToken(),
+                    currentTier.getDiscount());
             BigInteger tokensInteger = tokensDecimal.toBigInteger();
 
             if (tokensFillOrExceedTiersCap(tokensInteger, currentTier)) {
@@ -114,7 +104,8 @@ public class TokenConversionService {
                 BigInteger availableTokensOnTier = currentTier.getTokenMax()
                         .subtract(currentTier.getTokensSold());
                 BigDecimal tokenOverflow = tokensDecimal.subtract(new BigDecimal(availableTokensOnTier));
-                usdOverflow = convertTokensToCurrency(tokenOverflow, currentTier.getDiscount());
+                usdRemaining = TokenUtils.convertTokenUnitsToUsd(tokenOverflow, appConfig.getUsdPerToken(),
+                        currentTier.getDiscount());
                 tokensTotal = tokensTotal.add(availableTokensOnTier);
 
                 // Update tokens sold on current tier and end its active time.
@@ -132,12 +123,12 @@ public class TokenConversionService {
                 // All tokens can be retrieved from the same tier.
                 currentTier.setTokensSold(currentTier.getTokensSold().add(tokensInteger));
                 tokensTotal = tokensTotal.add(tokensInteger);
-                usdOverflow = BigDecimal.ZERO;
+                usdRemaining = BigDecimal.ZERO;
                 saleTierRepository.save(oCurrentTier.get());
             }
         }
         saleTierRepository.flush();
-        return new ConversionResult(tokensTotal, usdOverflow);
+        return new ConversionResult(tokensTotal, usdRemaining);
     }
 
     private boolean tokensFillOrExceedTiersCap(BigInteger tokens, SaleTier tier) {
@@ -145,8 +136,8 @@ public class TokenConversionService {
     }
 
     public static class ConversionResult {
-        private BigInteger tokens;
-        private BigDecimal overflow;
+        private final BigInteger tokens;
+        private final BigDecimal overflow;
 
         private ConversionResult(BigInteger tokens, BigDecimal overflow) {
             this.tokens = tokens;

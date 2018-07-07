@@ -59,7 +59,7 @@ public class FundsReceivedEmailMessageConsumer {
             BigDecimal amountFundsReceived = fundsReceivedEmailMessage.getAmountFundsReceived();
             CurrencyType currencyType = fundsReceivedEmailMessage.getCurrencyType();
             String linkToTransaction = fundsReceivedEmailMessage.getLinkToTransaction();
-            BigInteger tokenAmount = fundsReceivedEmailMessage.getTokenAmount();
+            BigDecimal tokenAmount = fundsReceivedEmailMessage.getTokenAmount();
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)
             mailService.sendFundsReceivedEmail(investor, amountFundsReceived, currencyType, linkToTransaction, tokenAmount);

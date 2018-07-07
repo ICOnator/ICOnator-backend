@@ -3,6 +3,8 @@ package io.iconator.monitor.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
+import java.math.BigDecimal;
+
 @Configuration
 public class MonitorAppConfig {
 
@@ -20,6 +22,9 @@ public class MonitorAppConfig {
 
     @Value("${io.iconator.services.monitor.retry.wait-between-attemps.max}")
     private Long tokenConversionMaxTimeWait;
+
+    @Value("${io.iconator.services.monitor.token.usd-per-token}")
+    private BigDecimal usdPerToken;
 
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
@@ -39,5 +44,9 @@ public class MonitorAppConfig {
 
     public Long getTokenConversionMaxTimeWait() {
         return tokenConversionMaxTimeWait;
+    }
+
+    public BigDecimal getUsdPerToken() {
+        return usdPerToken;
     }
 }

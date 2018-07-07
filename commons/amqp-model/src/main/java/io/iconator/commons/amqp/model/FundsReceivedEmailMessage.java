@@ -16,13 +16,13 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
 
     private String linkToTransaction;
 
-    private BigInteger tokenAmount;
+    private BigDecimal tokenAmount;
 
     public FundsReceivedEmailMessage() {
         super();
     }
 
-    public FundsReceivedEmailMessage(BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigInteger tokenAmount) {
+    public FundsReceivedEmailMessage(BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
         super();
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
@@ -30,7 +30,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
         this.tokenAmount = tokenAmount;
     }
 
-    public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigInteger tokenAmount) {
+    public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
         super(investor);
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
@@ -50,7 +50,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
         return linkToTransaction;
     }
 
-    public BigInteger getTokenAmount() {
+    public BigDecimal getTokenAmount() {
         return tokenAmount;
     }
 }

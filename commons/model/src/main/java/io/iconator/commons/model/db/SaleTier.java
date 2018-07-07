@@ -7,6 +7,9 @@ import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
+/**
+ * Uses integers for token amounts because it is assumed that tokens are stored in their smallest unit.
+ */
 @Entity
 @Table(name = "sale_tier")
 public class SaleTier {

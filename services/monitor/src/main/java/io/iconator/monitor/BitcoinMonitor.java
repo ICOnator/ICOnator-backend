@@ -16,6 +16,8 @@ import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
+import io.iconator.monitor.token.TokenUnit;
+import io.iconator.monitor.token.TokenUnitConverter;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
@@ -280,7 +282,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 coins,
                 CurrencyType.BTC,
                 blockChainInfoLink,
-                conversionResult.getTokens()));
+                TokenUnitConverter.convert(conversionResult.getTokens(), TokenUnit.SMALLEST, TokenUnit.MAIN)));
 
         LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",
