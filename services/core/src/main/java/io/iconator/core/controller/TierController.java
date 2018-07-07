@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -28,12 +29,27 @@ public class TierController {
     public ResponseEntity<List<SaleTierResponse>> getAllTiers() {
 
         List<SaleTierResponse> saleTiers = new ArrayList<>();
+        Date now = new Date();
         saleTierService.getAllSaleTiersOrderByStartDate().forEach(
                 t -> {
-                    SaleTierResponse tr = new SaleTierResponse(t.getTierNo(), t.getDescription(), t.getStartDate(),
-                            t.getEndDate(), t.getDiscount(), t.getTokensSold(), t.getTokenMax());
+                    SaleTierResponse.StatusType status;
+                    if (t.getEndDate().compareTo(now) < 0) {
+                        status = SaleTierResponse.StatusType.CLOSED;
+                    } else if (t.getStartDate().compareTo(now) <= 0 &&
+                            t.getEndDate().compareTo(now) > 0)  {
+                        if (t.getTokensSold().compareTo(t.getTokenMax()) >= 0) {
+                            status = SaleTierResponse.StatusType.CLOSED;
+                        } else {
+                            status = SaleTierResponse.StatusType.ACTIVE;
+                        }
+                    } else {
+                        status = SaleTierResponse.StatusType.INCOMING;
+                    }
+                    SaleTierResponse tr = new SaleTierResponse(t.getTierNo(), t.getDescription(),
+                            status, t.getStartDate(), t.getEndDate(), t.getDiscount(),
+                            t.getTokensSold(), t.getTokenMax());
                     saleTiers.add(tr);
                 });
-        return new ResponseEntity<>(saleTiers, HttpStatus.OK);
+        return ResponseEntity.ok(saleTiers);
     }
 }

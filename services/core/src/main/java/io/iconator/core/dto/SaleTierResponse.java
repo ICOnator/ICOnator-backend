@@ -7,9 +7,19 @@ import java.util.Date;
 
 public class SaleTierResponse {
 
+    public enum StatusType {
+        CLOSED,
+        ACTIVE,
+        INCOMING
+    }
+
     private int tierNo;
 
+    @NotNull
     private String name;
+
+    @NotNull
+    private StatusType type;
 
     @NotNull
     private Date startDate;
@@ -26,16 +36,19 @@ public class SaleTierResponse {
     @NotNull
     private BigInteger maxAmount;
 
-    public SaleTierResponse(int tierNo, String description, @NotNull Date startDate,
-                            @NotNull Date endDate, @NotNull BigDecimal discount,
-                            @NotNull BigInteger tokensSold, @NotNull BigInteger tokenMax) {
+    public SaleTierResponse(int tierNo, @NotNull String name, @NotNull StatusType statusType,
+                            @NotNull Date startDate, @NotNull Date endDate,
+                            @NotNull BigDecimal discount, @NotNull BigInteger amount,
+                            @NotNull BigInteger maxAmount) {
+
         this.tierNo = tierNo;
-        this.name = description;
+        this.name = name;
+        this.type = statusType;
         this.startDate = startDate;
         this.endDate = endDate;
         this.discount = discount;
-        this.amount = tokensSold;
-        this.maxAmount = tokenMax;
+        this.amount = amount;
+        this.maxAmount = maxAmount;
     }
 
     private SaleTierResponse() {
@@ -47,6 +60,10 @@ public class SaleTierResponse {
 
     public String getName() {
         return name;
+    }
+
+    public StatusType getType() {
+        return type;
     }
 
     public Date getStartDate() {
