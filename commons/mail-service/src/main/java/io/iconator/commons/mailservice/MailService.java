@@ -71,7 +71,7 @@ public class MailService {
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),
                 this.mailServiceConfigHolder.getFundsReceivedEmailSubject(), MailType.FUNDS_RECEIVED_EMAIL);
         this.mailContentBuilder.buildFundsReceivedEmail(oMessage, amountFundsReceived,
-                currencyType, linkToTransaction, tokenAmount, this.mailServiceConfigHolder.getTokenSymbol());
+                currencyType, linkToTransaction, tokenAmount);
         if (this.mailServiceConfigHolder.isEnabled()) {
             sendMail(oMessage, MailType.FUNDS_RECEIVED_EMAIL);
         } else {

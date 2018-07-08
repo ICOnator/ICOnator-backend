@@ -97,6 +97,7 @@ public class MailContentBuilder {
                 context.setVariable("tokenSaleName", this.mailServiceConfigHolder.getTokenSaleName());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
+                context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
 
                 context.setVariable("walletAddress", oInvestor.get().getWalletAddress());
                 context.setVariable("payInEtherAddress", this.ethereumAddressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
@@ -141,7 +142,7 @@ public class MailContentBuilder {
 
     public void buildFundsReceivedEmail(Optional<MimeMessageHelper> oMessage,
                                         BigDecimal amountFundsReceived, CurrencyType currencyType,
-                                        String link, BigInteger amountTokens, String tokenSymbol) {
+                                        String link, BigInteger amountTokens) {
         if (oMessage.isPresent()) {
             try {
                 Context context = new Context();
@@ -153,7 +154,7 @@ public class MailContentBuilder {
                 context.setVariable("currencyFundsReceived", currencyType.name());
                 context.setVariable("link", link);
                 context.setVariable("amountTokens", amountTokens);
-                context.setVariable("tokenSymbol", tokenSymbol);
+                context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
                 String html5Content = this.templateEngine.process("funds_received_email", context);

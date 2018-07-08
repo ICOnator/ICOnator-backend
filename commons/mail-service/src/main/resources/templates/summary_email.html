@@ -212,7 +212,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                             </tr>
                             <!--content-->
                             <tr align="center">
-                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">Buy your ICOnator tokens by sending ETH to this address.</td>
+                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">Buy your <span th:text="${tokenSymbol}" /> tokens by sending ETH to this address.</td>
                             </tr>
                             <tr align="center">
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${payInEtherAddress}" th:href="@{https://etherscan.io/address/{payInEtherAddress}(payInEtherAddress=${payInEtherAddress})}"></a></td>
@@ -285,7 +285,7 @@ img[class="img1"] { width: 100% !important; height: auto !important; }
                             </tr>
                             <!--content-->
                             <tr align="center">
-                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">This is your wallet address where you will receive your ICOnator tokens at the time of distribution.</td>
+                              <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;">This is your wallet address where you will receive your <span th:text="${tokenSymbol}" /> tokens at the time of distribution.</td>
                             </tr>
                             <tr align="center">
                               <td style="font-family:Open sans, Arial, Sans-serif; font-size:14px; color:#808E8E;line-height:28px;"><a th:text="${walletAddress}" th:href="@{https://etherscan.io/address/{walletAddress}(walletAddress=${walletAddress})}"></a></td>
