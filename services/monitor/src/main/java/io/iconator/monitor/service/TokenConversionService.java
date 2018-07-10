@@ -4,6 +4,7 @@ import com.github.rholder.retry.*;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import io.iconator.monitor.token.TokenUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,6 @@ public class TokenConversionService {
      * Converts the given amount of currency to tokens and updates the sale tiers accordingly.
      * E.g. if the converted amount of tokens overflows a tier's limit the tier is set inactive and
      * the next tier is activated.
-     *
      *
      * @return the result of the conversion. The {@link ConversionResult} consists of
      * <ul>
@@ -88,8 +88,7 @@ public class TokenConversionService {
     protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal usd, Date blockTime) {
         BigDecimal usdRemaining = usd;
         BigInteger tokensTotal = BigInteger.ZERO;
-        // TODO [cmu, 07.06.18]: Find active tier by date and token amount sold.
-        Optional<SaleTier> oCurrentTier = saleTierRepository.findActiveTierByDate(blockTime);
+        Optional<SaleTier> oCurrentTier = saleTierRepository.findTierAtDate(blockTime);
 
         while (oCurrentTier.isPresent() && usdRemaining.compareTo(BigDecimal.ZERO) > 0) {
             SaleTier currentTier = oCurrentTier.get();
@@ -98,7 +97,7 @@ public class TokenConversionService {
                     currentTier.getDiscount());
             BigInteger tokensInteger = tokensDecimal.toBigInteger();
 
-            if (tokensFillOrExceedTiersCap(tokensInteger, currentTier)) {
+            if (currentTier.isAmountOverflowingTier(tokensInteger)) {
                 // Tokens must be distributed over multiple tiers. Calculate the amount that is
                 // assigned to the current tier and how much currency is carried over to the next tier.
                 BigInteger availableTokensOnTier = currentTier.getTokenMax()
@@ -131,10 +130,6 @@ public class TokenConversionService {
         return new ConversionResult(tokensTotal, usdRemaining);
     }
 
-    private boolean tokensFillOrExceedTiersCap(BigInteger tokens, SaleTier tier) {
-        return tier.getTokensSold().add(tokens).compareTo(tier.getTokenMax()) >= 0;
-    }
-
     public static class ConversionResult {
         private final BigInteger tokens;
         private final BigDecimal overflow;
@@ -156,4 +151,74 @@ public class TokenConversionService {
             return overflow;
         }
     }
+
+    private void convert(BigDecimal usd, Date blockTime) throws TokenCapOverflowException {
+        Optional<SaleTier> tier = saleTierRepository.findTierAtDate(blockTime);
+        if (tier.isPresent()) {
+            if (tier.get().isFull()) {
+                distributeToNextTier(usd, tier.get(), blockTime);
+            } else {
+                distributeToTier(usd, tier.get(), blockTime);
+            }
+        } else {
+            throw new TokenCapOverflowException(BigInteger.ZERO, usd);
+        }
+    }
+
+    private BigInteger distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) throws TokenCapOverflowException {
+        BigDecimal tokensDecimal = TokenUtils.convertUsdToTokenUnits(usd, appConfig.getUsdPerToken(), tier.getDiscount());
+        BigInteger tokensInteger = tokensDecimal.toBigInteger();
+
+        if (tier.isAmountOverflowingTier(tokensInteger)) {
+            tokensInteger = tier.getRemainingTokens();
+            BigDecimal overflowInTokens = tokensDecimal.subtract(new BigDecimal(tokensInteger));
+            BigDecimal overflowInUsd = TokenUtils.convertTokenUnitsToUsd(overflowInTokens, appConfig.getUsdPerToken(), tier.getDiscount());
+            tier.setTokensSold(tier.getTokenMax());
+            if (tier.hasDynamicDuration()) {
+                tier.setEndDate(blockTime);
+                adaptDatesOfFollowingTiers(tier, blockTime);
+            }
+            tier = saleTierRepository.save(tier);
+            prepareNextTier(getNextTier(tier));
+            try {
+                tokensInteger = tokensInteger.add(distributeToNextTier(overflowInUsd, tier, blockTime));
+            } catch (TokenCapOverflowException e) {
+                e.addConvertedTokens(tokensInteger);
+                throw e;
+            }
+        } else {
+            tier.setTokensSold(tier.getTokensSold().add(tokensInteger));
+            if (tier.isFull() && tier.hasDynamicDuration()) {
+                tier.setEndDate(blockTime);
+                adaptDatesOfFollowingTiers(tier, blockTime);
+            }
+            saleTierRepository.save(tier);
+        }
+        return tokensInteger;
+    }
+
+    private Optional<SaleTier> getNextTier(SaleTier tier) {
+        return saleTierRepository.findByTierNo(tier.getTierNo() + 1);
+    }
+
+    private void prepareNextTier(Optional<SaleTier> tier) {
+        if (tier.isPresent() && tier.get().hasDynamicMax()) {
+            // TODO [claude, 09.07.18] set max token amount accordig to overall token max and tokens sold on previous
+            // tiers.
+        }
+    }
+
+    private void adaptDatesOfFollowingTiers(SaleTier tier, Date blockTime) {
+        // TODO [claude, 09.07.18] set start and end dates of all following tiers, given the blocktime.
+    }
+
+    private BigInteger distributeToNextTier(BigDecimal usd, SaleTier previousTier, Date blockTime) throws TokenCapOverflowException {
+        Optional<SaleTier> tier = saleTierRepository.findByTierNo(previousTier.getTierNo() + 1);
+        if (tier.isPresent()) {
+            return distributeToTier(usd, tier.get(), blockTime);
+        } else {
+            throw new TokenCapOverflowException(BigInteger.ZERO, usd);
+        }
+    }
 }
+

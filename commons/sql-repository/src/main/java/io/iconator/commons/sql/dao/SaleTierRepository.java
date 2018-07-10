@@ -12,13 +12,12 @@ import java.util.Optional;
 @Repository
 public interface SaleTierRepository extends JpaRepository<SaleTier, Long>{
 
-    @Query(value = "select t from SaleTier t where t.startDate <= ?1 and t.endDate > ?1")
-    Optional<SaleTier> findActiveTierByDate(Date date);
-
     List<SaleTier> findAllByOrderByStartDateAsc();
 
     Optional<SaleTier> findByTierNo(int tierNo);
 
     Optional<SaleTier> findFirstByOrderByEndDateDesc();
 
+    @Query(value = "select t from SaleTier t where t.startDate <= ?1 and t.endDate > ?1")
+    Optional<SaleTier> findTierAtDate(Date blockTime);
 }

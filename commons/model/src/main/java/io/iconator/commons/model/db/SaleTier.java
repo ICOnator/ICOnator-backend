@@ -14,14 +14,10 @@ import static javax.persistence.GenerationType.SEQUENCE;
 @Table(name = "sale_tier")
 public class SaleTier {
 
-    @Id
-    @GeneratedValue(strategy = SEQUENCE)
-    @Column(name = "id", updatable = false)
-    private long id;
-
     @Version
     private Long version = 0L;
 
+    @Id
     @Column(name = "tier_no")
     private int tierNo;
 
@@ -45,18 +41,26 @@ public class SaleTier {
     @Column(name = "token_max", precision = 34, scale = 0)
     private BigInteger tokenMax;
 
-    protected SaleTier() {
-    }
-
-    public SaleTier(int tierNo, String description, Date startDate, Date endDate,
-                    BigDecimal discount, BigInteger tokenMax) {
+    public SaleTier(int tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
+                    BigInteger tokensSold, BigInteger tokenMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
         this.tierNo = tierNo;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
         this.discount = discount;
+        this.tokensSold = tokensSold;
         this.tokenMax = tokenMax;
-        this.tokensSold = BigInteger.ZERO;
+        this.hasDynamicDuration = hasDynamicDuration;
+        this.hasDynamicMax = hasDynamicMax;
+    }
+
+    @Column(name = "has_dynamic_duration")
+    private boolean hasDynamicDuration;
+
+    @Column(name = "has_dynamic_max")
+    private boolean hasDynamicMax;
+
+    protected SaleTier() {
     }
 
     public int getTierNo() {
@@ -113,5 +117,33 @@ public class SaleTier {
 
     public void setTokenMax(BigInteger tokenMax) {
         this.tokenMax = tokenMax;
+    }
+
+    public boolean hasDynamicDuration() {
+        return hasDynamicDuration;
+    }
+
+    public void setHasDynamicDuration(boolean hasDynamicDuration) {
+        this.hasDynamicDuration = hasDynamicDuration;
+    }
+
+    public boolean hasDynamicMax() {
+        return hasDynamicMax;
+    }
+
+    public void setHasDynamicMax(boolean hasDynamicMax) {
+        this.hasDynamicMax = hasDynamicMax;
+    }
+
+    public boolean isFull() {
+        return tokenMax == tokensSold;
+    }
+
+    public boolean isAmountOverflowingTier(BigInteger tokens) {
+        return tokensSold.add(tokens).compareTo(tokenMax) > 0;
+    }
+
+    public BigInteger getRemainingTokens() {
+        return tokenMax.subtract(tokensSold);
     }
 }
