@@ -25,6 +25,6 @@ public class TokenCapOverflowException extends Exception {
         return convertedTokens;
     }
     public void addConvertedTokens(BigInteger tokens) {
-        this.convertedTokens.add(tokens);
+        convertedTokens = convertedTokens.add(tokens);
     }
 }

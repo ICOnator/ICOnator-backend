@@ -19,7 +19,7 @@ public class SaleTier {
 
     @Id
     @Column(name = "tier_no")
-    private int tierNo;
+    private long tierNo;
 
     @Column(name = "description")
     private String description;
@@ -41,7 +41,7 @@ public class SaleTier {
     @Column(name = "token_max", precision = 34, scale = 0)
     private BigInteger tokenMax;
 
-    public SaleTier(int tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
+    public SaleTier(long tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
                     BigInteger tokensSold, BigInteger tokenMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
         this.tierNo = tierNo;
         this.description = description;
@@ -63,7 +63,7 @@ public class SaleTier {
     protected SaleTier() {
     }
 
-    public int getTierNo() {
+    public long getTierNo() {
         return tierNo;
     }
 

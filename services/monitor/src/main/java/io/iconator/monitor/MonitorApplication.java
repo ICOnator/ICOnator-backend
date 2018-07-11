@@ -13,7 +13,10 @@ import static org.springframework.boot.SpringApplication.run;
 @SpringBootApplication
 @EnableJpaRepositories({"io.iconator.commons.sql.dao"})
 @EntityScan({"io.iconator.commons.model.db"})
-@ComponentScan({"io.iconator.commons.auth", "io.iconator.monitor"})
+@ComponentScan({"io.iconator.commons.auth",
+        "io.iconator.monitor",
+        "io.iconator.commons.db.services"})
+
 public class MonitorApplication {
     static { ConfigNaming.set("monitor.application"); }
     private static final Logger LOG = LoggerFactory.getLogger(MonitorApplication.class);

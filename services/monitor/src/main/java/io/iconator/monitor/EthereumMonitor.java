@@ -2,6 +2,7 @@ package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.ethereum.EthereumUnit;
 import io.iconator.commons.ethereum.EthereumUnitConverter;
 import io.iconator.commons.ethereum.EthereumUtils;
@@ -15,6 +16,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
 import io.iconator.monitor.token.TokenUnit;
 import io.iconator.monitor.token.TokenUnitConverter;
@@ -203,9 +205,14 @@ public class EthereumMonitor extends BaseMonitor {
             return;
         }
 
-        TokenConversionService.ConversionResult conversionResult;
+        BigInteger tomics;
         try {
-            conversionResult = tokenConversionService.convertToTokensAndUpdateTiers(usdReceived, timestamp);
+            tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
+        } catch (TokenCapOverflowException e) {
+            LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
+            tomics = e.getConvertedTokens();
+            BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperETH);
+            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
             LOG.error("Failed to convert payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
@@ -214,13 +221,7 @@ public class EthereumMonitor extends BaseMonitor {
             return;
         }
 
-        paymentLog.setTokenAmount(conversionResult.getTokens());
-        if (conversionResult.hasOverflow()) {
-            LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
-            BigInteger overflowWei = EthereumUtils.convertUsdToWei(conversionResult.getOverflow(), USDperETH);
-            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
-            return;
-        }
+        paymentLog.setTokenAmount(tomics);
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;
 
@@ -229,7 +230,7 @@ public class EthereumMonitor extends BaseMonitor {
                 ethers,
                 CurrencyType.ETH,
                 etherscanLink,
-                TokenUnitConverter.convert(conversionResult.getTokens(), TokenUnit.SMALLEST, TokenUnit.MAIN)));
+                TokenUnitConverter.convert(tomics, TokenUnit.SMALLEST, TokenUnit.MAIN)));
 
         LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",

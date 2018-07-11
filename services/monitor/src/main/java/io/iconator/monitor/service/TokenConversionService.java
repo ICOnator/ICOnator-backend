@@ -1,10 +1,15 @@
 package io.iconator.monitor.service;
 
-import com.github.rholder.retry.*;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
+import io.iconator.monitor.token.TokenUnit;
+import io.iconator.monitor.token.TokenUnitConverter;
 import io.iconator.monitor.token.TokenUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +29,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.rholder.retry.StopStrategies.neverStop;
+import static com.github.rholder.retry.WaitStrategies.randomWait;
+
 @Service
 public class TokenConversionService {
 
@@ -33,132 +41,43 @@ public class TokenConversionService {
     private SaleTierRepository saleTierRepository;
 
     @Autowired
+    private SaleTierService saleTierService;
+
+    @Autowired
     private MonitorAppConfig appConfig;
 
-    /**
-     * TODO [cmu, 07.06.18]: Update documentation. Mention the retrying behavior.
-     * Converts the given amount of currency to tokens and updates the sale tiers accordingly.
-     * E.g. if the converted amount of tokens overflows a tier's limit the tier is set inactive and
-     * the next tier is activated.
-     *
-     * @return the result of the conversion. The {@link ConversionResult} consists of
-     * <ul>
-     * <li>tokens: the tokens that the given amount is worth and was assigned to one or more tiers.
-     * <li>overflow: amount which could not be converted into tokens because all tiers where already
-     * full.
-     * </ul>
-     */
-    public ConversionResult convertToTokensAndUpdateTiers(BigDecimal usd, Date blockTime)
-            throws Throwable {
-
-        if (blockTime == null) {
-            throw new IllegalArgumentException("Block time stamp must not be null.");
-        }
-        if (usd == null) {
-            throw new IllegalArgumentException("USD amount must not be null.");
-        }
+    public BigInteger convertWithRetries(BigDecimal usd, Date blockTime) throws Throwable {
+        if (blockTime == null) throw new IllegalArgumentException("Block time must not be null.");
+        if (usd == null) throw new IllegalArgumentException("USD amount must not be null.");
 
         // Retry as long as there are database locking exceptions.
-        Retryer<ConversionResult> retryer = RetryerBuilder.<ConversionResult>newBuilder()
+        Retryer<BigInteger> retryer = RetryerBuilder.<BigInteger>newBuilder()
                 .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                 .retryIfExceptionOfType(OptimisticLockException.class)
-                .withWaitStrategy(WaitStrategies.randomWait(
-                        appConfig.getTokenConversionMaxTimeWait(),
-                        TimeUnit.MILLISECONDS))
-                .withStopStrategy(StopStrategies.neverStop())
+                .withWaitStrategy(randomWait(appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
+                .withStopStrategy(neverStop())
                 .build();
 
-        Callable<ConversionResult> callable =
-                () -> convertToTokensAndUpdateTiersInternal(usd, blockTime);
-
         try {
-            return retryer.call(callable);
-        } catch (ExecutionException e) {
-            LOG.error("Currency to token conversion failed.", e);
-            throw e.getCause();
-        } catch (RetryException e) {
-            // Should never happen because of NeverStopStrategy.
-        }
-        return null;
-    }
-
-    @Transactional(rollbackFor = {Exception.class},
-            isolation = Isolation.READ_COMMITTED,
-            propagation = Propagation.REQUIRES_NEW)
-    protected ConversionResult convertToTokensAndUpdateTiersInternal(BigDecimal usd, Date blockTime) {
-        BigDecimal usdRemaining = usd;
-        BigInteger tokensTotal = BigInteger.ZERO;
-        Optional<SaleTier> oCurrentTier = saleTierRepository.findTierAtDate(blockTime);
-
-        while (oCurrentTier.isPresent() && usdRemaining.compareTo(BigDecimal.ZERO) > 0) {
-            SaleTier currentTier = oCurrentTier.get();
-
-            BigDecimal tokensDecimal = TokenUtils.convertUsdToTokenUnits(usdRemaining, appConfig.getUsdPerToken(),
-                    currentTier.getDiscount());
-            BigInteger tokensInteger = tokensDecimal.toBigInteger();
-
-            if (currentTier.isAmountOverflowingTier(tokensInteger)) {
-                // Tokens must be distributed over multiple tiers. Calculate the amount that is
-                // assigned to the current tier and how much currency is carried over to the next tier.
-                BigInteger availableTokensOnTier = currentTier.getTokenMax()
-                        .subtract(currentTier.getTokensSold());
-                BigDecimal tokenOverflow = tokensDecimal.subtract(new BigDecimal(availableTokensOnTier));
-                usdRemaining = TokenUtils.convertTokenUnitsToUsd(tokenOverflow, appConfig.getUsdPerToken(),
-                        currentTier.getDiscount());
-                tokensTotal = tokensTotal.add(availableTokensOnTier);
-
-                // Update tokens sold on current tier and end its active time.
-                currentTier.setTokensSold(currentTier.getTokenMax());
-                currentTier.setEndDate(blockTime);
-                currentTier = saleTierRepository.save(oCurrentTier.get());
-
-                // Start next tiers active time if present.
-                oCurrentTier = saleTierRepository.findByTierNo(currentTier.getTierNo() + 1);
-                oCurrentTier.ifPresent(t -> {
-                    t.setStartDate(blockTime);
-                    saleTierRepository.save(t);
-                });
-            } else {
-                // All tokens can be retrieved from the same tier.
-                currentTier.setTokensSold(currentTier.getTokensSold().add(tokensInteger));
-                tokensTotal = tokensTotal.add(tokensInteger);
-                usdRemaining = BigDecimal.ZERO;
-                saleTierRepository.save(oCurrentTier.get());
+            return retryer.call(() -> convert(usd, blockTime));
+        } catch (ExecutionException | RetryException e) {
+            if (!(e.getCause() instanceof TokenCapOverflowException)) {
+                LOG.error("Currency to token conversion failed.", e);
             }
-        }
-        saleTierRepository.flush();
-        return new ConversionResult(tokensTotal, usdRemaining);
-    }
-
-    public static class ConversionResult {
-        private final BigInteger tokens;
-        private final BigDecimal overflow;
-
-        private ConversionResult(BigInteger tokens, BigDecimal overflow) {
-            this.tokens = tokens;
-            this.overflow = overflow;
-        }
-
-        public boolean hasOverflow() {
-            return overflow.compareTo(BigDecimal.ZERO) > 0;
-        }
-
-        public BigInteger getTokens() {
-            return tokens;
-        }
-
-        public BigDecimal getOverflow() {
-            return overflow;
+            throw e.getCause();
         }
     }
 
-    private void convert(BigDecimal usd, Date blockTime) throws TokenCapOverflowException {
-        Optional<SaleTier> tier = saleTierRepository.findTierAtDate(blockTime);
-        if (tier.isPresent()) {
-            if (tier.get().isFull()) {
-                distributeToNextTier(usd, tier.get(), blockTime);
+    // TODO [claude, 10.07.18]: Is it necessary to have a @Version on the SaleTiers if the isolation level is repeatable_reads?
+    // Or vice-versa, is it necessary to have isolation of repeatable_reads if we have a Version on the sale tiers.
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = TokenCapOverflowException.class, isolation = Isolation.REPEATABLE_READ)
+    public BigInteger convert(BigDecimal usd, Date blockTime) throws TokenCapOverflowException {
+        Optional<SaleTier> oTier = saleTierRepository.findTierAtDate(blockTime);
+        if (oTier.isPresent()) {
+            if (oTier.get().isFull()) {
+                return distributeToNextTier(usd, oTier, blockTime);
             } else {
-                distributeToTier(usd, tier.get(), blockTime);
+                return distributeToTier(usd, oTier.get(), blockTime);
             }
         } else {
             throw new TokenCapOverflowException(BigInteger.ZERO, usd);
@@ -166,22 +85,21 @@ public class TokenConversionService {
     }
 
     private BigInteger distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) throws TokenCapOverflowException {
-        BigDecimal tokensDecimal = TokenUtils.convertUsdToTokenUnits(usd, appConfig.getUsdPerToken(), tier.getDiscount());
+        BigDecimal tokensDecimal = TokenUtils.convertUsdToTokens(usd, appConfig.getUsdPerToken(), tier.getDiscount());
         BigInteger tokensInteger = tokensDecimal.toBigInteger();
 
         if (tier.isAmountOverflowingTier(tokensInteger)) {
             tokensInteger = tier.getRemainingTokens();
             BigDecimal overflowInTokens = tokensDecimal.subtract(new BigDecimal(tokensInteger));
-            BigDecimal overflowInUsd = TokenUtils.convertTokenUnitsToUsd(overflowInTokens, appConfig.getUsdPerToken(), tier.getDiscount());
+            BigDecimal overflowInUsd = TokenUtils.convertTokensToUsd(overflowInTokens, appConfig.getUsdPerToken(), tier.getDiscount());
             tier.setTokensSold(tier.getTokenMax());
             if (tier.hasDynamicDuration()) {
-                tier.setEndDate(blockTime);
-                adaptDatesOfFollowingTiers(tier, blockTime);
+                shiftDates(tier, blockTime);
             }
             tier = saleTierRepository.save(tier);
-            prepareNextTier(getNextTier(tier));
             try {
-                tokensInteger = tokensInteger.add(distributeToNextTier(overflowInUsd, tier, blockTime));
+                tokensInteger = tokensInteger.add(
+                        distributeToNextTier(overflowInUsd, saleTierService.getNextTier(tier), blockTime));
             } catch (TokenCapOverflowException e) {
                 e.addConvertedTokens(tokensInteger);
                 throw e;
@@ -189,36 +107,40 @@ public class TokenConversionService {
         } else {
             tier.setTokensSold(tier.getTokensSold().add(tokensInteger));
             if (tier.isFull() && tier.hasDynamicDuration()) {
-                tier.setEndDate(blockTime);
-                adaptDatesOfFollowingTiers(tier, blockTime);
+                shiftDates(tier, blockTime);
             }
             saleTierRepository.save(tier);
         }
         return tokensInteger;
     }
 
-    private Optional<SaleTier> getNextTier(SaleTier tier) {
-        return saleTierRepository.findByTierNo(tier.getTierNo() + 1);
+    private void shiftDates(SaleTier tier, Date blockTime) {
+        long dateShift = tier.getEndDate().getTime() - blockTime.getTime();
+        tier.setEndDate(blockTime);
+        tier = saleTierRepository.save(tier);
+        saleTierService.getAllFollowingTiers(tier).forEach(t -> {
+            t.setStartDate(new Date(t.getStartDate().getTime() - dateShift));
+            t.setEndDate(new Date(t.getEndDate().getTime() - dateShift));
+            saleTierRepository.save(t);
+        });
     }
 
-    private void prepareNextTier(Optional<SaleTier> tier) {
-        if (tier.isPresent() && tier.get().hasDynamicMax()) {
-            // TODO [claude, 09.07.18] set max token amount accordig to overall token max and tokens sold on previous
-            // tiers.
-        }
-    }
-
-    private void adaptDatesOfFollowingTiers(SaleTier tier, Date blockTime) {
-        // TODO [claude, 09.07.18] set start and end dates of all following tiers, given the blocktime.
-    }
-
-    private BigInteger distributeToNextTier(BigDecimal usd, SaleTier previousTier, Date blockTime) throws TokenCapOverflowException {
-        Optional<SaleTier> tier = saleTierRepository.findByTierNo(previousTier.getTierNo() + 1);
-        if (tier.isPresent()) {
-            return distributeToTier(usd, tier.get(), blockTime);
+    private BigInteger distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) throws TokenCapOverflowException {
+        if (oTier.isPresent()) {
+            SaleTier tier = oTier.get();
+            if (tier.hasDynamicMax()) {
+                tier.setTokenMax(getOverallTomicsAmount().subtract(saleTierService.getOverallTokenAmountSold()));
+                saleTierRepository.save(tier);
+            }
+            return distributeToTier(usd, tier, blockTime);
         } else {
             throw new TokenCapOverflowException(BigInteger.ZERO, usd);
         }
+    }
+
+    private BigInteger getOverallTomicsAmount() {
+        return TokenUnitConverter.convert(appConfig.getOverallTokenAmount(), TokenUnit.MAIN, TokenUnit.SMALLEST)
+                .toBigInteger();
     }
 }
 

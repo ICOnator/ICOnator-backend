@@ -8,7 +8,11 @@ import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.EthereumMonitorTestConfig;
+import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.token.TokenUnit;
+import io.iconator.monitor.token.TokenUnitConverter;
+import io.iconator.monitor.token.TokenUtils;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import io.iconator.testrpcj.TestBlockchain;
 import io.iconator.testrpcj.jsonrpc.TypeConverter;
@@ -77,6 +81,9 @@ public class EthereumMonitorTest {
     @Autowired
     private SaleTierRepository saleTierRepository;
 
+    @Autowired
+    private MonitorAppConfig appConfig;
+
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
@@ -85,6 +92,7 @@ public class EthereumMonitorTest {
     }
 
     @Before
+    @Transactional(propagation = Propagation.NOT_SUPPORTED) // Persist directly to DB without transactions.
     public void setUp() {
         createAndSaveTier();
         createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
@@ -100,7 +108,10 @@ public class EthereumMonitorTest {
 
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
-        BigInteger tokenAmountToBeReceived = BigInteger.ONE;
+        BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
+        BigInteger tokenAmountToBeReceived =
+                TokenUtils.convertUsdToTokens(fundsAmountToSendInUSD, appConfig.getUsdPerToken(), BigDecimal.ZERO)
+                        .toBigInteger();
         CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
 
@@ -137,7 +148,8 @@ public class EthereumMonitorTest {
     }
 
     private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tokenAmountSent) {
-        return p -> p.getTokenAmount() == tokenAmountSent;
+        BigDecimal tokensInMainUnit = TokenUnitConverter.convert(tokenAmountSent, TokenUnit.SMALLEST, TokenUnit.MAIN);
+        return p -> p.getTokenAmount().compareTo(tokensInMainUnit) == 0;
     }
 
 
@@ -146,7 +158,7 @@ public class EthereumMonitorTest {
     }
 
     public Predicate<FundsReceivedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
-        return p -> p.getAmountFundsReceived() == fundsSent;
+        return p -> p.getAmountFundsReceived().compareTo(fundsSent) == 0;
     }
 
     private boolean matchReceivedMessage(List<FundsReceivedEmailMessage> messages, Predicate<FundsReceivedEmailMessage> predicate) {
@@ -176,8 +188,10 @@ public class EthereumMonitorTest {
     private void createAndSaveTier() {
         Date from = Date.from(Instant.EPOCH);
         Date to = new Date();
+        BigInteger tomics = TokenUnitConverter.convert(BigInteger.valueOf(1000L), TokenUnit.MAIN, TokenUnit.SMALLEST)
+                .toBigInteger();
         saleTierRepository.saveAndFlush(
-                new SaleTier(4, "4", from, to, BigDecimal.ZERO, BigInteger.valueOf(1000L)));
+                new SaleTier(4, "4", from, to, new BigDecimal("0.0"), BigInteger.ZERO, tomics, true, false));
     }
 
 }

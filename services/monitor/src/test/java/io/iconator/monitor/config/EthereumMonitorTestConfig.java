@@ -1,6 +1,7 @@
 package io.iconator.monitor.config;
 
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
@@ -64,15 +65,12 @@ public class EthereumMonitorTestConfig {
     }
 
     @Bean
-    public MonitorAppConfig monitorAppConfig() {
-        return new MonitorAppConfig();
+    public SaleTierService saleTierService() {
+        return new SaleTierService();
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
-        JpaTransactionManager transactionManager = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(emf);
-        return transactionManager;
+    public MonitorAppConfig monitorAppConfig() {
+        return new MonitorAppConfig();
     }
-
 }

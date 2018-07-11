@@ -1,5 +1,6 @@
 package io.iconator.monitor.config;
 
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
@@ -40,6 +41,11 @@ public class BaseMonitorTestConfig {
     @Bean
     public MonitorAppConfig monitorAppConfig() {
         return new MonitorAppConfig();
+    }
+
+    @Bean
+    public SaleTierService saleTierService() {
+        return new SaleTierService();
     }
 }
 

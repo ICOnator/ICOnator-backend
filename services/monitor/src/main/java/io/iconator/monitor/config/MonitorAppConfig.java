@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Configuration
 public class MonitorAppConfig {
@@ -25,6 +26,9 @@ public class MonitorAppConfig {
 
     @Value("${io.iconator.services.monitor.token.usd-per-token}")
     private BigDecimal usdPerToken;
+
+    @Value("${io.iconator.services.monitor.token.overall-amount}")
+    private BigInteger overallTokenAmount;
 
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
@@ -49,4 +53,9 @@ public class MonitorAppConfig {
     public BigDecimal getUsdPerToken() {
         return usdPerToken;
     }
+
+    public BigInteger getOverallTokenAmount() {
+        return overallTokenAmount;
+    }
+
 }

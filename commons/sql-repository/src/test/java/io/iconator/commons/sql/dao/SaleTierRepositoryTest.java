@@ -50,7 +50,7 @@ public class SaleTierRepositoryTest {
         tierRepository.save(createTier(1, "2018-01-01", "2018-01-10", new BigDecimal("0.5"), 1000L));
         tierRepository.save(createTier(2, "2018-01-11", "2018-01-20", new BigDecimal("0.2"), 2000L));
         final Date date = java.sql.Date.valueOf("2018-01-02");
-        Optional<SaleTier> oTier = tierRepository.findActiveTierByDate(date);
+        Optional<SaleTier> oTier = tierRepository.findTierAtDate(date);
         assertTrue(oTier.isPresent());
         assertEquals(oTier.get().getTierNo(), 1);
     }
@@ -61,7 +61,7 @@ public class SaleTierRepositoryTest {
         tierRepository.save(createTier(2, "2018-01-02", "2018-01-11", new BigDecimal("0.2"), 2000L));
         final Date date = java.sql.Date.valueOf("2018-01-02");
         try {
-            tierRepository.findActiveTierByDate(date);
+            tierRepository.findTierAtDate(date);
         } catch (IncorrectResultSizeDataAccessException e) {
             return;
         }
@@ -109,7 +109,7 @@ public class SaleTierRepositoryTest {
         assertEquals(0, t.getDiscount().compareTo(new BigDecimal("0.000950")));
     }
 
-    private SaleTier createTier(int tierNo, String start, String end, BigDecimal discount, long tokenMax) {
+    private static SaleTier createTier(int tierNo, String start, String end, BigDecimal discount, long tokenMax) {
 
         Date beginDate = java.sql.Date.valueOf(start);
         Date endDate = java.sql.Date.valueOf(end);
@@ -119,6 +119,9 @@ public class SaleTierRepositoryTest {
                 beginDate,
                 endDate,
                 discount,
-                BigInteger.valueOf(tokenMax));
+                BigInteger.valueOf(tokenMax),
+                BigInteger.ZERO,
+                true,
+                false);
     }
 }

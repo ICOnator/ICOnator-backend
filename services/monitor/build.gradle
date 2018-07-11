@@ -15,6 +15,7 @@ dependencies {
     compile project(':commons:ethereum')
     compile project(':commons:amqp-service')
     compile project(':commons:sql-repository')
+    compile project(':commons:db-services')
     compile project(':commons:services-base')
     compile project(':commons:security-actuator')
 

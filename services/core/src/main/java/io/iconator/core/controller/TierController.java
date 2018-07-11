@@ -1,7 +1,7 @@
 package io.iconator.core.controller;
 
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.core.dto.SaleTierResponse;
-import io.iconator.core.service.SaleTierService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

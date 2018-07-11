@@ -15,6 +15,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import io.iconator.monitor.token.TokenUnit;
 import io.iconator.monitor.token.TokenUnitConverter;
@@ -257,9 +258,14 @@ public class BitcoinMonitor extends BaseMonitor {
             return;
         }
 
-        TokenConversionService.ConversionResult conversionResult;
+        BigInteger tomics;
         try {
-            conversionResult = tokenConversionService.convertToTokensAndUpdateTiers(usdReceived, timestamp);
+            tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
+        } catch (TokenCapOverflowException e) {
+            LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
+            tomics = e.getConvertedTokens();
+            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperBTC);
+            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
             LOG.error("Failed to convert payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
@@ -267,22 +273,17 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
-        paymentLog.setTokenAmount(conversionResult.getTokens());
-        if (conversionResult.hasOverflow()) {
-            LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
-            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(conversionResult.getOverflow(), USDperBTC);
-            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
-        }
 
-        final String blockChainInfoLink = "https://blockchain.info/tx/" +
-                utxo.getParentTransaction().getHashAsString();
+        paymentLog.setTokenAmount(tomics);
+
+        final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();
 
         messageService.send(new FundsReceivedEmailMessage(
                 build(investor),
                 coins,
                 CurrencyType.BTC,
                 blockChainInfoLink,
-                TokenUnitConverter.convert(conversionResult.getTokens(), TokenUnit.SMALLEST, TokenUnit.MAIN)));
+                TokenUnitConverter.convert(tomics, TokenUnit.SMALLEST, TokenUnit.MAIN)));
 
         LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tokens Amount {}",

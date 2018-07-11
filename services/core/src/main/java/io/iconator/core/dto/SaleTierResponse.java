@@ -13,7 +13,7 @@ public class SaleTierResponse {
         INCOMING
     }
 
-    private int tierNo;
+    private long tierNo;
 
     @NotNull
     private String name;
@@ -36,7 +36,7 @@ public class SaleTierResponse {
     @NotNull
     private BigInteger maxAmount;
 
-    public SaleTierResponse(int tierNo, @NotNull String name, @NotNull StatusType statusType,
+    public SaleTierResponse(long tierNo, @NotNull String name, @NotNull StatusType statusType,
                             @NotNull Date startDate, @NotNull Date endDate,
                             @NotNull BigDecimal discount, @NotNull BigInteger amount,
                             @NotNull BigInteger maxAmount) {
@@ -54,7 +54,7 @@ public class SaleTierResponse {
     private SaleTierResponse() {
     }
 
-    public int getTierNo() {
+    public long getTierNo() {
         return tierNo;
     }
 
