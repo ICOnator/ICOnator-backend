@@ -128,7 +128,7 @@ public class TokenConversionService {
     private BigInteger distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) throws TokenCapOverflowException {
         if (oTier.isPresent()) {
             SaleTier tier = oTier.get();
-            if (tier.hasDynamicMax()) {
+            if (tier.hasDynamicMax() && (tier.getTokenMax() == BigInteger.ZERO || tier.getTokenMax() == null)) {
                 tier.setTokenMax(getOverallTomicsAmount().subtract(saleTierService.getOverallTokenAmountSold()));
                 saleTierRepository.save(tier);
             }
