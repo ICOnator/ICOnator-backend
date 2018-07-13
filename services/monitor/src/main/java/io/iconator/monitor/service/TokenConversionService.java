@@ -92,11 +92,15 @@ public class TokenConversionService {
             tokensInteger = tier.getRemainingTokens();
             BigDecimal overflowInTokens = tokensDecimal.subtract(new BigDecimal(tokensInteger));
             BigDecimal overflowInUsd = TokenUtils.convertTokensToUsd(overflowInTokens, appConfig.getUsdPerToken(), tier.getDiscount());
-            tier.setTokensSold(tier.getTokenMax());
-            if (tier.hasDynamicDuration()) {
-                shiftDates(tier, blockTime);
+            try {
+                checkAndThrowOverflowingOverallTokenMax(tier, tokensInteger);
+            } catch (TokenCapOverflowException e) {
+                e.addOverflow(overflowInUsd);
+                throw e;
             }
+            tier.setTokensSold(tier.getTokenMax());
             tier = saleTierRepository.save(tier);
+            if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
             try {
                 tokensInteger = tokensInteger.add(
                         distributeToNextTier(overflowInUsd, saleTierService.getNextTier(tier), blockTime));
@@ -105,6 +109,7 @@ public class TokenConversionService {
                 throw e;
             }
         } else {
+            checkAndThrowOverflowingOverallTokenMax(tier, tokensInteger);
             tier.setTokensSold(tier.getTokensSold().add(tokensInteger));
             if (tier.isFull() && tier.hasDynamicDuration()) {
                 shiftDates(tier, blockTime);
@@ -112,6 +117,25 @@ public class TokenConversionService {
             saleTierRepository.save(tier);
         }
         return tokensInteger;
+    }
+
+    private void checkAndThrowOverflowingOverallTokenMax(SaleTier tier, BigInteger tokensInteger) throws TokenCapOverflowException {
+        if (isOverflowingOverallMax(tokensInteger)) {
+            BigInteger remainingTomics = getOverallRemainingTomicsAmount();
+            BigInteger overflowInTokens = tokensInteger.subtract(remainingTomics);
+            BigDecimal overflowInUsd = TokenUtils.convertTokensToUsd(overflowInTokens,
+                    appConfig.getUsdPerToken(), tier.getDiscount());
+            tier.setTokensSold(remainingTomics);
+            throw new TokenCapOverflowException(remainingTomics, overflowInUsd);
+        }
+    }
+
+    private BigInteger getOverallRemainingTomicsAmount() {
+        return getOverallTomicsAmount().subtract(saleTierService.getOverallTokenAmountSold());
+    }
+
+    private boolean isOverflowingOverallMax(BigInteger tomics) {
+        return tomics.compareTo(getOverallRemainingTomicsAmount()) > 0;
     }
 
     private void shiftDates(SaleTier tier, Date blockTime) {

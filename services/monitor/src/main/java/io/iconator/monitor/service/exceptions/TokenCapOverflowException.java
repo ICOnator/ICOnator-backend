@@ -24,7 +24,12 @@ public class TokenCapOverflowException extends Exception {
     public BigInteger getConvertedTokens() {
         return convertedTokens;
     }
+
     public void addConvertedTokens(BigInteger tokens) {
         convertedTokens = convertedTokens.add(tokens);
+    }
+
+    public void addOverflow(BigDecimal overflow) {
+        this.overflow = this.overflow.add(overflow);
     }
 }

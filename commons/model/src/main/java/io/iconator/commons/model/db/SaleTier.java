@@ -41,6 +41,12 @@ public class SaleTier {
     @Column(name = "token_max", precision = 34, scale = 0)
     private BigInteger tokenMax;
 
+    @Column(name = "has_dynamic_duration")
+    private boolean hasDynamicDuration;
+
+    @Column(name = "has_dynamic_max")
+    private boolean hasDynamicMax;
+
     public SaleTier(long tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
                     BigInteger tokensSold, BigInteger tokenMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
         this.tierNo = tierNo;
@@ -53,12 +59,6 @@ public class SaleTier {
         this.hasDynamicDuration = hasDynamicDuration;
         this.hasDynamicMax = hasDynamicMax;
     }
-
-    @Column(name = "has_dynamic_duration")
-    private boolean hasDynamicDuration;
-
-    @Column(name = "has_dynamic_max")
-    private boolean hasDynamicMax;
 
     protected SaleTier() {
     }

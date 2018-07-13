@@ -34,6 +34,7 @@ public class SaleTierService {
                 .orElse(BigInteger.ZERO);
     }
 
+
     public List<SaleTier> getAllFollowingTiers(SaleTier tier) {
         return saleTierRepository.findTierByTierNoGreaterThanOrderByTierNoAsc(tier.getTierNo());
     }
