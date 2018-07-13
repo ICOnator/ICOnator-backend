@@ -174,7 +174,7 @@ public class ExchangeRateService {
 
     public BigDecimal getLatestUSDperETH() throws USDETHFxException {
         Optional<ExchangeAggregateRate> exchangeAggregateRate =
-                exchangeAggregateRateRepository.findFirstOptionalByOrderByBlockNrEthDesc();
+                exchangeAggregateRateRepository.findFirstOptionalByOrderByCreationDateDesc();
 
         return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.ETH))
                 .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
@@ -183,7 +183,7 @@ public class ExchangeRateService {
 
     public BigDecimal getLatestUSDPerBTC() throws USDBTCFxException {
         Optional<ExchangeAggregateRate> exchangeAggregateRate =
-                exchangeAggregateRateRepository.findFirstOptionalByOrderByBlockNrBtcDesc();
+                exchangeAggregateRateRepository.findFirstOptionalByOrderByCreationDateDesc();
 
         return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.BTC))
                 .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
