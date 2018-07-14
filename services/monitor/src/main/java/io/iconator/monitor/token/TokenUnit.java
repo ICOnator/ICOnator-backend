@@ -4,16 +4,22 @@ import java.math.BigDecimal;
 
 public enum TokenUnit {
 
-    MAIN(18),
-    SMALLEST(1);
+    /**
+     * main token unit
+     */
+    TOKEN(18),
+    /**
+     * atomic token unit
+     */
+    TOMIC(1);
 
-    private BigDecimal unitFactor;
+    private BigDecimal tomicFactor;
 
     TokenUnit(int exponent) {
-        this.unitFactor = BigDecimal.TEN.pow(exponent);
+        this.tomicFactor = BigDecimal.TEN.pow(exponent);
     }
 
-    public BigDecimal getUnitFactor() {
-        return unitFactor;
+    public BigDecimal getTomicFactor() {
+        return tomicFactor;
     }
 }

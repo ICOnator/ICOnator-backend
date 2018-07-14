@@ -37,7 +37,7 @@ public class TierController {
                         status = SaleTierResponse.StatusType.CLOSED;
                     } else if (t.getStartDate().compareTo(now) <= 0 &&
                             t.getEndDate().compareTo(now) > 0)  {
-                        if (t.getTokensSold().compareTo(t.getTokenMax()) >= 0) {
+                        if (t.getTomicsSold().compareTo(t.getTomicsMax()) >= 0) {
                             status = SaleTierResponse.StatusType.CLOSED;
                         } else {
                             status = SaleTierResponse.StatusType.ACTIVE;
@@ -47,7 +47,7 @@ public class TierController {
                     }
                     SaleTierResponse tr = new SaleTierResponse(t.getTierNo(), t.getDescription(),
                             status, t.getStartDate(), t.getEndDate(), t.getDiscount(),
-                            t.getTokensSold(), t.getTokenMax());
+                            t.getTomicsSold(), t.getTomicsMax());
                     saleTiers.add(tr);
                 });
         return ResponseEntity.ok(saleTiers);

@@ -109,8 +109,8 @@ public class EthereumMonitorTest {
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
         BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
-        BigInteger tokenAmountToBeReceived =
-                TokenUtils.convertUsdToTokens(fundsAmountToSendInUSD, appConfig.getUsdPerToken(), BigDecimal.ZERO)
+        BigInteger tomicsAmountToBeReceived =
+                TokenUtils.convertUsdToTomics(fundsAmountToSendInUSD, appConfig.getUsdPerToken(), BigDecimal.ZERO)
                         .toBigInteger();
         CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
@@ -142,14 +142,14 @@ public class EthereumMonitorTest {
 
         assertEquals(1, messages.size());
 
-        assertTrue(matchReceivedMessage(messages, isTokenAmountReceivedEqualToCurrencyTypeSent(tokenAmountToBeReceived)));
+        assertTrue(matchReceivedMessage(messages, isTokenAmountReceivedEqualToCurrencyTypeSent(tomicsAmountToBeReceived)));
         assertTrue(matchReceivedMessage(messages, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
         assertTrue(matchReceivedMessage(messages, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
     }
 
-    private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tokenAmountSent) {
-        BigDecimal tokensInMainUnit = TokenUnitConverter.convert(tokenAmountSent, TokenUnit.SMALLEST, TokenUnit.MAIN);
-        return p -> p.getTokenAmount().compareTo(tokensInMainUnit) == 0;
+    private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tomicsAmountSent) {
+        BigDecimal tokens = TokenUnitConverter.convert(tomicsAmountSent, TokenUnit.TOMIC, TokenUnit.TOKEN);
+        return p -> p.getTokenAmount().compareTo(tokens) == 0;
     }
 
 
@@ -188,7 +188,7 @@ public class EthereumMonitorTest {
     private void createAndSaveTier() {
         Date from = Date.from(Instant.EPOCH);
         Date to = new Date();
-        BigInteger tomics = TokenUnitConverter.convert(BigInteger.valueOf(1000L), TokenUnit.MAIN, TokenUnit.SMALLEST)
+        BigInteger tomics = TokenUnitConverter.convert(BigInteger.valueOf(1000L), TokenUnit.TOKEN, TokenUnit.TOMIC)
                 .toBigInteger();
         saleTierRepository.saveAndFlush(
                 new SaleTier(4, "4", from, to, new BigDecimal("0.0"), BigInteger.ZERO, tomics, true, false));

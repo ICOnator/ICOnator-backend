@@ -5,11 +5,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
-import static javax.persistence.GenerationType.SEQUENCE;
-
-/**
- * Uses integers for token amounts because it is assumed that tokens are stored in their smallest unit.
- */
 @Entity
 @Table(name = "sale_tier")
 public class SaleTier {
@@ -35,11 +30,11 @@ public class SaleTier {
     @Column(name = "discount", precision = 6, scale = 6)
     private BigDecimal discount;
 
-    @Column(name = "tokens_sold", precision = 34, scale = 0)
-    private BigInteger tokensSold;
+    @Column(name = "tomics_sold", precision = 34, scale = 0)
+    private BigInteger tomicsSold;
 
-    @Column(name = "token_max", precision = 34, scale = 0)
-    private BigInteger tokenMax;
+    @Column(name = "tomics_max", precision = 34, scale = 0)
+    private BigInteger tomicsMax;
 
     @Column(name = "has_dynamic_duration")
     private boolean hasDynamicDuration;
@@ -48,14 +43,14 @@ public class SaleTier {
     private boolean hasDynamicMax;
 
     public SaleTier(long tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
-                    BigInteger tokensSold, BigInteger tokenMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
+                    BigInteger tomicsSold, BigInteger tomicsMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
         this.tierNo = tierNo;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
         this.discount = discount;
-        this.tokensSold = tokensSold;
-        this.tokenMax = tokenMax;
+        this.tomicsSold = tomicsSold;
+        this.tomicsMax = tomicsMax;
         this.hasDynamicDuration = hasDynamicDuration;
         this.hasDynamicMax = hasDynamicMax;
     }
@@ -103,20 +98,20 @@ public class SaleTier {
         this.discount = discount;
     }
 
-    public BigInteger getTokensSold() {
-        return tokensSold;
+    public BigInteger getTomicsSold() {
+        return tomicsSold;
     }
 
-    public void setTokensSold(BigInteger tokensSold) {
-        this.tokensSold = tokensSold;
+    public void setTomicsSold(BigInteger tomicsSold) {
+        this.tomicsSold = tomicsSold;
     }
 
-    public BigInteger getTokenMax() {
-        return tokenMax;
+    public BigInteger getTomicsMax() {
+        return tomicsMax;
     }
 
-    public void setTokenMax(BigInteger tokenMax) {
-        this.tokenMax = tokenMax;
+    public void setTomicsMax(BigInteger tomicsMax) {
+        this.tomicsMax = tomicsMax;
     }
 
     public boolean hasDynamicDuration() {
@@ -136,14 +131,14 @@ public class SaleTier {
     }
 
     public boolean isFull() {
-        return tokenMax == tokensSold;
+        return tomicsMax == tomicsSold;
     }
 
-    public boolean isAmountOverflowingTier(BigInteger tokens) {
-        return tokensSold.add(tokens).compareTo(tokenMax) > 0;
+    public boolean isAmountOverflowingTier(BigInteger tomics) {
+        return tomicsSold.add(tomics).compareTo(tomicsMax) > 0;
     }
 
-    public BigInteger getRemainingTokens() {
-        return tokenMax.subtract(tokensSold);
+    public BigInteger getRemainingTomics() {
+        return tomicsMax.subtract(tomicsSold);
     }
 }

@@ -38,7 +38,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigInteger.ZERO); // token amount
+                BigInteger.ZERO); // tomics amount
 
         baseMonitor.savePaymentLog(paymentLog1);
 
@@ -51,7 +51,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigInteger.ZERO); // token amount
+                BigInteger.ZERO); // tomics amount
 
         try {
             baseMonitor.savePaymentLog(paymentLog2);
@@ -73,7 +73,7 @@ public class BaseMonitorTest {
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
-                BigInteger.ZERO); // token amount
+                BigInteger.ZERO); // tomics amount
         try {
             baseMonitor.savePaymentLog(paymentLog1);
         } catch (Exception e) {

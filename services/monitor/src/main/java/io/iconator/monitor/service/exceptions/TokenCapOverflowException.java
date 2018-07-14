@@ -5,11 +5,11 @@ import java.math.BigInteger;
 
 public class TokenCapOverflowException extends Exception {
 
-    private BigInteger convertedTokens;
+    private BigInteger convertedTomics;
     private BigDecimal overflow;
 
-    public TokenCapOverflowException(BigInteger convertedTokens, BigDecimal overflow) {
-        this.convertedTokens = convertedTokens;
+    public TokenCapOverflowException(BigInteger convertedTomics, BigDecimal overflow) {
+        this.convertedTomics = convertedTomics;
         this.overflow = overflow;
     }
 
@@ -21,12 +21,12 @@ public class TokenCapOverflowException extends Exception {
         return overflow;
     }
 
-    public BigInteger getConvertedTokens() {
-        return convertedTokens;
+    public BigInteger getConvertedTomics() {
+        return convertedTomics;
     }
 
-    public void addConvertedTokens(BigInteger tokens) {
-        convertedTokens = convertedTokens.add(tokens);
+    public void addConvertedTomics(BigInteger tokens) {
+        convertedTomics = convertedTomics.add(tokens);
     }
 
     public void addOverflow(BigDecimal overflow) {

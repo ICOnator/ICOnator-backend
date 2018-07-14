@@ -27,9 +27,9 @@ public class SaleTierService {
         return saleTierRepository.findByTierNo(tier.getTierNo() + 1);
     }
 
-    public BigInteger getOverallTokenAmountSold() {
+    public BigInteger getOverallTomicsSold() {
         return saleTierRepository.findAll().stream()
-                .map(SaleTier::getTokensSold)
+                .map(SaleTier::getTomicsSold)
                 .reduce(BigInteger::add)
                 .orElse(BigInteger.ZERO);
     }

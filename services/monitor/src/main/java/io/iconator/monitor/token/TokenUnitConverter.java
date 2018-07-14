@@ -11,11 +11,11 @@ public class TokenUnitConverter {
     public static BigDecimal convert(BigDecimal value, TokenUnit unitFrom, TokenUnit unitTo)
             throws TokenUnitConversionNotImplementedException {
 
-        if (unitFrom.equals(TokenUnit.SMALLEST) && unitTo.equals(TokenUnit.MAIN)) {
-            return value.divide(TokenUnit.MAIN.getUnitFactor(), MathContext.DECIMAL128);
+        if (unitFrom.equals(TokenUnit.TOMIC) && unitTo.equals(TokenUnit.TOKEN)) {
+            return value.divide(TokenUnit.TOKEN.getTomicFactor(), MathContext.DECIMAL128);
         }
-        if (unitFrom.equals(TokenUnit.MAIN) && unitTo.equals(TokenUnit.SMALLEST)) {
-            return value.multiply(TokenUnit.MAIN.getUnitFactor());
+        if (unitFrom.equals(TokenUnit.TOKEN) && unitTo.equals(TokenUnit.TOMIC)) {
+            return value.multiply(TokenUnit.TOKEN.getTomicFactor());
         }
         throw new TokenUnitConversionNotImplementedException(
                 String.format("Converting %s to %s is not implemented.", unitFrom, unitTo));

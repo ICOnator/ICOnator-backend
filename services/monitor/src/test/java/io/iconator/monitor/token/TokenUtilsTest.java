@@ -23,23 +23,23 @@ public class TokenUtilsTest {
     private MonitorAppConfig appConfig;
 
     @Test
-    public void testConvertUsdToTokens() {
+    public void testConvertUsdToTomics() {
         BigDecimal usd = new BigDecimal("1");
         BigDecimal discount = new BigDecimal("0.25", new MathContext(6, RoundingMode.HALF_EVEN));
 
-        BigDecimal tokens = TokenUtils.convertUsdToTokens(usd, appConfig.getUsdPerToken(), discount);
-        BigDecimal expectedResult = new BigDecimal("40").multiply(TokenUnit.MAIN.getUnitFactor())
+        BigDecimal tomics = TokenUtils.convertUsdToTomics(usd, appConfig.getUsdPerToken(), discount);
+        BigDecimal expectedResult = new BigDecimal("40").multiply(TokenUnit.TOKEN.getTomicFactor())
                 .divide(new BigDecimal("3"), new MathContext(34, RoundingMode.DOWN));
 
-        assertEquals(0, tokens.compareTo(expectedResult));
+        assertEquals(0, tomics.compareTo(expectedResult));
     }
 
     @Test
-    public void testConvertTokensToUsd() {
-        BigDecimal tokens = new BigDecimal("3.333").multiply(TokenUnit.MAIN.getUnitFactor());
+    public void testConvertTomicsToUsd() {
+        BigDecimal tomics = new BigDecimal("3.333").multiply(TokenUnit.TOKEN.getTomicFactor());
         BigDecimal discount = new BigDecimal("0.333333", new MathContext(6, RoundingMode.HALF_EVEN));
 
-        BigDecimal usd = TokenUtils.convertTokensToUsd(tokens, appConfig.getUsdPerToken(), discount);
+        BigDecimal usd = TokenUtils.convertTomicsToUsd(tomics, appConfig.getUsdPerToken(), discount);
         BigDecimal expectedResult = new BigDecimal("3.333")
                 .multiply(BigDecimal.ONE.subtract(discount), MathContext.DECIMAL128)
                 .multiply(appConfig.getUsdPerToken());

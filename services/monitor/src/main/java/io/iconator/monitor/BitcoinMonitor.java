@@ -263,7 +263,7 @@ public class BitcoinMonitor extends BaseMonitor {
             tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
         } catch (TokenCapOverflowException e) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
-            tomics = e.getConvertedTokens();
+            tomics = e.getConvertedTomics();
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperBTC);
             eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
@@ -274,7 +274,7 @@ public class BitcoinMonitor extends BaseMonitor {
             return;
         }
 
-        paymentLog.setTokenAmount(tomics);
+        paymentLog.setTomicsAmount(tomics);
 
         final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();
 
@@ -283,16 +283,16 @@ public class BitcoinMonitor extends BaseMonitor {
                 coins,
                 CurrencyType.BTC,
                 blockChainInfoLink,
-                TokenUnitConverter.convert(tomics, TokenUnit.SMALLEST, TokenUnit.MAIN)));
+                TokenUnitConverter.convert(tomics, TokenUnit.TOMIC, TokenUnit.TOKEN)));
 
         LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
-                        "Tokens Amount {}",
+                        "Tomics Amount {}",
                 utxo.getValue().toFriendlyString(),
                 paymentLog.getPaymentAmount(),
                 paymentLog.getFxRate(),
                 investor.getEmail(),
                 paymentLog.getCreateDate(),
                 receivingAddress,
-                paymentLog.getTokenAmount());
+                paymentLog.getTomicsAmount());
     }
 }

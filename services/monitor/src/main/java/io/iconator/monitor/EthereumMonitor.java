@@ -5,7 +5,6 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.ethereum.EthereumUnit;
 import io.iconator.commons.ethereum.EthereumUnitConverter;
-import io.iconator.commons.ethereum.EthereumUtils;
 import io.iconator.commons.ethereum.exception.EthereumUnitConversionNotImplementedException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
@@ -210,7 +209,7 @@ public class EthereumMonitor extends BaseMonitor {
             tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
         } catch (TokenCapOverflowException e) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
-            tomics = e.getConvertedTokens();
+            tomics = e.getConvertedTomics();
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperETH);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
@@ -221,7 +220,7 @@ public class EthereumMonitor extends BaseMonitor {
             return;
         }
 
-        paymentLog.setTokenAmount(tomics);
+        paymentLog.setTomicsAmount(tomics);
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;
 
@@ -230,16 +229,16 @@ public class EthereumMonitor extends BaseMonitor {
                 ethers,
                 CurrencyType.ETH,
                 etherscanLink,
-                TokenUnitConverter.convert(tomics, TokenUnit.SMALLEST, TokenUnit.MAIN)));
+                TokenUnitConverter.convert(tomics, TokenUnit.TOMIC, TokenUnit.TOKEN)));
 
         LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
-                        "Tokens Amount {}",
+                        "Tomics Amount {}",
                 ethers,
                 paymentLog.getPaymentAmount(),
                 paymentLog.getFxRate(),
                 investor.getEmail(),
                 paymentLog.getCreateDate(),
                 receivingAddress,
-                paymentLog.getTokenAmount());
+                paymentLog.getTomicsAmount());
     }
 }

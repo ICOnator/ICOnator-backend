@@ -12,9 +12,6 @@ import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
-/**
- * Uses integers for token amounts because it is assumed that tokens are stored in their smallest unit.
- */
 @Entity(name = "payment_log")
 public class PaymentLog {
 
@@ -47,15 +44,15 @@ public class PaymentLog {
     @Column(name = "investor_id", nullable = false)
     private long investorId;
 
-    @Column(name = "token_amount", nullable = false, precision = 34, scale = 0)
-    private BigInteger tokenAmount;
+    @Column(name = "tomics_amount", nullable = false, precision = 34, scale = 0)
+    private BigInteger tomicsAmount;
 
     public PaymentLog() {
     }
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
                       BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
-                      long investorId, BigInteger tokenAmount) {
+                      long investorId, BigInteger tomicsAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -64,7 +61,7 @@ public class PaymentLog {
         this.fxRate = fxRate;
         this.usdValue = usdValue;
         this.investorId = investorId;
-        this.tokenAmount = tokenAmount;
+        this.tomicsAmount = tomicsAmount;
     }
 
     public long getId() {
@@ -99,12 +96,12 @@ public class PaymentLog {
         return usdValue;
     }
 
-    public BigInteger getTokenAmount() {
-        return tokenAmount;
+    public BigInteger getTomicsAmount() {
+        return tomicsAmount;
     }
 
-    public void setTokenAmount(BigInteger amount) {
-        this.tokenAmount = amount;
+    public void setTomicsAmount(BigInteger amount) {
+        this.tomicsAmount = amount;
     }
 
     public long getInvestorId() {
