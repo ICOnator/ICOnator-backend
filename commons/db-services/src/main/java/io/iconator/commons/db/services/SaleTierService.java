@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,5 +38,9 @@ public class SaleTierService {
 
     public List<SaleTier> getAllFollowingTiers(SaleTier tier) {
         return saleTierRepository.findTierByTierNoGreaterThanOrderByTierNoAsc(tier.getTierNo());
+    }
+
+    public Optional<SaleTier> getTierAtDate(Date date) {
+        return saleTierRepository.findTierAtDate(date);
     }
 }

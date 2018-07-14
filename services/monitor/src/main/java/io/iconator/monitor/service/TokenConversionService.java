@@ -70,7 +70,7 @@ public class TokenConversionService {
     // Or vice-versa, is it necessary to have isolation of repeatable_reads if we have a Version on the sale tiers.
     @Transactional(rollbackFor = Exception.class, noRollbackFor = TokenCapOverflowException.class, isolation = Isolation.REPEATABLE_READ)
     public BigInteger convert(BigDecimal usd, Date blockTime) throws TokenCapOverflowException {
-        Optional<SaleTier> oTier = saleTierRepository.findTierAtDate(blockTime);
+        Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
             if (oTier.get().isFull()) {
                 return distributeToNextTier(usd, oTier, blockTime);
