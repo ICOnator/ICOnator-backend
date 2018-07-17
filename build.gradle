@@ -16,12 +16,17 @@ plugins {
 // Don't generate a build folder in root
 jar.enabled = false
 
-subprojects {
+allprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     repositories {
         mavenLocal()
         mavenCentral()
+        jcenter()
         // Used for https://github.com/kenglxn/QRGen, they publish on github
         maven { url "https://jitpack.io" }
         maven { url 'https://dl.bintray.com/ethereum/maven/' }
@@ -30,13 +35,13 @@ subprojects {
         // Used for rates
         maven { url 'https://raw.githubusercontent.com/blockchain/api-v1-client-java/mvn-repo/' }
     }
+}
+
+subprojects {
 
     dependencies {
-        testCompile group: 'junit', name: 'junit', version: '4.12'
+        testCompile 'junit:junit:4.12'
     }
-
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 
     ext.dockerVersion = project.hasProperty('dockerVersion') ? project['dockerVersion'] : ''
     ext.dockerImageName = project.hasProperty('dockerImageName') ? project['dockerImageName'] : ''
@@ -50,3 +55,22 @@ configure([project(':commons'), project(':services')]) {
 
 task stage(dependsOn: ['build', 'clean'])
 build.mustRunAfter clean
+
+task codeCoverageReport(type: JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+    subprojects.each {
+        sourceSets it.sourceSets.main
+    }
+
+    reports {
+        xml.enabled true
+        xml.destination "${buildDir}/reports/jacoco/report.xml"
+        html.enabled false
+        csv.enabled false
+    }
+}
+
+codeCoverageReport.dependsOn {
+    subprojects*.test
+}
