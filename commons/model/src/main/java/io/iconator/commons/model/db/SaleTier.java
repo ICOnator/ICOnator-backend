@@ -131,7 +131,7 @@ public class SaleTier {
     }
 
     public boolean isFull() {
-        return tomicsMax == tomicsSold;
+        return tomicsMax.compareTo(BigInteger.ZERO) > 0  && tomicsMax.compareTo(tomicsSold) == 0;
     }
 
     public boolean isAmountOverflowingTier(BigInteger tomics) {

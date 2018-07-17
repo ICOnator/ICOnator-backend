@@ -17,8 +17,6 @@ import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
-import io.iconator.monitor.token.TokenUnit;
-import io.iconator.monitor.token.TokenUnitConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -175,7 +173,7 @@ public class EthereumMonitor extends BaseMonitor {
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (EthereumUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convert wei to ethers for transaction {}.", txIdentifier, e);
+            LOG.error("Failed to convertAndDistributeToTiers wei to ethers for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_FROM_WEI_TO_ETHER, investor);
             return;
         }
@@ -206,14 +204,14 @@ public class EthereumMonitor extends BaseMonitor {
 
         BigInteger tomics;
         try {
-            tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
+            tomics = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (TokenCapOverflowException e) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
             tomics = e.getConvertedTomics();
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperETH);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
-            LOG.error("Failed to convert payment to tokens for transaction {}. " +
+            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
             paymentLogRepository.delete(paymentLog);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
@@ -229,7 +227,7 @@ public class EthereumMonitor extends BaseMonitor {
                 ethers,
                 CurrencyType.ETH,
                 etherscanLink,
-                TokenUnitConverter.convert(tomics, TokenUnit.TOMIC, TokenUnit.TOKEN)));
+                tokenConversionService.convertTomicsToTokens(tomics)));
 
         LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tomics Amount {}",

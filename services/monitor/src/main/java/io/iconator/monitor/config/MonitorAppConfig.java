@@ -28,7 +28,10 @@ public class MonitorAppConfig {
     private BigDecimal usdPerToken;
 
     @Value("${io.iconator.services.monitor.token.overall-amount}")
-    private BigInteger overallTokenAmount;
+    private BigDecimal overallTokenAmount;
+
+    @Value("${io.iconator.services.monitor.token.atomic-unit-factor}")
+    private int atomicUnitFactor;
 
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
@@ -54,8 +57,11 @@ public class MonitorAppConfig {
         return usdPerToken;
     }
 
-    public BigInteger getOverallTokenAmount() {
+    public BigDecimal getOverallTokenAmount() {
         return overallTokenAmount;
     }
 
+    public BigInteger getAtomicUnitFactor() {
+        return BigInteger.TEN.pow(atomicUnitFactor);
+    }
 }

@@ -17,8 +17,6 @@ import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
-import io.iconator.monitor.token.TokenUnit;
-import io.iconator.monitor.token.TokenUnitConverter;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
@@ -229,7 +227,7 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (BitcoinUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convert satoshi to bitcoin for transaction {}.", txoIdentifier, e);
+            LOG.error("Failed to convertAndDistributeToTiers satoshi to bitcoin for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_FROM_SATOSHI_TO_COIN, investor);
             return;
         }
@@ -260,14 +258,14 @@ public class BitcoinMonitor extends BaseMonitor {
 
         BigInteger tomics;
         try {
-            tomics = tokenConversionService.convertWithRetries(usdReceived, timestamp);
+            tomics = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (TokenCapOverflowException e) {
             LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
             tomics = e.getConvertedTomics();
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperBTC);
             eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         } catch (Throwable e) {
-            LOG.error("Failed to convert payment to tokens for transaction {}. " +
+            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
             paymentLogRepository.delete(paymentLog);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
@@ -283,7 +281,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 coins,
                 CurrencyType.BTC,
                 blockChainInfoLink,
-                TokenUnitConverter.convert(tomics, TokenUnit.TOMIC, TokenUnit.TOKEN)));
+                tokenConversionService.convertTomicsToTokens(tomics)));
 
         LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
                         "Tomics Amount {}",

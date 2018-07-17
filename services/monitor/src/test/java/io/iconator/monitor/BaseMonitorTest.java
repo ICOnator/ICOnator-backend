@@ -2,7 +2,7 @@ package io.iconator.monitor;
 
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.monitor.config.BaseMonitorTestConfig;
+import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.TokenConversionService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +19,7 @@ import java.util.Date;
 import static junit.framework.TestCase.fail;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {BaseMonitorTestConfig.class, TokenConversionService.class})
+@ContextConfiguration(classes = {MonitorTestConfig.class, TokenConversionService.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class BaseMonitorTest {

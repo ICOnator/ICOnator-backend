@@ -15,7 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
 @EntityScan(basePackages = {"io.iconator.commons.model"})
-public class BaseMonitorTestConfig {
+public class MonitorTestConfig {
 
     @Bean
     public FxService fxService() {

@@ -8,11 +8,8 @@ import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.EthereumMonitorTestConfig;
-import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.token.TokenUnit;
-import io.iconator.monitor.token.TokenUnitConverter;
-import io.iconator.monitor.token.TokenUtils;
+import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import io.iconator.testrpcj.TestBlockchain;
 import io.iconator.testrpcj.jsonrpc.TypeConverter;
@@ -82,7 +79,7 @@ public class EthereumMonitorTest {
     private SaleTierRepository saleTierRepository;
 
     @Autowired
-    private MonitorAppConfig appConfig;
+    private TokenConversionService tokenConversionService;
 
     private static TestBlockchain testBlockchain;
 
@@ -109,9 +106,8 @@ public class EthereumMonitorTest {
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
         BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
-        BigInteger tomicsAmountToBeReceived =
-                TokenUtils.convertUsdToTomics(fundsAmountToSendInUSD, appConfig.getUsdPerToken(), BigDecimal.ZERO)
-                        .toBigInteger();
+        BigInteger tomicsAmountToBeReceived = tokenConversionService.convertUsdToTomics(
+                fundsAmountToSendInUSD, BigDecimal.ZERO).toBigInteger();
         CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
 
@@ -148,7 +144,7 @@ public class EthereumMonitorTest {
     }
 
     private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tomicsAmountSent) {
-        BigDecimal tokens = TokenUnitConverter.convert(tomicsAmountSent, TokenUnit.TOMIC, TokenUnit.TOKEN);
+        BigDecimal tokens = tokenConversionService.convertTomicsToTokens(tomicsAmountSent);
         return p -> p.getTokenAmount().compareTo(tokens) == 0;
     }
 
@@ -188,7 +184,7 @@ public class EthereumMonitorTest {
     private void createAndSaveTier() {
         Date from = Date.from(Instant.EPOCH);
         Date to = new Date();
-        BigInteger tomics = TokenUnitConverter.convert(BigInteger.valueOf(1000L), TokenUnit.TOKEN, TokenUnit.TOMIC)
+        BigInteger tomics = tokenConversionService.convertTokensToTomics(new BigDecimal(1000L))
                 .toBigInteger();
         saleTierRepository.saveAndFlush(
                 new SaleTier(4, "4", from, to, new BigDecimal("0.0"), BigInteger.ZERO, tomics, true, false));
