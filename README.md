@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/ICOnator/ICOnator-backend.svg?branch=master)](https://travis-ci.org/ICOnator/ICOnator-backend)
+[![Slack Status](https://slackin.iconator.io/badge.svg)](https://iconator.io)
 
 # ICOnator
 
