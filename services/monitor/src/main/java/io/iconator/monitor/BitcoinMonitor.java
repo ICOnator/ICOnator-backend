@@ -15,7 +15,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
-import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
+import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
@@ -256,14 +256,9 @@ public class BitcoinMonitor extends BaseMonitor {
             return;
         }
 
-        BigInteger tomics;
+        TokenDistributionResult result;
         try {
-            tomics = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
-        } catch (TokenCapOverflowException e) {
-            LOG.info("Token overflow that couldn't be converted for transaction {}", txoIdentifier);
-            tomics = e.getConvertedTomics();
-            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperBTC);
-            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            result = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
@@ -271,8 +266,13 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
-
+        BigInteger tomics = result.getDistributedTomics();
         paymentLog.setTomicsAmount(tomics);
+        paymentLog = savePaymentLog(paymentLog);
+        if (result.hasOverflow()) {
+            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperBTC);
+            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+        }
 
         final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();
 

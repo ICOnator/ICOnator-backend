@@ -7,7 +7,6 @@ import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
-import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,9 +42,9 @@ public class TokenConversionService {
     private MonitorAppConfig appConfig;
 
     /**
-     * @param usd         the USD amount to convertAndDistributeToTiers to tokens.
-     * @param discount    the discount applied to the price of a token. E.g. with 0.25 the price for
-     *                    one token is reduced to 75% of the original price.
+     * @param usd      the USD amount to convert to tokens.
+     * @param discount the discount applied to the price of a token. E.g. with 0.25 the price for
+     *                 one token is reduced to 75% of the original price.
      * @return the amount of tokens (in their atomic unit) worth the given USD amount
      */
     public BigDecimal convertUsdToTomics(BigDecimal usd, BigDecimal discount) {
@@ -55,9 +54,9 @@ public class TokenConversionService {
     }
 
     /**
-     * @param tomics      the amount of tokens to convertAndDistributeToTiers given in their atomic unit.
-     * @param discount    the discount applied to the price of a token. E.g. with 0.25 the price for
-     *                    one token is reduced to 75% of the original price.
+     * @param tomics   the amount of tokens to convert given in their atomic unit.
+     * @param discount the discount applied to the price of a token. E.g. with 0.25 the price for
+     *                 one token is reduced to 75% of the original price.
      * @return the price in USD for the given amount of atomic tokens.
      */
     public BigDecimal convertTomicsToUsd(BigDecimal tomics, BigDecimal discount) {
@@ -67,9 +66,9 @@ public class TokenConversionService {
     }
 
     /**
-     * @param tomics      the amount of tokens to convertAndDistributeToTiers given in their atomic unit.
-     * @param discount    the discount applied to the price of a token. E.g. with 0.25 the price for
-     *                    one token is reduced to 75% of the original price.
+     * @param tomics   the amount of tokens to convert given in their atomic unit.
+     * @param discount the discount applied to the price of a token. E.g. with 0.25 the price for
+     *                 one token is reduced to 75% of the original price.
      * @return the price in USD for the given amount of atomic tokens.
      */
     public BigDecimal convertTomicsToUsd(BigInteger tomics, BigDecimal discount) {
@@ -88,12 +87,14 @@ public class TokenConversionService {
         return value.multiply(new BigDecimal(appConfig.getAtomicUnitFactor()));
     }
 
-    public BigInteger convertAndDistributeToTiersWithRetries(BigDecimal usd, Date blockTime) throws Throwable {
+    public TokenDistributionResult convertAndDistributeToTiersWithRetries(BigDecimal usd, Date blockTime)
+            throws Throwable {
+
         if (blockTime == null) throw new IllegalArgumentException("Block time must not be null.");
         if (usd == null) throw new IllegalArgumentException("USD amount must not be null.");
 
         // Retry as long as there are database locking exceptions.
-        Retryer<BigInteger> retryer = RetryerBuilder.<BigInteger>newBuilder()
+        Retryer<TokenDistributionResult> retryer = RetryerBuilder.<TokenDistributionResult>newBuilder()
                 .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                 .retryIfExceptionOfType(OptimisticLockException.class)
                 .withWaitStrategy(randomWait(appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
@@ -103,17 +104,15 @@ public class TokenConversionService {
         try {
             return retryer.call(() -> convertAndDistributeToTiers(usd, blockTime));
         } catch (ExecutionException | RetryException e) {
-            if (!(e.getCause() instanceof TokenCapOverflowException)) {
-                LOG.error("Currency to token conversion failed.", e);
-            }
+            LOG.error("Currency to token conversion failed.", e);
             throw e.getCause();
         }
     }
 
     // TODO [claude, 10.07.18]: Is it necessary to have a @Version on the SaleTiers if the isolation level is repeatable_reads?
     // Or vice-versa, is it necessary to have isolation of repeatable_reads if we have a Version on the sale tiers.
-    @Transactional(rollbackFor = Exception.class, noRollbackFor = TokenCapOverflowException.class, isolation = Isolation.REPEATABLE_READ)
-    public BigInteger convertAndDistributeToTiers(BigDecimal usd, Date blockTime) throws TokenCapOverflowException {
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.REPEATABLE_READ)
+    public TokenDistributionResult convertAndDistributeToTiers(BigDecimal usd, Date blockTime) {
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
             handleDynamicMax(oTier.get());
@@ -123,63 +122,62 @@ public class TokenConversionService {
                 return distributeToTier(usd, oTier.get(), blockTime);
             }
         } else {
-            throw new TokenCapOverflowException(BigInteger.ZERO, usd);
+            return new TokenDistributionResult(BigInteger.ZERO, usd);
         }
     }
 
-    private BigInteger distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) throws TokenCapOverflowException {
+    private TokenDistributionResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
+        // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
         BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
         BigInteger tomicsInteger = tomicsDecimal.toBigInteger();
 
         if (tier.isAmountOverflowingTier(tomicsInteger)) {
-            tomicsInteger = tier.getRemainingTomics();
-            BigDecimal overflowInTomics = tomicsDecimal.subtract(new BigDecimal(tomicsInteger));
-            BigDecimal overflowInUsd = convertTomicsToUsd(overflowInTomics, tier.getDiscount());
-            try {
-                checkAndThrowOverflowingOverallTokenMax(tier, tomicsInteger);
-            } catch (TokenCapOverflowException e) {
-                e.addOverflow(overflowInUsd);
-                throw e;
-            }
-            tier.setTomicsSold(tier.getTomicsMax());
-            tier = saleTierRepository.save(tier);
-            if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-            try {
-                tomicsInteger = tomicsInteger.add(
-                        distributeToNextTier(overflowInUsd, saleTierService.getNextTier(tier), blockTime));
-            } catch (TokenCapOverflowException e) {
-                e.addConvertedTomics(tomicsInteger);
-                throw e;
+            BigInteger remainingTomicsOnTier = tier.getRemainingTomics();
+            BigDecimal overflowOverTier = tomicsDecimal.subtract(new BigDecimal(remainingTomicsOnTier));
+            BigDecimal overflowInUsd = convertTomicsToUsd(overflowOverTier, tier.getDiscount());
+            if (isOverflowingTotalMax(remainingTomicsOnTier)) {
+                return handleTotalMaxOverflow(tier, remainingTomicsOnTier).addToOverflow(overflowInUsd);
+            } else {
+                tier.setTomicsSold(tier.getTomicsMax());
+                tier = saleTierRepository.save(tier);
+                if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
+                return distributeToNextTier(overflowInUsd, saleTierService.getNextTier(tier), blockTime)
+                        .addToDistributedTomics(remainingTomicsOnTier);
             }
         } else {
-            checkAndThrowOverflowingOverallTokenMax(tier, tomicsInteger);
-            tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
-            if (tier.isFull()) {
-                if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                saleTierService.getNextTier(tier).ifPresent(this::handleDynamicMax);
+            if (isOverflowingTotalMax(tomicsInteger)) {
+                return handleTotalMaxOverflow(tier, tomicsInteger);
+            } else {
+                tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
+                if (tier.isFull()) {
+                    if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
+                    saleTierService.getNextTier(tier).ifPresent(this::handleDynamicMax);
+                }
+                saleTierRepository.save(tier);
+                return new TokenDistributionResult(tomicsInteger, BigDecimal.ZERO);
             }
-            saleTierRepository.save(tier);
-        }
-        return tomicsInteger;
-    }
-
-    private void checkAndThrowOverflowingOverallTokenMax(SaleTier tier, BigInteger tomics) throws TokenCapOverflowException {
-        if (isOverflowingOverallMax(tomics)) {
-            BigInteger remainingTomics = getOverallRemainingTomics();
-            BigInteger overflowInTomics = tomics.subtract(remainingTomics);
-            BigDecimal overflowInUsd = convertTomicsToUsd(overflowInTomics, tier.getDiscount());
-            tier.setTomicsSold(remainingTomics);
-            saleTierRepository.save(tier);
-            throw new TokenCapOverflowException(remainingTomics, overflowInUsd);
         }
     }
 
-    private BigInteger getOverallRemainingTomics() {
-        return getOverallTomicsAmount().subtract(saleTierService.getOverallTomicsSold());
+    private TokenDistributionResult handleTotalMaxOverflow(SaleTier tier, BigInteger tomicsForTier) {
+        TokenDistributionResult result = distributeTotalRemainingTokensToTier(tier);
+        BigInteger totalMaxOverflow = tomicsForTier.subtract(result.getDistributedTomics());
+        return result.addToOverflow(convertTomicsToUsd(totalMaxOverflow, tier.getDiscount()));
     }
 
-    private boolean isOverflowingOverallMax(BigInteger tomics) {
-        return tomics.compareTo(getOverallRemainingTomics()) > 0;
+    private TokenDistributionResult distributeTotalRemainingTokensToTier(SaleTier tier) {
+        BigInteger totalRemainingTokens = getTotalRemainingTomics();
+        tier.setTomicsSold(tier.getTomicsSold().add(totalRemainingTokens));
+        saleTierRepository.save(tier);
+        return new TokenDistributionResult(totalRemainingTokens, BigDecimal.ZERO);
+    }
+
+    private BigInteger getTotalRemainingTomics() {
+        return getTotalTomicsAmount().subtract(saleTierService.getTotalTomicsSold());
+    }
+
+    private boolean isOverflowingTotalMax(BigInteger tomics) {
+        return tomics.compareTo(getTotalRemainingTomics()) > 0;
     }
 
     private void shiftDates(SaleTier tier, Date blockTime) {
@@ -193,23 +191,64 @@ public class TokenConversionService {
         });
     }
 
-    private BigInteger distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) throws TokenCapOverflowException {
-        SaleTier tier = oTier.orElseThrow(() -> new TokenCapOverflowException(BigInteger.ZERO, usd));
-        handleDynamicMax(tier);
-        return distributeToTier(usd, tier, blockTime);
+    private TokenDistributionResult distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) {
+        if (oTier.isPresent()) {
+            handleDynamicMax(oTier.get());
+            return distributeToTier(usd, oTier.get(), blockTime);
+        } else {
+            return new TokenDistributionResult(BigInteger.ZERO, usd);
+        }
     }
 
     private void handleDynamicMax(SaleTier tier) {
         if (tier.hasDynamicMax() && (tier.getTomicsMax().compareTo(BigInteger.ZERO) == 0
                 || tier.getTomicsMax() == null)) {
-            tier.setTomicsMax(getOverallRemainingTomics());
+            tier.setTomicsMax(getTotalRemainingTomics());
             saleTierRepository.save(tier);
         }
     }
 
-    private BigInteger getOverallTomicsAmount() {
-        return convertTokensToTomics(appConfig.getOverallTokenAmount())
+    private BigInteger getTotalTomicsAmount() {
+        return convertTokensToTomics(appConfig.getTotalTokenAmount())
                 .toBigInteger();
+    }
+
+    public static class TokenDistributionResult {
+
+        private BigInteger tomics;
+        private BigDecimal overflow;
+
+        public TokenDistributionResult(BigInteger tomics, BigDecimal overflow) {
+            this.tomics = tomics;
+            this.overflow = overflow;
+        }
+
+        public TokenDistributionResult() {
+            this.tomics = BigInteger.ZERO;
+            this.overflow = BigDecimal.ZERO;
+        }
+
+        public boolean hasOverflow() {
+            return overflow.compareTo(BigDecimal.ZERO) > 0;
+        }
+
+        public BigDecimal getOverflow() {
+            return overflow;
+        }
+
+        public BigInteger getDistributedTomics() {
+            return tomics;
+        }
+
+        public TokenDistributionResult addToDistributedTomics(BigInteger tomics) {
+            this.tomics = this.tomics.add(tomics);
+            return this;
+        }
+
+        public TokenDistributionResult addToOverflow(BigDecimal overflow) {
+            this.overflow = this.overflow.add(overflow);
+            return this;
+        }
     }
 }
 

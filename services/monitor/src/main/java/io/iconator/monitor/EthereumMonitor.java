@@ -15,7 +15,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
-import io.iconator.monitor.service.exceptions.TokenCapOverflowException;
+import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,14 +202,9 @@ public class EthereumMonitor extends BaseMonitor {
             return;
         }
 
-        BigInteger tomics;
+        TokenDistributionResult result;
         try {
-            tomics = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
-        } catch (TokenCapOverflowException e) {
-            LOG.info("Token overflow that couldn't be converted for transaction {}", txIdentifier);
-            tomics = e.getConvertedTomics();
-            BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(e.getOverflow(), USDperETH);
-            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            result = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
@@ -217,8 +212,13 @@ public class EthereumMonitor extends BaseMonitor {
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
-
+        BigInteger tomics = result.getDistributedTomics();
         paymentLog.setTomicsAmount(tomics);
+        paymentLog = savePaymentLog(paymentLog);
+        if (result.hasOverflow()) {
+            BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
+            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+        }
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;
 

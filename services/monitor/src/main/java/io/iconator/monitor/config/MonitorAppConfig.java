@@ -27,8 +27,8 @@ public class MonitorAppConfig {
     @Value("${io.iconator.services.monitor.token.usd-per-token}")
     private BigDecimal usdPerToken;
 
-    @Value("${io.iconator.services.monitor.token.overall-amount}")
-    private BigDecimal overallTokenAmount;
+    @Value("${io.iconator.services.monitor.token.total-amount}")
+    private BigDecimal totalTokenAmount;
 
     @Value("${io.iconator.services.monitor.token.atomic-unit-factor}")
     private int atomicUnitFactor;
@@ -57,8 +57,8 @@ public class MonitorAppConfig {
         return usdPerToken;
     }
 
-    public BigDecimal getOverallTokenAmount() {
-        return overallTokenAmount;
+    public BigDecimal getTotalTokenAmount() {
+        return totalTokenAmount;
     }
 
     public BigInteger getAtomicUnitFactor() {

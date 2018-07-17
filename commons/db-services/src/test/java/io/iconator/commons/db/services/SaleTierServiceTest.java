@@ -2,7 +2,7 @@ package io.iconator.commons.db.services;
 
 public class SaleTierServiceTest {
 
-    public void testGetOverallTokenAmountSold() {
+    public void testGetTotalTokenAmountSold() {
         // TODO [claude, 10.07.18]: implement
     }
 
