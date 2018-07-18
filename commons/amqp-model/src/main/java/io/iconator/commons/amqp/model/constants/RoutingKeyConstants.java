@@ -14,6 +14,9 @@ public class RoutingKeyConstants {
     public static final String KYC_START_EMAIL_ROUTING_KEY = "iconator.kyc.start";
     public static final String KYC_REMINDER_EMAIL_ROUTING_KEY = "iconator.kyc.reminder";
 
+    public static final String KYC_START_EMAIL_SENT_ROUTING_KEY = "iconator.kyc.start.sent";
+    public static final String KYC_REMINDER_EMAIL_SENT_ROUTING_KEY = "iconator.kyc.reminder.sent";
+
     public static final String EXCHANGE_RATE_REQUEST_ROUTING_KEY = "iconator.exchange.rate.request";
 
 }

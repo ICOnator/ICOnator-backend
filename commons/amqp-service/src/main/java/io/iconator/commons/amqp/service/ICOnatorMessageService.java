@@ -16,4 +16,8 @@ public interface ICOnatorMessageService {
 
     void send(KycReminderEmailMessage kycReminderEmailMessage);
 
+    void send(KycStartEmailSentMessage kycStartEmailSentMessage);
+
+    void send(KycReminderEmailSentMessage kycReminderEmailSentMessage);
+
 }

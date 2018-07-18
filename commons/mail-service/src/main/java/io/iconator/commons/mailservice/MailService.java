@@ -1,5 +1,9 @@
 package io.iconator.commons.mailservice;
 
+import io.iconator.commons.amqp.model.KycReminderEmailMessage;
+import io.iconator.commons.amqp.model.KycReminderEmailSentMessage;
+import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.mailservice.config.MailServiceConfig;
 import io.iconator.commons.mailservice.config.MailServiceConfigHolder;
 import io.iconator.commons.mailservice.exceptions.EmailNotPreparedException;
@@ -35,6 +39,9 @@ public class MailService {
 
     @Autowired
     private MailServiceConfigHolder mailServiceConfigHolder;
+
+    @Autowired
+    private ICOnatorMessageService messageService;
 
     public void sendConfirmationEmail(Investor investor, String confirmationEmaiLink)
             throws EmailNotSentException, EmailNotPreparedException {
@@ -126,6 +133,7 @@ public class MailService {
                 LOG.info("Sending email type {} to {}", emailType, recipient);
                 this.javaMailService.send(oMessage.get().getMimeMessage());
                 // TODO: publish email sent message to amqp
+                publishMailSentMessage(recipient, emailType);
             } else {
                 throw new Exception();
             }
@@ -162,6 +170,21 @@ public class MailService {
 
     private Optional<MimeMessage> createMessageContainer(String recipient) {
         return Optional.ofNullable(this.javaMailService.createMimeMessage());
+    }
+
+    private void publishMailSentMessage(String recipient, MailType mailType) {
+        switch(mailType) {
+            case KYC_START_EMAIL:
+                KycStartEmailSentMessage startSentMessage = new KycStartEmailSentMessage(recipient);
+                messageService.send(startSentMessage);
+                break;
+            case KYC_REMINDER_EMAIL:
+                KycReminderEmailSentMessage reminderSentMessage = new KycReminderEmailSentMessage(recipient);
+                messageService.send(reminderSentMessage);
+                break;
+            default:
+                //Do nothing
+        }
     }
 
 }

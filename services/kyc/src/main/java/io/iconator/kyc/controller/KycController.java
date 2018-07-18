@@ -5,8 +5,8 @@ import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
-import io.iconator.kyc.service.InvestorService;
-import io.iconator.kyc.service.KycInfoService;
+import io.iconator.kyc.dto.Identification;
+import io.iconator.kyc.service.*;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
 import io.iconator.kyc.utils.IPAddressUtil;
@@ -25,6 +25,9 @@ import javax.ws.rs.core.Context;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -42,11 +45,17 @@ public class KycController {
     @Autowired
     private InvestorService investorService;
 
+    @Autowired
+    private IdentificationService fetcher;
+
+    @Autowired
+    private KycLinkCreatorService linkCreator;
+
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
     @RequestMapping(value = "/kyc/{investorId}/start", method = POST)
     public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
-                                      @RequestBody String kycLink,
+                                      @RequestBody(required = false) String kycLink,
                                       @Context HttpServletRequest requestContext) {
         ResponseEntity response;
         URI kycUri;
@@ -55,20 +64,24 @@ public class KycController {
         LOG.info("/start called from {} with investorId {}", ipAddress, investorId);
 
         try {
-            kycUri = new URI(kycLink);
-        } catch(URISyntaxException e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
-        }
-
-        try {
             KycInfo kycInfo = kycInfoService.getKycInfoByInvestorId(investorId);
             boolean isKycComplete = kycInfo.isKycComplete();
             if(!isKycComplete) {
                 //KYC process with this investor started but not yet completed
                 if(kycInfo.isStartKycEmailSent()) {
-                    // sending reminder
+                    // setting link & sending reminder
+                    if(kycLink == null) {
+                        kycLink = kycInfo.getKycUri();
+                    }
+
+                    try {
+                        kycUri = new URI(kycLink);
+                    } catch(URISyntaxException e) {
+                        return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(e.getMessage());
+                    }
+
                     response = remindKyc(investorId, kycUri);
                 } else {
                     response = ResponseEntity
@@ -83,7 +96,18 @@ public class KycController {
         } catch(InvestorNotFoundException e) {
             // KYC Process not yet started
             // search for investor in investor db and start process
-            response = initiateKyc(investorId, kycUri);
+            if(kycLink != null) {
+                try {
+                    kycUri = new URI(kycLink);
+                } catch (URISyntaxException use) {
+                    return ResponseEntity
+                            .status(HttpStatus.BAD_REQUEST)
+                            .body(use.getMessage());
+                }
+                response = initiateKyc(investorId, kycUri);
+            } else {
+                response = initiateKyc(investorId, null);
+            }
         }
 
         return response;
@@ -145,6 +169,40 @@ public class KycController {
         return response;
     }
 
+    @RequestMapping(value = "/kyc/fetchall", method = GET)
+    public ResponseEntity<?> fetchAllKycIdentifications(@Context HttpServletRequest requestContext) {
+        String ipAddress = IPAddressUtil.getIPAddress(requestContext);
+
+        LOG.info("/fetchall called from {}", ipAddress);
+
+        List<UUID> setCompleteList = new ArrayList<>();
+        List<UUID> errorList = new ArrayList<>();
+
+        List<Identification> identificationList = fetcher.fetchIdentifications();
+
+        for(Identification id : identificationList) {
+            if(id.getResult().equals("SUCCESS")) {
+                try {
+                    UUID kycUuid = id.getKycUuid();
+                    KycInfo kycInfo = kycInfoService.getKycInfoByKycUuid(kycUuid);
+                    kycInfoService.setKycComplete(kycInfo.getInvestorId(), true);
+                    setCompleteList.add(kycUuid);
+                } catch(InvestorNotFoundException e) {
+                    LOG.info("No KYC data about investor with KYC-UUID {}.", id.getKycUuid());
+                    errorList.add(id.getKycUuid());
+                }
+            } else {
+                //TODO what to do with differing kyc status?
+            }
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(setCompleteList.size() + " KYC-UUIDs set to complete: " + setCompleteList + "\n" +
+                        errorList.size() + " KYC-UUIDs not found in DB:" + errorList);
+
+    }
+
     private ResponseEntity<?> initiateKyc(long investorId, URI kycUri) {
         ResponseEntity response;
         Investor investor;
@@ -160,9 +218,18 @@ public class KycController {
 
         try {
             kycInfoService.saveKycInfo(investorId, kycUri);
+            if(kycUri == null) {
+                try {
+                    kycUri = new URI(linkCreator.getKycLink(investorId));
+                    kycInfoService.setKycUri(investorId, kycUri.toASCIIString());
+                } catch(Exception e) {
+                    return ResponseEntity
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(e.getMessage());
+                }
+            }
             KycStartEmailMessage kycStartEmail = messageFactory.makeKycStartEmailMessage(investor, kycUri);
             messageService.send(kycStartEmail);
-            // TODO listener for mail sent successfully message on amqp
             response = ResponseEntity
                     .status(HttpStatus.OK)
                     .body("Started KYC process for investor " + investorId);

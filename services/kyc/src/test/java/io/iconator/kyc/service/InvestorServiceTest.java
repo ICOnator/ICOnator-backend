@@ -4,6 +4,7 @@ import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.kyc.config.BaseKycTestConfig;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +30,28 @@ public class InvestorServiceTest {
     @Autowired
     private InvestorRepository investorRepository;
 
+    private Investor investor;
+
+    @Before
+    public void setUp() {
+        investor = new Investor(new Date(), "test@test.com", "1234");
+        investorRepository.save(investor);
+    }
+
     @Test
     public void testGetInvestorByInvestorId() {
-        Investor investor = new Investor(new Date(), "test@test.com", "1234");
-        investorRepository.save(investor);
-
         try {
             Investor investorFromDb = investorService.getInvestorByInvestorId(investor.getId());
+            assertEquals(investor, investorFromDb);
+        } catch(InvestorNotFoundException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetInvestorByEmail() {
+        try {
+            Investor investorFromDb = investorService.getInvestorByEmail("test@test.com");
             assertEquals(investor, investorFromDb);
         } catch(InvestorNotFoundException e) {
             fail(e.getMessage());

@@ -12,6 +12,9 @@ public class QueueConstants {
     public static final String KYC_START_EMAIL_QUEUE = "kyc_start_email_queue";
     public static final String KYC_REMINDER_EMAIL_QUEUE = "kyc_reminder_email_queue";
 
+    public static final String KYC_START_EMAIL_SENT_QUEUE = "kyc_start_email_sent_queue";
+    public static final String KYC_REMINDER_EMAIL_SENT_QUEUE = "kyc_reminder_email_sent_queue";
+
     public static final String EXCHANGE_RATE_REQUEST_QUEUE = "exchange_rate_request_queue";
 
 }
