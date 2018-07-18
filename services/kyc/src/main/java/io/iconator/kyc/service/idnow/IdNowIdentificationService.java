@@ -1,13 +1,19 @@
-package io.iconator.kyc.service;
+package io.iconator.kyc.service.idnow;
 
+import io.iconator.kyc.config.KycConfigHolder;
+import io.iconator.kyc.dto.Identification;
 import io.iconator.kyc.dto.IdentificationResponse;
 import io.iconator.kyc.dto.LoginResponse;
-import io.iconator.kyc.dto.Identification;
+import io.iconator.kyc.service.IdentificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -20,18 +26,14 @@ import java.util.List;
 
 @Service
 public class IdNowIdentificationService implements IdentificationService {
+
     private static final Logger LOG = LoggerFactory.getLogger(IdNowIdentificationService.class);
 
-    @Value("${io.iconator.kyc.host}")
-    private String kycHost;
-
-    @Value("${io.iconator.kyc.companyId}")
-    private String companyId;
-
-    @Value("${io.iconator.kyc.apiKey}")
-    private String apiKey;
+    @Autowired
+    private KycConfigHolder kycConfigHolder;
 
     @Autowired
+    @Qualifier("restTemplateIDNow")
     private RestTemplate restTemplate;
 
     @Override
@@ -41,23 +43,23 @@ public class IdNowIdentificationService implements IdentificationService {
         try {
             String authToken = login();
             identificationList = getIdentifications(authToken);
-        } catch(URISyntaxException e) {
+        } catch (URISyntaxException e) {
             LOG.error("Syntax error in URL", e);
         }
 
         return identificationList;
     }
 
-    //TODO add retry mechanism
-
+    // TODO:
+    // add retry mechanism -- also, being configurable
     private String login() throws URISyntaxException {
-        URI uri = new URI(kycHost + "/api/v1/" + companyId + "/login");
+        URI uri = new URI(kycConfigHolder.getIdNowHost() + "/api/v1/" + kycConfigHolder.getIdNowCompanyId() + "/login");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
 
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        map.add("apiKey", apiKey);
+        map.add("apiKey", kycConfigHolder.getIdNowApiKey());
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
@@ -67,7 +69,7 @@ public class IdNowIdentificationService implements IdentificationService {
     }
 
     private List<Identification> getIdentifications(String authToken) throws URISyntaxException {
-        URI uri = new URI(kycHost + "/api/v1/" + companyId + "/identifications");
+        URI uri = new URI(kycConfigHolder.getIdNowHost() + "/api/v1/" + kycConfigHolder.getIdNowCompanyId() + "/identifications");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON_UTF8);

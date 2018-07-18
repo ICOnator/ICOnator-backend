@@ -1,7 +1,7 @@
 package io.iconator.kyc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.kyc.service.IdNowIdentificationService;
+import io.iconator.kyc.service.idnow.IdNowIdentificationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;

@@ -38,8 +38,4 @@ public class KycApplication {
         }
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 }

@@ -34,6 +34,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 public class KycController {
+
     private static final Logger LOG = LoggerFactory.getLogger(KycController.class);
 
     @Autowired
@@ -53,6 +54,10 @@ public class KycController {
 
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
+    // TODO:
+    // Instead of providing a raw String as the body, please provide a DTO with the kycLink attribute
+    // Important: the format of DTO class names, should be, e.g.:
+    // BLAHRequestDTO, BLAHResponseDTO
     @RequestMapping(value = "/kyc/{investorId}/start", method = POST)
     public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
                                       @RequestBody(required = false) String kycLink,
@@ -169,6 +174,10 @@ public class KycController {
         return response;
     }
 
+    // TODO:
+    // Instead of returning a string, please return a DTO with the information in JSON
+    // In all APIs, please specify the "consumes = APPLICATION_JSON_UTF8_VALUE" and/or "produces = APPLICATION_JSON_UTF8_VALUE",
+    // if necessary.
     @RequestMapping(value = "/kyc/fetchall", method = GET)
     public ResponseEntity<?> fetchAllKycIdentifications(@Context HttpServletRequest requestContext) {
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
@@ -181,9 +190,12 @@ public class KycController {
         List<Identification> identificationList = fetcher.fetchIdentifications();
 
         for(Identification id : identificationList) {
-            if(id.getResult().equals("SUCCESS")) {
+            if(id.getResult() != null && id.getResult().equals("SUCCESS")) {
                 try {
                     UUID kycUuid = id.getKycUuid();
+                    // TODO:
+                    // Instead of getting by UUID and then set the KYC as complete by investorId,
+                    // just try to setKycCompleteByUuid() directly.
                     KycInfo kycInfo = kycInfoService.getKycInfoByKycUuid(kycUuid);
                     kycInfoService.setKycComplete(kycInfo.getInvestorId(), true);
                     setCompleteList.add(kycUuid);
@@ -203,6 +215,8 @@ public class KycController {
 
     }
 
+    // TODO:
+    // Is this method @Transactional?
     private ResponseEntity<?> initiateKyc(long investorId, URI kycUri) {
         ResponseEntity response;
         Investor investor;

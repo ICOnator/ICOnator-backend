@@ -6,7 +6,7 @@ import com.google.common.io.Files;
 import io.iconator.kyc.config.RestClientTestConfig;
 import io.iconator.kyc.dto.Identification;
 import io.iconator.kyc.dto.LoginResponse;
-import io.iconator.kyc.service.IdNowIdentificationService;
+import io.iconator.kyc.service.idnow.IdNowIdentificationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
