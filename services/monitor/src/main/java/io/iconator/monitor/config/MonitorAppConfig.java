@@ -21,7 +21,7 @@ public class MonitorAppConfig {
     @Value("${io.iconator.services.monitor.btc.node.enabled}")
     private Boolean bitcoinNodeEnabled;
 
-    @Value("${io.iconator.services.monitor.retry.wait-between-attemps.max}")
+    @Value("${io.iconator.services.monitor.retry.wait-between-attempts.max}")
     private Long tokenConversionMaxTimeWait;
 
     @Value("${io.iconator.services.monitor.token.usd-per-token}")

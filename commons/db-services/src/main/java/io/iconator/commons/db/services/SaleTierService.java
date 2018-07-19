@@ -24,7 +24,7 @@ public class SaleTierService {
         return saleTierRepository.findAllByOrderByStartDateAsc();
     }
 
-    public Optional<SaleTier> getNextTier(SaleTier tier) {
+    public Optional<SaleTier> getsubsequentTier(SaleTier tier) {
         return saleTierRepository.findByTierNo(tier.getTierNo() + 1);
     }
 
@@ -36,7 +36,7 @@ public class SaleTierService {
     }
 
 
-    public List<SaleTier> getAllFollowingTiers(SaleTier tier) {
+    public List<SaleTier> getAllSubsequentTiers(SaleTier tier) {
         return saleTierRepository.findTierByTierNoGreaterThanOrderByTierNoAsc(tier.getTierNo());
     }
 

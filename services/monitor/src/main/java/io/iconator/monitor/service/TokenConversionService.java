@@ -141,7 +141,7 @@ public class TokenConversionService {
                 tier.setTomicsSold(tier.getTomicsMax());
                 tier = saleTierRepository.save(tier);
                 if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                return distributeToNextTier(overflowInUsd, saleTierService.getNextTier(tier), blockTime)
+                return distributeToNextTier(overflowInUsd, saleTierService.getsubsequentTier(tier), blockTime)
                         .addToDistributedTomics(remainingTomicsOnTier);
             }
         } else {
@@ -151,7 +151,7 @@ public class TokenConversionService {
                 tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
                 if (tier.isFull()) {
                     if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                    saleTierService.getNextTier(tier).ifPresent(this::handleDynamicMax);
+                    saleTierService.getsubsequentTier(tier).ifPresent(this::handleDynamicMax);
                 }
                 saleTierRepository.save(tier);
                 return new TokenDistributionResult(tomicsInteger, BigDecimal.ZERO);
@@ -184,7 +184,7 @@ public class TokenConversionService {
         long dateShift = tier.getEndDate().getTime() - blockTime.getTime();
         tier.setEndDate(blockTime);
         tier = saleTierRepository.save(tier);
-        saleTierService.getAllFollowingTiers(tier).forEach(t -> {
+        saleTierService.getAllSubsequentTiers(tier).forEach(t -> {
             t.setStartDate(new Date(t.getStartDate().getTime() - dateShift));
             t.setEndDate(new Date(t.getEndDate().getTime() - dateShift));
             saleTierRepository.save(t);
