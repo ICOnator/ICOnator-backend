@@ -3,6 +3,7 @@ package io.iconator.monitor;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
+import io.iconator.commons.test.utils.ThreadTestUtils;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.TokenConversionService;
@@ -11,6 +12,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -37,6 +40,8 @@ import static org.mockito.Mockito.when;
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class TokenConversionServiceTest {
 
+    private final static Logger LOG = LoggerFactory.getLogger(TokenConversionServiceTest.class);
+
     @Autowired
     private TokenConversionService tokenConversionService;
 
@@ -49,6 +54,8 @@ public class TokenConversionServiceTest {
     @MockBean
     private MonitorAppConfig appConfig;
 
+    @Autowired
+    private BaseMonitor baseMonitor;
 
     @Before
     public void setUp() {
@@ -58,6 +65,8 @@ public class TokenConversionServiceTest {
                 .thenReturn(new BigDecimal("0.1"));
         when(appConfig.getAtomicUnitFactor())
                 .thenReturn(BigInteger.TEN.pow(18));
+        when(appConfig.getTokenConversionMaxTimeWait())
+                .thenReturn(1000L);
     }
 
     @After
@@ -91,8 +100,8 @@ public class TokenConversionServiceTest {
     }
 
     @Test
-    public void testNoTierAvailableAtDate() {
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(BigDecimal.TEN, Date.valueOf("1970-01-01"));
+    public void testNoTierAvailableAtDate() throws Throwable {
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-01"));
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(BigInteger.ZERO));
         assertEquals(0, r.getOverflow().compareTo(BigDecimal.TEN));
@@ -100,7 +109,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testDistributeToSingleTier() {
+    public void testDistributeToSingleTier() throws Throwable {
         // setup
         TestTier tt = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.2"),
                 new BigInteger("1000").multiply(tomicsFactor()), true, false);
@@ -110,7 +119,7 @@ public class TokenConversionServiceTest {
         final BigDecimal payment = tokenConversionService.convertTomicsToUsd(tomicsToSell, tt.getDiscount());
 
         // test
-        TokenDistributionResult result = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult result = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (result.hasOverflow()) fail();
         assertEquals(0, result.getDistributedTomics().compareTo(tomicsToSell));
         tt.assertTier();
@@ -118,7 +127,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowWithSingleTier() {
+    public void testOverflowWithSingleTier() throws Throwable {
         // setup
         TestTier tt = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.25"), new BigInteger("1000").multiply(tomicsFactor()), true, false);
         Date blockTime = Date.valueOf("1970-01-02");
@@ -129,7 +138,7 @@ public class TokenConversionServiceTest {
                 .add(overflow);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (!r.hasOverflow()) fail();
         // rounding the resulting USD overflow because that will be the actual precision with which the overflow
         // will be stored for refunds.
@@ -145,7 +154,7 @@ public class TokenConversionServiceTest {
      */
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowIntoSecondTierDynamicDuration() {
+    public void testOverflowIntoSecondTierDynamicDuration() throws Throwable {
         // setup
         Date blockTime = Date.valueOf("1970-01-02");
 
@@ -165,7 +174,7 @@ public class TokenConversionServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -183,7 +192,7 @@ public class TokenConversionServiceTest {
      */
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowIntoSecondTierStaticDuration() {
+    public void testOverflowIntoSecondTierStaticDuration() throws Throwable {
         // setup
         Date blockTime = Date.valueOf("1970-01-02");
 
@@ -201,7 +210,7 @@ public class TokenConversionServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -217,7 +226,7 @@ public class TokenConversionServiceTest {
      */
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowIntoSecondTierDynamicMax() {
+    public void testOverflowIntoSecondTierDynamicMax() throws Throwable {
         // setup
         Date blockTime = Date.valueOf("1970-01-02");
 
@@ -237,7 +246,7 @@ public class TokenConversionServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -250,7 +259,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowMultipleStaticTiers() {
+    public void testOverflowMultipleStaticTiers() throws Throwable {
         // setup
         Date blockTime = Date.valueOf("1970-01-02");
 
@@ -270,7 +279,7 @@ public class TokenConversionServiceTest {
                 .add(overflow);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(tt1.getTomicsMax().add(tt2.getTomicsMax()).add(tt3.getTomicsMax())));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -278,7 +287,7 @@ public class TokenConversionServiceTest {
         tt2.assertTier();
         tt3.assertTier();
 
-        r = tokenConversionService.convertAndDistributeToTiers(BigDecimal.TEN, Date.valueOf("1970-01-06"));
+        r = baseMonitor.convertAndDistributeToTiersWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-06"));
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(BigInteger.ZERO));
         assertEquals(0, r.getOverflow().compareTo(BigDecimal.TEN));
@@ -286,7 +295,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowTotalTokenAmountAndTier() {
+    public void testOverflowTotalTokenAmountAndTier() throws Throwable {
         // setup
         final Date blockTime = Date.valueOf("1970-01-02");
         // tier with a capacity of total token amount plus one token.
@@ -301,7 +310,7 @@ public class TokenConversionServiceTest {
         final BigDecimal overflow = payment.subtract(usdAmountConverted);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -310,7 +319,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowTotalTokenAmountButNotTier() {
+    public void testOverflowTotalTokenAmountButNotTier() throws Throwable {
         // setup
         final Date blockTime = Date.valueOf("1970-01-02");
         // tier with a capacity of total token amount plus one token.
@@ -321,7 +330,7 @@ public class TokenConversionServiceTest {
         final BigDecimal payment = tokenConversionService.convertTomicsToUsd(totalTomicsAmount(), tt1.getDiscount()).add(overflow);
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -330,7 +339,33 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testOverflowTotalTokenAmountInSecondTier() {
+    public void testOverflowTotalTokenAmountWithHalfFullTier() throws Throwable {
+        final Date blockTime = Date.valueOf("1970-01-02");
+        // tier with a capacity of total token amount plus one token.
+        final TestTier t = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.25"), totalTomicsAmount().add(tomicsFactor()), true, false);
+
+        BigInteger tomicsFromTier = totalTomicsAmount().divide(new BigInteger("2"));
+        BigDecimal payment = tokenConversionService.convertTomicsToUsd(tomicsFromTier, t.getDiscount());
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
+        t.tomicsSoldMustBe(tomicsFromTier);
+        if (r.hasOverflow()) fail();
+        assertEquals(0, r.getDistributedTomics().compareTo(tomicsFromTier));
+        t.assertTier();
+
+        final BigDecimal overflow = appConfig.getUsdPerToken().divide(new BigDecimal("2"));
+        payment = tokenConversionService.convertTomicsToUsd(tomicsFromTier, t.getDiscount()).add(overflow);
+        t.tomicsSoldMustBe(totalTomicsAmount());
+
+        r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
+        if (!r.hasOverflow()) fail();
+        assertEquals(0, r.getDistributedTomics().compareTo(tomicsFromTier));
+        assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
+        t.assertTier();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void testOverflowTotalTokenAmountInSecondTier() throws Throwable {
 
         final BigInteger tomicsOverflowOverTier1 = tomicsFactor();
         final Date blockTime = Date.valueOf("1970-01-02");
@@ -352,7 +387,7 @@ public class TokenConversionServiceTest {
         final BigDecimal overflow = paymentToTier2.divide(new BigDecimal(2), new MathContext(6, RoundingMode.HALF_EVEN));
 
         // test
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -362,7 +397,7 @@ public class TokenConversionServiceTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void testWithFiveTiers() {
+    public void testWithFiveTiers() throws Throwable {
 
         when(appConfig.getTotalTokenAmount())
                 .thenReturn(new BigDecimal("149303520"));
@@ -398,7 +433,7 @@ public class TokenConversionServiceTest {
                 .subtract(tiers.get(0).getTier().getTomicsSold())
                 .subtract(tiers.get(1).getTomicsMax()));
 
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(paymentToTier1, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(paymentToTier1, blockTime);
         assertEquals(0, tomicsFromTier1.compareTo(r.getDistributedTomics()));
         if (r.hasOverflow()) fail();
         tiers.forEach(TestTier::assertTier);
@@ -410,7 +445,7 @@ public class TokenConversionServiceTest {
         BigDecimal paymentToTier3 = tokenConversionService.convertTomicsToUsd(tomicsFromTier3, tiers.get(3).getDiscount());
         tiers.get(3).tomicsMaxMustBe(overallRemainingTomics);
         tiers.get(3).tomicsSoldMustBe(tomicsFromTier3);
-        r = tokenConversionService.convertAndDistributeToTiers(paymentToTier3, blockTime);
+        r = baseMonitor.convertAndDistributeToTiersWithRetries(paymentToTier3, blockTime);
         assertEquals(0, tomicsFromTier3.compareTo(r.getDistributedTomics()));
         if (r.hasOverflow()) fail();
         tiers.forEach(TestTier::assertTier);
@@ -427,7 +462,7 @@ public class TokenConversionServiceTest {
         tiers.get(5).datesMustBeShiftedBy(dateShift);
         tiers.get(5).newEndDateMustBe(blockTime);
 
-        r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         assertEquals(0, overallRemainingTomics.compareTo(r.getDistributedTomics()));
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(overallRemainingTomics));
@@ -436,8 +471,71 @@ public class TokenConversionServiceTest {
         assertEquals(0, totalTomicsAmount().compareTo(saleTierService.getTotalTomicsSold()));
     }
 
+    @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    protected List<TestTier> createFiveTiers() {
+    public void testConcurrentPaymentsWithoutOverflow() throws InterruptedException {
+        final Date blockTime = Date.valueOf("1970-01-02");
+        final TestTier t = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.25"),
+                totalTomicsAmount().divide(new BigInteger("2")), true, false);
+
+        int nrOfPayments = 10;
+        BigDecimal singlePayment = BigDecimal.ONE;
+        BigInteger singleSoldTomics = tokenConversionService.convertUsdToTomics(singlePayment, t.getDiscount()).toBigInteger();
+        t.tomicsSoldMustBe(singleSoldTomics.multiply(BigInteger.valueOf(nrOfPayments)));
+        ThreadTestUtils.runMultiThread(
+                () -> {
+                    try {
+                        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(singlePayment, blockTime);
+                        if (r.hasOverflow()) fail();
+                        assertEquals(0, r.getDistributedTomics().compareTo(singleSoldTomics));
+                        LOG.info("Distributed tomics: {}", r.getDistributedTomics().toString());
+                    } catch (Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                }, nrOfPayments
+        );
+        t.assertTier();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void testConcurrentPaymentsWithOverflowOverFirstTier() throws InterruptedException {
+        final Date blockTime = Date.valueOf("1970-01-02");
+
+        final TestTier t1 = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.25"),
+                totalTomicsAmount().divide(new BigInteger("2")), true, false);
+
+        final TestTier t2 = new TestTier(2, "1970-01-03", "1970-01-05", new BigDecimal("0.1"),
+                totalTomicsAmount().divide(new BigInteger("2")), false, false);
+
+        int nrOfPayments = 11;
+        BigInteger singleSoldTomicsToTier1 = t1.getTomicsMax().divide(BigInteger.valueOf(nrOfPayments - 1));
+        BigDecimal singlePayment = tokenConversionService.convertTomicsToUsd(singleSoldTomicsToTier1,
+                t1.getDiscount());
+        BigInteger singleSoldTomicsToTier2 = tokenConversionService.convertUsdToTomics(singlePayment, t2.getDiscount()).toBigInteger();
+
+        t1.mustBeFull();
+        t1.tomicsSoldMustBe(t1.getTomicsMax());
+        t1.newEndDateMustBe(blockTime);
+        t2.tomicsSoldMustBe(singleSoldTomicsToTier2);
+        t2.datesMustBeShiftedBy(t1.initialEndDate.getTime() - blockTime.getTime());
+
+        ThreadTestUtils.runMultiThread(
+                () -> {
+                    try {
+                        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(singlePayment, blockTime);
+                        if (r.hasOverflow()) fail();
+                        LOG.info("Distributed tomics: {}", r.getDistributedTomics().toString());
+                    } catch (Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                }, nrOfPayments
+        );
+        t1.assertTier();
+        t2.assertTier();
+    }
+
+    private List<TestTier> createFiveTiers() {
         List<TestTier> tiers = new ArrayList<>();
         tiers.add(new TestTier(0, "2018-08-01", "2018-09-01", new BigDecimal("0.25"),
                 new BigInteger("47777126400000000000000000"), false, false));
@@ -464,11 +562,11 @@ public class TokenConversionServiceTest {
      * Fails if the conversion throws a TokenDistributionResult. Asserts the returned amount of tokens.
      * Sets the amount of tokens that have to be sold on the given test tier for later assertions.
      */
-    private void makeAndConvertPaymentFailingOnOverflow(TestTier t, Date blockTime, int divisor) {
+    private void makeAndConvertPaymentFailingOnOverflow(TestTier t, Date blockTime, int divisor) throws Throwable {
         BigInteger tomicsFromTier = t.getTomicsMax().divide(BigInteger.valueOf(divisor));
         BigDecimal payment = tokenConversionService.convertTomicsToUsd(tomicsFromTier, t.getDiscount());
         t.tomicsSoldMustBe(t.tomicsSold.add(tomicsFromTier));
-        TokenDistributionResult r = tokenConversionService.convertAndDistributeToTiers(payment, blockTime);
+        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(payment, blockTime);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getDistributedTomics().compareTo(tomicsFromTier));
     }
@@ -507,6 +605,7 @@ public class TokenConversionServiceTest {
         }
 
         public void assertTier() {
+            LOG.info("Asserting Tier {}", tierNo);
             if (newStartDate != null)
                 assertEquals(0, newStartDate.compareTo(getTier().getStartDate()));
             else assertEquals(0, initialStartDate.compareTo(getTier().getStartDate()));
@@ -514,6 +613,8 @@ public class TokenConversionServiceTest {
             if (newEndDate != null) assertEquals(0, newEndDate.compareTo(getTier().getEndDate()));
             else assertEquals(0, initialEndDate.compareTo(getTier().getEndDate()));
 
+            LOG.info("{} tomics sold on Tier {}", getTier().getTomicsSold(), tierNo);
+            LOG.info("{} tomics should have been sold on Tier {}", tomicsSold, tierNo);
             if (tomicsSold != null)
                 assertEquals(0, tomicsSold.compareTo(getTier().getTomicsSold()));
 

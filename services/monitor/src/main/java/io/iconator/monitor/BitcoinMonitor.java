@@ -258,7 +258,7 @@ public class BitcoinMonitor extends BaseMonitor {
 
         TokenDistributionResult result;
         try {
-            result = tokenConversionService.convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
+            result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);

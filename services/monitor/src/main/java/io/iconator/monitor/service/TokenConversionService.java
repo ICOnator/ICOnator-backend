@@ -1,8 +1,5 @@
 package io.iconator.monitor.service;
 
-import com.github.rholder.retry.RetryException;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
@@ -10,36 +7,31 @@ import io.iconator.monitor.config.MonitorAppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.Date;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import static com.github.rholder.retry.StopStrategies.neverStop;
-import static com.github.rholder.retry.WaitStrategies.randomWait;
 
 @Service
 public class TokenConversionService {
-
-    private final static Logger LOG = LoggerFactory.getLogger(TokenConversionService.class);
 
     @Autowired
     private SaleTierRepository saleTierRepository;
 
     @Autowired
-    private SaleTierService saleTierService;
+    public SaleTierService saleTierService;
 
     @Autowired
     private MonitorAppConfig appConfig;
+
+    // TODO [claude, 2018-07-19], Remove as soon as concurrency tests are through.
+//    @Autowired
+//    private PlatformTransactionManager txManager;
 
     /**
      * @param usd      the USD amount to convert to tokens.
@@ -87,32 +79,13 @@ public class TokenConversionService {
         return value.multiply(new BigDecimal(appConfig.getAtomicUnitFactor()));
     }
 
-    public TokenDistributionResult convertAndDistributeToTiersWithRetries(BigDecimal usd, Date blockTime)
-            throws Throwable {
-
-        if (blockTime == null) throw new IllegalArgumentException("Block time must not be null.");
-        if (usd == null) throw new IllegalArgumentException("USD amount must not be null.");
-
-        // Retry as long as there are database locking exceptions.
-        Retryer<TokenDistributionResult> retryer = RetryerBuilder.<TokenDistributionResult>newBuilder()
-                .retryIfExceptionOfType(OptimisticLockingFailureException.class)
-                .retryIfExceptionOfType(OptimisticLockException.class)
-                .withWaitStrategy(randomWait(appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
-                .withStopStrategy(neverStop())
-                .build();
-
-        try {
-            return retryer.call(() -> convertAndDistributeToTiers(usd, blockTime));
-        } catch (ExecutionException | RetryException e) {
-            LOG.error("Currency to token conversion failed.", e);
-            throw e.getCause();
-        }
-    }
-
-    // TODO [claude, 10.07.18]: Is it necessary to have a @Version on the SaleTiers if the isolation level is repeatable_reads?
-    // Or vice-versa, is it necessary to have isolation of repeatable_reads if we have a Version on the sale tiers.
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.REPEATABLE_READ)
     public TokenDistributionResult convertAndDistributeToTiers(BigDecimal usd, Date blockTime) {
+        // TODO [claude, 2018-07-19], Remove as soon as concurrency tests are through.
+//        DefaultTransactionDefinition dtd = new DefaultTransactionDefinition();
+//        dtd.setPropagationBehavior(PROPAGATION_MANDATORY);
+//        TransactionStatus s = txManager.getTransaction(dtd);
+
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
             handleDynamicMax(oTier.get());
@@ -141,7 +114,7 @@ public class TokenConversionService {
                 tier.setTomicsSold(tier.getTomicsMax());
                 tier = saleTierRepository.save(tier);
                 if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                return distributeToNextTier(overflowInUsd, saleTierService.getsubsequentTier(tier), blockTime)
+                return distributeToNextTier(overflowInUsd, saleTierService.getSubsequentTier(tier), blockTime)
                         .addToDistributedTomics(remainingTomicsOnTier);
             }
         } else {
@@ -151,7 +124,7 @@ public class TokenConversionService {
                 tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
                 if (tier.isFull()) {
                     if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                    saleTierService.getsubsequentTier(tier).ifPresent(this::handleDynamicMax);
+                    saleTierService.getSubsequentTier(tier).ifPresent(this::handleDynamicMax);
                 }
                 saleTierRepository.save(tier);
                 return new TokenDistributionResult(tomicsInteger, BigDecimal.ZERO);
