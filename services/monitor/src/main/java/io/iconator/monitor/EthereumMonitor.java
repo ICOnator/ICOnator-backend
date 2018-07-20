@@ -123,15 +123,15 @@ public class EthereumMonitor extends BaseMonitor {
         LOG.debug("Detected funds received: wei {}, receiving address {}, transaction hash {}, " +
                 "blockHeight {}.", wei, receivingAddress, txIdentifier, blockHeight);
 
-        Investor investor;
-        try {
-            investor = investorRepository.findOptionalByPayInEtherAddress(receivingAddress).get();
-        } catch (NoSuchElementException e) {
-            LOG.error("Couldn't fetch investor for transaction {}.", txIdentifier, e);
+        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddress(receivingAddress);
+        if(!oInvestor.isPresent()) {
+            LOG.error("Couldn't fetch investor with public address {} for transaction {}.", receivingAddress, txIdentifier);
+            //TODO: this throws an NullPointer when investor is null
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
                     RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS, null);
             return;
         }
+        Investor investor = oInvestor.get();
 
         Date timestamp;
         try {

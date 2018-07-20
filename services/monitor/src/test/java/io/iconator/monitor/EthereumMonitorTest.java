@@ -38,13 +38,13 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
-import org.web3j.utils.Numeric;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
@@ -68,7 +68,7 @@ public class EthereumMonitorTest {
     @Autowired
     private Web3j web3j;
 
-    @Autowired
+    @MockBean
     private InvestorRepository investorRepository;
 
     @MockBean
@@ -113,15 +113,28 @@ public class EthereumMonitorTest {
         CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
 
-        String account1PubKey = Numeric.prependHexPrefix(Hex.toHexString(Keys.getAddress(TestBlockchain.ACCOUNT_1.getPubKey())));
-
         when(fxService.getUSDperETH(eq(ethBlockNumber)))
                 .thenReturn(usdPricePerETH);
 
-        ethereumMonitor.addMonitoredEtherAddress(account1PubKey);
+        Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
+
+        String receivingAddress = TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress());
+        when(investorRepository.findOptionalByPayInEtherAddress(eq(receivingAddress))).thenReturn(
+                Optional.of(new Investor(
+                        new Date(),
+                        "email",
+                        "emailConfirmationToken",
+                        "walletAddress",
+                        receivingAddress,
+                        "payInBitcoinAddress",
+                        "refundEtherAddress" ,
+                        "refundBitcoinAddress",
+                        "ipAddress")));
+
+        ethereumMonitor.addMonitoredEtherAddress(receivingAddress);
         ethereumMonitor.start((long) 0);
 
-        Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
+
 
         TransactionReceipt r = Transfer.sendFunds(
                 web3j,
