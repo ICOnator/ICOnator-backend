@@ -36,6 +36,17 @@ public class KeyPairsRepositoryService {
         }
     }
 
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public boolean addKeyPairsIfNotPresent(KeyPairs keyPairs) {
+        try {
+            this.keyPairsRepository.save(keyPairs);
+            return true;
+        } catch (Exception e) {
+            LOG.warn("Not loading key [{}, {}]. Error: {}", keyPairs.getPublicEth(), keyPairs.getPublicBtc(), e);
+            return false;
+        }
+    }
+
     public Optional<KeyPairs> findById(long id) {
         return this.keyPairsRepository.findById(id);
     }
