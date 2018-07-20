@@ -11,8 +11,8 @@ public class MessageDTOHelper {
                 investor.getEmail(),
                 investor.getEmailConfirmationToken(),
                 investor.getWalletAddress(),
-                investor.getPayInEtherPublicKey(),
-                investor.getPayInBitcoinPublicKey(),
+                investor.getPayInEtherAddress(),
+                investor.getPayInBitcoinAddress(),
                 investor.getRefundEtherAddress(),
                 investor.getRefundBitcoinAddress(),
                 investor.getIpAddress()

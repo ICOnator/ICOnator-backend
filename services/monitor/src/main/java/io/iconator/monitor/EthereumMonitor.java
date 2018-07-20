@@ -19,7 +19,6 @@ import io.iconator.monitor.service.TokenConversionService.TokenDistributionResul
 import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
@@ -31,10 +30,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -45,7 +41,7 @@ public class EthereumMonitor extends BaseMonitor {
 
     private final Web3j web3j;
     private boolean started = false;
-    private Map<String, String> monitoredAddresses = new HashMap<>(); // public key -> address
+    private Set<String> monitoredAddresses = new HashSet<>(); // public key -> address
 
     private ICOnatorMessageService messageService;
 
@@ -67,14 +63,13 @@ public class EthereumMonitor extends BaseMonitor {
     /**
      * Add a public key we want to monitor
      *
-     * @param publicKey Ethereum public key as hex string
+     * @param addressString Ethereum public address as hex string
      */
-    public synchronized void addMonitoredEtherPublicKey(String publicKey) {
-        String addressString = Hex.toHexString(org.ethereum.crypto.ECKey.fromPublicOnly(Hex.decode(publicKey)).getAddress());
+    public synchronized void addMonitoredEtherAddress(String addressString) {
         if (!addressString.startsWith("0x"))
             addressString = "0x" + addressString;
         LOG.info("Add monitored Ethereum Address: {}", addressString);
-        monitoredAddresses.put(addressString.toLowerCase(), publicKey);
+        monitoredAddresses.add(addressString.toLowerCase());
     }
 
     public void start(Long startBlock) throws IOException {
@@ -102,7 +97,7 @@ public class EthereumMonitor extends BaseMonitor {
                     new DefaultBlockParameterNumber(startBlock))
                     .subscribe(tx -> {
 
-                        if (monitoredAddresses.containsKey(tx.getTo())
+                        if (monitoredAddresses.contains(tx.getTo())
                                 && isTransactionUnprocessed(tx.getHash())) {
 
                             try {
@@ -110,11 +105,6 @@ public class EthereumMonitor extends BaseMonitor {
                             } catch (Throwable e) {
                                 LOG.error("Error while processing transaction.", e);
                             }
-                        }
-
-                        if (monitoredAddresses.get(tx.getFrom().toLowerCase()) != null) {
-                            // This should normally not happen as it means funds are stolen!
-                            LOG.error("ATTENTION: Removed: {} wei from pay-in address", tx.getValue().toString());
                         }
                     }, throwable -> {
                         LOG.error("Error during scanning of txs: ", throwable);
@@ -135,8 +125,7 @@ public class EthereumMonitor extends BaseMonitor {
 
         Investor investor;
         try {
-            String publicKey = monitoredAddresses.get(receivingAddress);
-            investor = investorRepository.findOptionalByPayInEtherPublicKey(publicKey).get();
+            investor = investorRepository.findOptionalByPayInEtherAddress(receivingAddress).get();
         } catch (NoSuchElementException e) {
             LOG.error("Couldn't fetch investor for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,

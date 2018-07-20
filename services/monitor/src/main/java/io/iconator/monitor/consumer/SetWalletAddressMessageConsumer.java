@@ -60,8 +60,8 @@ public class SetWalletAddressMessageConsumer {
         optionalSetWalletAddressMessage.ifPresent((m) -> {
             ofNullable(m.getInvestor()).ifPresent((investor) -> {
                 long timestamp = investor.getCreationDate().getTime() / 1000L;
-                bitcoinMonitor.addMonitoredPublicKey(investor.getPayInBitcoinPublicKey(), timestamp);
-                ethereumMonitor.addMonitoredEtherPublicKey(investor.getPayInEtherPublicKey());
+                bitcoinMonitor.addMonitoredAddress(investor.getPayInBitcoinAddress(), timestamp);
+                ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
             });
         });
 

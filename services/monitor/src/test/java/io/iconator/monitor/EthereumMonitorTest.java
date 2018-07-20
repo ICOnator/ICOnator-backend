@@ -33,10 +33,12 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
+import org.web3j.utils.Numeric;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -111,12 +113,12 @@ public class EthereumMonitorTest {
         CurrencyType currencyType = CurrencyType.ETH;
         Long ethBlockNumber = new Long(2);
 
-        String account1PubKey = Hex.toHexString(TestBlockchain.ACCOUNT_1.getPubKey());
+        String account1PubKey = Numeric.prependHexPrefix(Hex.toHexString(Keys.getAddress(TestBlockchain.ACCOUNT_1.getPubKey())));
 
         when(fxService.getUSDperETH(eq(ethBlockNumber)))
                 .thenReturn(usdPricePerETH);
 
-        ethereumMonitor.addMonitoredEtherPublicKey(account1PubKey);
+        ethereumMonitor.addMonitoredEtherAddress(account1PubKey);
         ethereumMonitor.start((long) 0);
 
         Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
@@ -172,7 +174,7 @@ public class EthereumMonitorTest {
                 "emailConfirmationToken",
                 "walletAddress",
                 Hex.toHexString(key.getPubKey()),
-                "payInBitcoinPublicKey",
+                "payInBitcoinAddress",
                 "refundEtherAddress",
                 "refundBitcoinAddress",
                 "127.0.0.1"

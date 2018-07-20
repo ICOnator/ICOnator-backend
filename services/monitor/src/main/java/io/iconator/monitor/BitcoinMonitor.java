@@ -28,10 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
@@ -50,7 +47,7 @@ public class BitcoinMonitor extends BaseMonitor {
     /* Used in addition to the PaymentLog entries because processing of transactions can fail and
      * lead to a refund but must still be marked as processed.
      */
-    private Map<String, String> monitoredAddresses = new HashMap<>();
+    private Set<String> monitoredAddresses = new HashSet<>();
 
     private ICOnatorMessageService messageService;
 
@@ -94,13 +91,11 @@ public class BitcoinMonitor extends BaseMonitor {
      * @param publicKey Bitcoin public key as hex string
      * @param timestamp Timestamp in seconds when this key was created
      */
-    public synchronized void addMonitoredPublicKey(String publicKey, long timestamp) {
-        final Address address = ECKey.fromPublicOnly(Hex.decode(publicKey))
-                .toAddress(this.bitcoinNetworkParameters);
-        final String addressString = address.toBase58();
+    public synchronized void addMonitoredAddress(String addressString, long timestamp) {
+        final Address address = Address.fromBase58(bitcoinNetworkParameters, addressString);
         LOG.info("Add monitored Bitcoin Address: {}", addressString);
         wallet.addWatchedAddress(address, timestamp);
-        monitoredAddresses.put(addressString, publicKey);
+        monitoredAddresses.add(addressString);
     }
 
     public void start() throws InterruptedException {
@@ -194,8 +189,7 @@ public class BitcoinMonitor extends BaseMonitor {
 
         Investor investor;
         try {
-            String publicKey = monitoredAddresses.get(receivingAddress);
-            investor = investorRepository.findOptionalByPayInBitcoinPublicKey(publicKey).get();
+            investor = investorRepository.findOptionalByPayInBitcoinAddress(receivingAddress).get();
         } catch (NoSuchElementException e) {
             LOG.error("Couldn't fetch investor for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier,

@@ -49,9 +49,9 @@ public class InvestorRepositoryTest {
         Investor i = createInvestor();
         investorRepository.save(i);
 
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherPublicKey("payInEther1");
+        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddress("payInEther1");
         assertTrue(oInvestor.isPresent());
-        assertTrue(oInvestor.filter((investor) -> investor.getPayInEtherPublicKey().equals("payInEther1")).isPresent());
+        assertTrue(oInvestor.filter((investor) -> investor.getPayInEtherAddress().equals("payInEther1")).isPresent());
     }
 
     @Test
@@ -59,9 +59,9 @@ public class InvestorRepositoryTest {
         Investor i = createInvestor();
         investorRepository.save(i);
 
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInBitcoinPublicKey("payInBitcoin1");
+        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInBitcoinAddress("payInBitcoin1");
         assertTrue(oInvestor.isPresent());
-        assertTrue(oInvestor.filter((investor) -> investor.getPayInBitcoinPublicKey().equals("payInBitcoin1")).isPresent());
+        assertTrue(oInvestor.filter((investor) -> investor.getPayInBitcoinAddress().equals("payInBitcoin1")).isPresent());
     }
 
     @Test(expected = DataIntegrityViolationException.class)

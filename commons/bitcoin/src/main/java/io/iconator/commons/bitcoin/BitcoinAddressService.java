@@ -21,10 +21,6 @@ public class BitcoinAddressService {
         this.bitcoinConfig = bitcoinConfig;
     }
 
-    public String getBitcoinAddressFromPublicKey(String publicKey) {
-        return ECKey.fromPublicOnly(Hex.decode(publicKey)).toAddress(getBitcoinNetworkParameters()).toString();
-    }
-
     public boolean isValidBitcoinAddress(String address) {
         try {
             Address.fromBase58(getBitcoinNetworkParameters(), address);

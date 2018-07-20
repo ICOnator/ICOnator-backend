@@ -18,9 +18,9 @@ public class InvestorMessageDTO {
 
     private String walletAddress;
 
-    private String payInEtherPublicKey;
+    private String payInEtherAddress;
 
-    private String payInBitcoinPublicKey;
+    private String payInBitcoinAddress;
 
     private String refundEtherAddress;
 
@@ -31,13 +31,13 @@ public class InvestorMessageDTO {
     public InvestorMessageDTO() {
     }
 
-    public InvestorMessageDTO(Date creationDate, String email, String emailConfirmationToken, String walletAddress, String payInEtherPublicKey, String payInBitcoinPublicKey, String refundEtherAddress, String refundBitcoinAddress, String ipAddress) {
+    public InvestorMessageDTO(Date creationDate, String email, String emailConfirmationToken, String walletAddress, String payInEtherAddress, String payInBitcoinAddress, String refundEtherAddress, String refundBitcoinAddress, String ipAddress) {
         this.creationDate = creationDate;
         this.email = email;
         this.emailConfirmationToken = emailConfirmationToken;
         this.walletAddress = walletAddress;
-        this.payInEtherPublicKey = payInEtherPublicKey;
-        this.payInBitcoinPublicKey = payInBitcoinPublicKey;
+        this.payInEtherAddress = payInEtherAddress;
+        this.payInBitcoinAddress = payInBitcoinAddress;
         this.refundEtherAddress = refundEtherAddress;
         this.refundBitcoinAddress = refundBitcoinAddress;
         this.ipAddress = ipAddress;
@@ -75,20 +75,20 @@ public class InvestorMessageDTO {
         this.walletAddress = walletAddress;
     }
 
-    public String getPayInEtherPublicKey() {
-        return payInEtherPublicKey;
+    public String getPayInEtherAddress() {
+        return payInEtherAddress;
     }
 
-    public void setPayInEtherPublicKey(String payInEtherPublicKey) {
-        this.payInEtherPublicKey = payInEtherPublicKey;
+    public void setPayInEtherAddress(String payInEtherAddress) {
+        this.payInEtherAddress = payInEtherAddress;
     }
 
-    public String getPayInBitcoinPublicKey() {
-        return payInBitcoinPublicKey;
+    public String getPayInBitcoinAddress() {
+        return payInBitcoinAddress;
     }
 
-    public void setPayInBitcoinPublicKey(String payInBitcoinPublicKey) {
-        this.payInBitcoinPublicKey = payInBitcoinPublicKey;
+    public void setPayInBitcoinAddress(String payInBitcoinAddress) {
+        this.payInBitcoinAddress = payInBitcoinAddress;
     }
 
     public String getRefundEtherAddress() {
@@ -121,8 +121,8 @@ public class InvestorMessageDTO {
                 getEmail(),
                 getEmailConfirmationToken(),
                 getWalletAddress(),
-                getPayInEtherPublicKey(),
-                getPayInBitcoinPublicKey(),
+                getPayInEtherAddress(),
+                getPayInBitcoinAddress(),
                 getRefundEtherAddress(),
                 getRefundBitcoinAddress(),
                 getIpAddress()

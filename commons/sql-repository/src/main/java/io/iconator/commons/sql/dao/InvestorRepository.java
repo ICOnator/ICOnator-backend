@@ -14,9 +14,9 @@ public interface InvestorRepository extends JpaRepository<Investor, Long> {
 
     Optional<Investor> findOptionalByEmailConfirmationToken(String emailConfirmationToken);
 
-    Optional<Investor> findOptionalByPayInEtherPublicKey(String payInEtherPublicKey);
+    Optional<Investor> findOptionalByPayInEtherAddress(String payInEtherPublicKey);
 
-    Optional<Investor> findOptionalByPayInBitcoinPublicKey(String payInBitcoinPublicKey);
+    Optional<Investor> findOptionalByPayInBitcoinAddress(String payInBitcoinPublicKey);
 
     List<Investor> findAllByOrderByCreationDateAsc();
 

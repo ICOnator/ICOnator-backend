@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-import static java.util.Optional.ofNullable;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -109,8 +108,8 @@ public class RegisterController {
             // Else, send the confirmation email with the confirmationEmailToken
             if (oInvestor.isPresent()
                     && oInvestor.get().getWalletAddress() != null
-                    && oInvestor.get().getPayInBitcoinPublicKey() != null
-                    && oInvestor.get().getPayInEtherPublicKey() != null) {
+                    && oInvestor.get().getPayInBitcoinAddress() != null
+                    && oInvestor.get().getPayInEtherAddress() != null) {
                 SummaryEmailMessage summaryEmailMessage = new SummaryEmailMessage(build(oInvestor.get()));
                 messageService.send(summaryEmailMessage);
                 return ResponseEntity.ok().build();
@@ -149,8 +148,8 @@ public class RegisterController {
             return ResponseEntity.ok().build();
         } else {
             AddressResponse addressResponse = new AddressResponse()
-                    .setBtc(bitcoinAddressService.getBitcoinAddressFromPublicKey(oInvestor.get().getPayInBitcoinPublicKey()))
-                    .setEther(ethereumAddressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
+                    .setBtc(oInvestor.get().getPayInBitcoinAddress())
+                    .setEther(oInvestor.get().getPayInEtherAddress());
             return new ResponseEntity<>(addressResponse, HttpStatus.OK);
         }
     }

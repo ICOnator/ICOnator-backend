@@ -18,8 +18,8 @@ import static javax.persistence.TemporalType.TIMESTAMP;
 @Table(
         name = "investor",
         indexes = {
-                @Index(columnList = "pay_in_bitcoin_public_key", name = "pay_in_bitcoin_public_key_idx"),
-                @Index(columnList = "pay_in_ether_public_key", name = "pay_in_ether_public_key_idx")
+                @Index(columnList = "pay_in_bitcoin_address", name = "pay_in_bitcoin_address_idx"),
+                @Index(columnList = "pay_in_ether_address", name = "pay_in_ether_address_idx")
         }
 )
 public class Investor {
@@ -42,11 +42,11 @@ public class Investor {
     @Column(name = "wallet_address")
     private String walletAddress;
 
-    @Column(name = "pay_in_ether_public_key", unique = true)
-    private String payInEtherPublicKey;
+    @Column(name = "pay_in_ether_address", unique = true)
+    private String payInEtherAddress;
 
-    @Column(name = "pay_in_bitcoin_public_key", unique = true)
-    private String payInBitcoinPublicKey;
+    @Column(name = "pay_in_bitcoin_address", unique = true)
+    private String payInBitcoinAddress;
 
     @Column(name = "refund_ether_address")
     private String refundEtherAddress;
@@ -60,13 +60,13 @@ public class Investor {
     public Investor() {
     }
 
-    public Investor(Date creationDate, String email, String emailConfirmationToken, String walletAddress, String payInEtherPublicKey, String payInBitcoinPublicKey, String refundEtherAddress, String refundBitcoinAddress, String ipAddress) {
+    public Investor(Date creationDate, String email, String emailConfirmationToken, String walletAddress, String payInEtherAddress, String payInBitcoinAddress, String refundEtherAddress, String refundBitcoinAddress, String ipAddress) {
         this.creationDate = creationDate;
         this.email = email;
         this.emailConfirmationToken = emailConfirmationToken;
         this.walletAddress = walletAddress;
-        this.payInEtherPublicKey = payInEtherPublicKey;
-        this.payInBitcoinPublicKey = payInBitcoinPublicKey;
+        this.payInEtherAddress = payInEtherAddress;
+        this.payInBitcoinAddress = payInBitcoinAddress;
         this.refundEtherAddress = refundEtherAddress;
         this.refundBitcoinAddress = refundBitcoinAddress;
         this.ipAddress = ipAddress;
@@ -130,21 +130,21 @@ public class Investor {
         return this;
     }
 
-    public String getPayInEtherPublicKey() {
-        return payInEtherPublicKey;
+    public String getPayInEtherAddress() {
+        return payInEtherAddress;
     }
 
-    public Investor setPayInEtherPublicKey(String payInEtherPublicKey) {
-        this.payInEtherPublicKey = payInEtherPublicKey;
+    public Investor setPayInEtherAddress(String payInEtherAddress) {
+        this.payInEtherAddress = payInEtherAddress;
         return this;
     }
 
-    public String getPayInBitcoinPublicKey() {
-        return payInBitcoinPublicKey;
+    public String getPayInBitcoinAddress() {
+        return payInBitcoinAddress;
     }
 
-    public Investor setPayInBitcoinPublicKey(String payInBitcoinPublicKey) {
-        this.payInBitcoinPublicKey = payInBitcoinPublicKey;
+    public Investor setPayInBitcoinAddress(String payInBitcoinAddress) {
+        this.payInBitcoinAddress = payInBitcoinAddress;
         return this;
     }
 

@@ -85,12 +85,12 @@ public class MonitoringInit {
         listInvestors.stream().forEach((investor) -> {
             long timestamp = investor.getCreationDate().getTime() / 1000L;
 
-            ofNullable(investor.getPayInBitcoinPublicKey()).ifPresent((bitcoinPublicKey) -> {
-                bitcoinMonitor.addMonitoredPublicKey(bitcoinPublicKey, timestamp);
+            ofNullable(investor.getPayInBitcoinAddress()).ifPresent((bitcoinAddress) -> {
+                bitcoinMonitor.addMonitoredAddress(bitcoinAddress, timestamp);
             });
 
-            ofNullable(investor.getPayInEtherPublicKey()).ifPresent((etherPublicKey) -> {
-                ethereumMonitor.addMonitoredEtherPublicKey(etherPublicKey);
+            ofNullable(investor.getPayInEtherAddress()).ifPresent((etherAddress) -> {
+                ethereumMonitor.addMonitoredEtherAddress(etherAddress);
             });
         });
 

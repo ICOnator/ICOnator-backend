@@ -21,7 +21,6 @@ import javax.annotation.PostConstruct;
 import javax.mail.MessagingException;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
@@ -100,8 +99,8 @@ public class MailContentBuilder {
                 context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
 
                 context.setVariable("walletAddress", oInvestor.get().getWalletAddress());
-                context.setVariable("payInEtherAddress", this.ethereumAddressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
-                context.setVariable("payInBitcoinAddress", this.bitcoinAddressService.getBitcoinAddressFromPublicKey(oInvestor.get().getPayInBitcoinPublicKey()));
+                context.setVariable("payInEtherAddress", oInvestor.get().getPayInEtherAddress());
+                context.setVariable("payInBitcoinAddress", oInvestor.get().getPayInBitcoinAddress());
                 context.setVariable("refundEtherAddress", oInvestor.get().getRefundEtherAddress());
                 context.setVariable("refundBitcoinAddress", oInvestor.get().getRefundBitcoinAddress());
 
@@ -118,7 +117,7 @@ public class MailContentBuilder {
 
                 // payInEtherAddress:
                 ByteArrayOutputStream payInEtherAddressQRCodeStream = QRCode
-                        .from(this.ethereumAddressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()))
+                        .from(oInvestor.get().getPayInEtherAddress())
                         .to(ImageType.PNG)
                         .withSize(265, 200)
                         .stream();
@@ -127,7 +126,7 @@ public class MailContentBuilder {
 
                 // payInBitcoinAddress:
                 ByteArrayOutputStream payInBitcoinAddressQRCodeStream = QRCode
-                        .from(this.bitcoinAddressService.getBitcoinAddressFromPublicKey(oInvestor.get().getPayInBitcoinPublicKey()))
+                        .from(oInvestor.get().getPayInBitcoinAddress())
                         .to(ImageType.PNG)
                         .withSize(265, 200)
                         .stream();

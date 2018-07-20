@@ -8,12 +8,10 @@ import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Objects;
 

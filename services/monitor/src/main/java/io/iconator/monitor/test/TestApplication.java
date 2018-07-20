@@ -59,12 +59,11 @@ public class TestApplication {
 
     }
 
-    public static void addMonitoredEtherPublicKey(String publicKey) {
-        String addressString = Hex.toHexString(org.ethereum.crypto.ECKey.fromPublicOnly(Hex.decode(publicKey)).getAddress());
+    public static void addMonitoredEtherAddress(String addressString) {
         if (!addressString.startsWith("0x"))
             addressString = "0x" + addressString;
         LOG.info("Add monitored Ethereum Address: {}", addressString);
-        monitoredAddresses.put(addressString.toLowerCase(), publicKey);
+        monitoredAddresses.put(addressString.toLowerCase(), addressString);
     }
 
 

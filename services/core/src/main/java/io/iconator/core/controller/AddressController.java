@@ -129,8 +129,8 @@ public class AddressController {
         try {
             Investor investor = oInvestor.get();
             investor.setWalletAddress(addPrefixEtherIfNotExist(walletAddress))
-                    .setPayInBitcoinPublicKey(keyPairs.getPublicBtc())
-                    .setPayInEtherPublicKey(keyPairs.getPublicEth())
+                    .setPayInBitcoinAddress(keyPairs.getPublicBtc())
+                    .setPayInEtherAddress(keyPairs.getPublicEth())
                     .setRefundBitcoinAddress(refundBitcoinAddress)
                     .setRefundEtherAddress(addPrefixEtherIfNotExist(refundEthereumAddress));
             LOG.debug("Saving wallet for the investor (" + investor.getEmail()
@@ -147,8 +147,8 @@ public class AddressController {
 
         // Return DTO
         return new ResponseEntity<>(new AddressResponse()
-                .setBtc(bitcoinAddressService.getBitcoinAddressFromPublicKey(keyPairs.getPublicBtc()))
-                .setEther(ethereumAddressService.getEthereumAddressFromPublicKey(keyPairs.getPublicEth())), HttpStatus.OK);
+                .setBtc(keyPairs.getPublicBtc())
+                .setEther(keyPairs.getPublicEth()), HttpStatus.OK);
     }
 
     private String getEmailConfirmationToken(String authorizationHeader) throws AuthorizationHeaderMissingException {
