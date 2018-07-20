@@ -23,7 +23,7 @@ public class ExchangeAggregateCurrencyRate {
     @Column(name = "currency_type", nullable = false)
     private CurrencyType currencyType;
 
-    @Column(name = "aggregate_exchange_rate")
+    @Column(name = "aggregate_exchange_rate", precision = 18, scale = 6)
     private BigDecimal aggregateExchangeRate;
 
     public ExchangeAggregateCurrencyRate() {

@@ -5,22 +5,16 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
-import static javax.persistence.GenerationType.SEQUENCE;
-
 @Entity
 @Table(name = "sale_tier")
 public class SaleTier {
 
-    @Id
-    @GeneratedValue(strategy = SEQUENCE)
-    @Column(name = "id", updatable = false)
-    private long id;
-
     @Version
     private Long version = 0L;
 
+    @Id
     @Column(name = "tier_no")
-    private int tierNo;
+    private long tierNo;
 
     @Column(name = "description")
     private String description;
@@ -33,34 +27,38 @@ public class SaleTier {
     @Column(name = "end_date")
     private Date endDate;
 
-    @Column(name = "discount")
+    @Column(name = "discount", precision = 6, scale = 6)
     private BigDecimal discount;
 
-    @Column(name = "tokens_sold")
-    private BigInteger tokensSold;
+    @Column(name = "tomics_sold", precision = 34, scale = 0)
+    private BigInteger tomicsSold;
 
-    @Column(name = "token_max")
-    private BigInteger tokenMax;
+    @Column(name = "tomics_max", precision = 34, scale = 0)
+    private BigInteger tomicsMax;
 
-    @Column(name = "is_active")
-    private boolean isActive;
+    @Column(name = "has_dynamic_duration")
+    private boolean hasDynamicDuration;
 
-    protected SaleTier() {
-    }
+    @Column(name = "has_dynamic_max")
+    private boolean hasDynamicMax;
 
-    public SaleTier(int tierNo, String description, Date startDate, Date endDate,
-                    BigDecimal discount, BigInteger tokenMax, boolean isActive) {
+    public SaleTier(long tierNo, String description, Date startDate, Date endDate, BigDecimal discount,
+                    BigInteger tomicsSold, BigInteger tomicsMax, boolean hasDynamicDuration, boolean hasDynamicMax) {
         this.tierNo = tierNo;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
         this.discount = discount;
-        this.tokenMax = tokenMax;
-        this.tokensSold = BigInteger.ZERO;
-        this.isActive = isActive;
+        this.tomicsSold = tomicsSold;
+        this.tomicsMax = tomicsMax;
+        this.hasDynamicDuration = hasDynamicDuration;
+        this.hasDynamicMax = hasDynamicMax;
     }
 
-    public int getTierNo() {
+    protected SaleTier() {
+    }
+
+    public long getTierNo() {
         return tierNo;
     }
 
@@ -100,31 +98,47 @@ public class SaleTier {
         this.discount = discount;
     }
 
-    public BigInteger getTokensSold() {
-        return tokensSold;
+    public BigInteger getTomicsSold() {
+        return tomicsSold;
     }
 
-    public void setTokensSold(BigInteger tokensSold) {
-        this.tokensSold = tokensSold;
+    public void setTomicsSold(BigInteger tomicsSold) {
+        this.tomicsSold = tomicsSold;
     }
 
-    public BigInteger getTokenMax() {
-        return tokenMax;
+    public BigInteger getTomicsMax() {
+        return tomicsMax;
     }
 
-    public void setTokenMax(BigInteger tokenMax) {
-        this.tokenMax = tokenMax;
+    public void setTomicsMax(BigInteger tomicsMax) {
+        this.tomicsMax = tomicsMax;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public boolean hasDynamicDuration() {
+        return hasDynamicDuration;
     }
 
-    public void setActive() {
-        isActive = true;
+    public void setHasDynamicDuration(boolean hasDynamicDuration) {
+        this.hasDynamicDuration = hasDynamicDuration;
     }
 
-    public void setInactive() {
-        isActive = false;
+    public boolean hasDynamicMax() {
+        return hasDynamicMax;
+    }
+
+    public void setHasDynamicMax(boolean hasDynamicMax) {
+        this.hasDynamicMax = hasDynamicMax;
+    }
+
+    public boolean isFull() {
+        return tomicsMax.compareTo(BigInteger.ZERO) > 0  && tomicsMax.compareTo(tomicsSold) == 0;
+    }
+
+    public boolean isAmountOverflowingTier(BigInteger tomics) {
+        return tomicsSold.add(tomics).compareTo(tomicsMax) > 0;
+    }
+
+    public BigInteger getRemainingTomics() {
+        return tomicsMax.subtract(tomicsSold);
     }
 }

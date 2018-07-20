@@ -21,6 +21,7 @@ import javax.annotation.PostConstruct;
 import javax.mail.MessagingException;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
@@ -96,6 +97,7 @@ public class MailContentBuilder {
                 context.setVariable("tokenSaleName", this.mailServiceConfigHolder.getTokenSaleName());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
+                context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
 
                 context.setVariable("walletAddress", oInvestor.get().getWalletAddress());
                 context.setVariable("payInEtherAddress", this.ethereumAddressService.getEthereumAddressFromPublicKey(oInvestor.get().getPayInEtherPublicKey()));
@@ -140,7 +142,7 @@ public class MailContentBuilder {
 
     public void buildFundsReceivedEmail(Optional<MimeMessageHelper> oMessage,
                                         BigDecimal amountFundsReceived, CurrencyType currencyType,
-                                        String link, BigDecimal amountTokens, String tokenSymbol) {
+                                        String link, BigDecimal amountTokens) {
         if (oMessage.isPresent()) {
             try {
                 Context context = new Context();
@@ -152,7 +154,7 @@ public class MailContentBuilder {
                 context.setVariable("currencyFundsReceived", currencyType.name());
                 context.setVariable("link", link);
                 context.setVariable("amountTokens", amountTokens);
-                context.setVariable("tokenSymbol", tokenSymbol);
+                context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
                 String html5Content = this.templateEngine.process("funds_received_email", context);
@@ -160,6 +162,51 @@ public class MailContentBuilder {
 
                 oMessage.get().addInline("logo", this.logoContentData, getLogoContentType());
 
+            } catch (MessagingException e) {
+                LOG.error("Error to add inline images to the message.");
+            }
+        }
+    }
+
+    public void buildKycStartEmail(Optional<MimeMessageHelper> oMessage,
+                                   String kycUrl) {
+        if (oMessage.isPresent()) {
+            try {
+                Context context = new Context();
+                context.setVariable("logo", "logo");
+                context.setVariable("logoWidth", getLogoWidth());
+                context.setVariable("logoHeight", getLogoHeight());
+
+                context.setVariable("kycUrl", kycUrl);
+                context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
+                context.setVariable("year", this.mailServiceConfigHolder.getYear());
+                String html5Content = this.templateEngine.process("kyc_start_email", context);
+                oMessage.get().setText(html5Content, true);
+
+                oMessage.get().addInline("logo", this.logoContentData, getLogoContentType());
+            } catch (MessagingException e) {
+                LOG.error("Error to add inline images to the message.");
+            }
+        }
+    }
+
+    public void buildKycReminderEmail(Optional<MimeMessageHelper> oMessage,
+                                      String kycUrl) {
+        if (oMessage.isPresent()) {
+            try {
+                Context context = new Context();
+                context.setVariable("logo", "logo");
+                context.setVariable("logoWidth", getLogoWidth());
+                context.setVariable("logoHeight", getLogoHeight());
+
+                context.setVariable("kycUrl", kycUrl);
+                LOG.debug(kycUrl);
+                context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
+                context.setVariable("year", this.mailServiceConfigHolder.getYear());
+                String html5Content = this.templateEngine.process("kyc_reminder_email", context);
+                oMessage.get().setText(html5Content, true);
+
+                oMessage.get().addInline("logo", this.logoContentData, getLogoContentType());
             } catch (MessagingException e) {
                 LOG.error("Error to add inline images to the message.");
             }

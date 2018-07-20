@@ -160,3 +160,4 @@ reports/
 .vscode/settings.json
 *.dat
 gradlew.bat
+.java-version

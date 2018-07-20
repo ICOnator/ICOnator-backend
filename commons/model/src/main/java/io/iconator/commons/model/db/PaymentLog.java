@@ -2,8 +2,12 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -28,28 +32,27 @@ public class PaymentLog {
     @Column(name = "currency", nullable = false)
     private CurrencyType currency;
 
-    @Column(name = "payment_amount", nullable = false)
+    @Column(name = "payment_amount", nullable = false, precision = 34, scale = 0)
     private BigDecimal paymentAmount;
 
     @Column(name = "fx_rate", nullable = false)
     private BigDecimal fxRate;
 
-    @Column(name = "usd_amount", nullable = false)
+    @Column(name = "usd_amount", nullable = false, precision = 34, scale = 6)
     private BigDecimal usdValue;
 
-    @OneToOne()
-    @JoinColumn(name = "investor", nullable = false)
-    private Investor investor;
+    @Column(name = "investor_id", nullable = false)
+    private long investorId;
 
-    @Column(name = "token_amount", nullable = false)
-    private BigDecimal tokenAmount;
+    @Column(name = "tomics_amount", nullable = false, precision = 34, scale = 0)
+    private BigInteger tomicsAmount;
 
     public PaymentLog() {
     }
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
                       BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
-                      Investor investor, BigDecimal tokenAmount) {
+                      long investorId, BigInteger tomicsAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -57,8 +60,8 @@ public class PaymentLog {
         this.paymentAmount = paymentAmount;
         this.fxRate = fxRate;
         this.usdValue = usdValue;
-        this.investor = investor;
-        this.tokenAmount = tokenAmount;
+        this.investorId = investorId;
+        this.tomicsAmount = tomicsAmount;
     }
 
     public long getId() {
@@ -93,15 +96,19 @@ public class PaymentLog {
         return usdValue;
     }
 
-    public BigDecimal getTokenAmount() {
-        return tokenAmount;
+    public BigInteger getTomicsAmount() {
+        return tomicsAmount;
     }
 
-    public void setTokenAmount(BigDecimal amount) {
-        this.tokenAmount = amount;
+    public void setTomicsAmount(BigInteger amount) {
+        this.tomicsAmount = amount;
     }
 
-    public Investor getInvestor() {
-        return investor;
+    public long getInvestorId() {
+        return investorId;
+    }
+
+    public void setInvestorId(long investorId) {
+        this.investorId = investorId;
     }
 }

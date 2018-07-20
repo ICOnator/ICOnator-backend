@@ -3,6 +3,11 @@ jdk:
 - oraclejdk8
 services:
 - docker
+script:
+- sh gradlew check
+- sh gradlew codeCoverageReport
+after_success:
+- bash <(curl -s https://codecov.io/bash)
 deploy:
 - provider: releases
   api_key:
@@ -12,6 +17,7 @@ deploy:
   - services/email/build/libs/email-exec.jar
   - services/monitor/build/libs/monitor-exec.jar
   - services/rates/build/libs/rates-exec.jar
+  - services/kyc/build/libs/kyc-exec.jar
   skip_cleanup: true
   on:
     tags: true

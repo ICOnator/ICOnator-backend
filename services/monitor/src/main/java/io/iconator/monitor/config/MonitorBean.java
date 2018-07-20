@@ -6,10 +6,10 @@ import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
-import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
+import io.iconator.monitor.service.TokenConversionService;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
@@ -88,14 +88,32 @@ public class MonitorBean {
         PeerGroup peerGroup = new PeerGroup(bitcoinContext, bitcoinBlockchain);
         // Regtest has no peer-to-peer functionality
         if (chainNetworkParameters.equals(MainNetParams.get())) {
+            // node-217.csg.uzh.ch.
             peerGroup.addAddress(Inet4Address.getByName("192.41.136.217"));
+            // 212-51-140-183.fiber7.init7.net.
             peerGroup.addAddress(Inet4Address.getByName("212.51.140.183"));
-            peerGroup.addAddress(Inet4Address.getByName("85.5.108.217"));
+            // 212-51-159-248.fiber7.init7.net.
             peerGroup.addAddress(Inet4Address.getByName("212.51.159.248"));
-            peerGroup.addAddress(Inet4Address.getByName("83.76.178.6"));
-            peerGroup.addAddress(Inet4Address.getByName("213.144.135.202"));
+            // bitcoin.vable.ch.
             peerGroup.addAddress(Inet4Address.getByName("194.15.231.236"));
+            // hosted-by.solarcom.ch.
             peerGroup.addAddress(Inet4Address.getByName("95.183.48.62"));
+            // no reverse DNS
+            peerGroup.addAddress(Inet4Address.getByName("193.234.225.156"));
+            // yodel.dconnolly.com.
+            peerGroup.addAddress(Inet4Address.getByName("176.9.154.110"));
+            // static.109.19.9.5.clients.your-server.de.
+            peerGroup.addAddress(Inet4Address.getByName("5.9.19.109"));
+
+            // These are the DNS seeds found on the bitcoin core client:
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.sipa.be"));
+            peerGroup.addAddress(Inet4Address.getByName("dnsseed.bluematt.me"));
+            peerGroup.addAddress(Inet4Address.getByName("dnsseed.bitcoin.dashjr.org"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoinstats.com"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.jonasschnelli.ch"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.btc.petertodd.org"));
+            peerGroup.addAddress(Inet4Address.getByName("seed.bitcoin.sprovoost.nl"));
+
         } else if (chainNetworkParameters.equals(TestNet3Params.get())) {
             peerGroup.addPeerDiscovery(new DnsDiscovery(chainNetworkParameters));
         }
@@ -107,11 +125,11 @@ public class MonitorBean {
                                            Web3j web3j,
                                            InvestorRepository investorRepository,
                                            PaymentLogRepository paymentLogRepository,
-                                           SaleTierRepository saleTierRepository,
+                                           TokenConversionService tokenConversionService,
                                            EligibleForRefundRepository eligibleForRefundRepository,
                                            ICOnatorMessageService messageService) {
-        return new EthereumMonitor(fxService, web3j, investorRepository, paymentLogRepository,
-                saleTierRepository, eligibleForRefundRepository, messageService);
+        return new EthereumMonitor(fxService, investorRepository, paymentLogRepository,
+                tokenConversionService, eligibleForRefundRepository, messageService, web3j);
     }
 
     @Bean
@@ -123,12 +141,12 @@ public class MonitorBean {
                                          PeerGroup peerGroup,
                                          InvestorRepository investorRepository,
                                          PaymentLogRepository paymentLogRepository,
-                                         SaleTierRepository saleTierRepository,
+                                         TokenConversionService tokenConversionService,
                                          EligibleForRefundRepository eligibleForRefundRepository,
                                          ICOnatorMessageService messageService) {
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogRepository, saleTierRepository,
+                investorRepository, paymentLogRepository, tokenConversionService,
                 eligibleForRefundRepository, messageService);
     }
 

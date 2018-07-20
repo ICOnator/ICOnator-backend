@@ -5,6 +5,7 @@ import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
 import io.iconator.commons.model.CurrencyType;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
@@ -30,6 +31,7 @@ public class FundsReceivedEmailMessage extends IncludeInvestorMessage {
     }
 
     public FundsReceivedEmailMessage(InvestorMessageDTO investor, BigDecimal amountFundsReceived, CurrencyType currencyType, String linkToTransaction, BigDecimal tokenAmount) {
+        super(investor);
         this.amountFundsReceived = amountFundsReceived;
         this.currencyType = currencyType;
         this.linkToTransaction = linkToTransaction;

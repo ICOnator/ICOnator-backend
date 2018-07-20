@@ -13,6 +13,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 import java.util.Optional;
 
@@ -41,8 +42,9 @@ public class PaymentLogRepositoryTest {
         paymentLogRepository.save(p);
         Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifier("identifier");
         assertTrue(oPaymentLog.isPresent());
-        assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.getInvestor().getEmail()
-                .equals("test@test.com")).isPresent());
+        assertTrue(oPaymentLog.filter((paymentLog) ->
+            investorRepository.findById(paymentLog.getInvestorId()).get().getEmail().equals("test@test.com")
+        ).isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.equals(p)).isPresent());
     }
 
@@ -68,8 +70,8 @@ public class PaymentLogRepositoryTest {
                 new BigDecimal(1),
                 new BigDecimal(2),
                 new BigDecimal(3),
-                investor,
-                new BigDecimal(100));
+                investor.getId(),
+                BigInteger.valueOf(100L));
     }
 
 }

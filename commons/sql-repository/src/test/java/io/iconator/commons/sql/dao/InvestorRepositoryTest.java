@@ -46,7 +46,6 @@ public class InvestorRepositoryTest {
 
     @Test
     public void testFindByPayInEtherPublicKey() {
-        String randomUUID = UUID.randomUUID().toString();
         Investor i = createInvestor();
         investorRepository.save(i);
 
@@ -57,7 +56,6 @@ public class InvestorRepositoryTest {
 
     @Test
     public void testFindByPayInBitcoinPublicKey() {
-        String randomUUID = UUID.randomUUID().toString();
         Investor i = createInvestor();
         investorRepository.save(i);
 

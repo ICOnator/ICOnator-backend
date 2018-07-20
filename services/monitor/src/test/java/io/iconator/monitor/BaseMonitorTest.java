@@ -1,330 +1,84 @@
 package io.iconator.monitor;
 
-import io.iconator.commons.model.db.SaleTier;
-import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.BaseMonitor.ConversionResult;
-import io.iconator.monitor.config.TestConfig;
-import org.junit.After;
-import org.junit.Before;
+import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.monitor.config.MonitorTestConfig;
+import io.iconator.monitor.service.TokenConversionService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Date;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
+import java.util.Date;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
+import static junit.framework.TestCase.fail;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ContextConfiguration(classes = {TestConfig.class})
+@ContextConfiguration(classes = {MonitorTestConfig.class, TokenConversionService.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 public class BaseMonitorTest {
 
-    private final static BigDecimal T1_DISCOUNT = new BigDecimal("0.5");
-    private final static BigDecimal T2_DISCOUNT = new BigDecimal("0.2");
-    private final static BigDecimal T3_DISCOUNT = new BigDecimal("0.1");
-
-    private final static int T1_NO = 1;
-    private final static int T2_NO = 2;
-    private final static int T3_NO = 3;
-
-    private final static Date T1_START_DATE = Date.valueOf("2018-01-01");
-    private final static Date T1_END_DATE = Date.valueOf("2018-01-10");
-    private final static Date T2_START_DATE = Date.valueOf("2018-01-11");
-    private final static Date T2_END_DATE = Date.valueOf("2018-01-20");
-    private final static Date T3_START_DATE = Date.valueOf("2018-01-21");
-    private final static Date T3_END_DATE = Date.valueOf("2018-01-30");
-
-    private final static BigInteger T1_MAX = BigInteger.valueOf(1000L);
-    private final static BigInteger T2_MAX = BigInteger.valueOf(2000L);
-    private final static BigInteger T3_MAX = BigInteger.valueOf(3000L);
-
     @Autowired
     private BaseMonitor baseMonitor;
 
-    @Autowired
-    private SaleTierRepository saleTierRepository;
+    @Test
+    public void testSavePaymentLog() {
+        PaymentLog paymentLog1 = new PaymentLog(
+                "1", // TxIdentifier
+                new Date(), // payment log timestamp
+                new Date(), // Block Timestamp
+                CurrencyType.ETH,
+                new BigDecimal(1), // cryptocurrency amount
+                new BigDecimal(1), // USD to cryptocurrency rate
+                new BigDecimal(1), // USD amount
+                1, // investor id
+                BigInteger.ZERO); // tomics amount
 
-    @Before
-    public void setUpTiers() {
-        saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
-        saleTierRepository.save(createTier(2, T2_START_DATE, T2_END_DATE, T2_DISCOUNT, 2000L, false));
-        saleTierRepository.save(createTier(3, T3_START_DATE, T3_END_DATE, T3_DISCOUNT, 3000L, false));
-        saleTierRepository.flush();
-    }
+        baseMonitor.savePaymentLog(paymentLog1);
 
-    @After
-    public void tearDownTiers() {
-        saleTierRepository.deleteAll();
+        PaymentLog paymentLog2 = new PaymentLog(
+                "1", // TxIdentifier
+                new Date(), // payment log timestamp
+                new Date(), // Block Timestamp
+                CurrencyType.ETH,
+                new BigDecimal(1), // cryptocurrency amount
+                new BigDecimal(1), // USD to cryptocurrency rate
+                new BigDecimal(1), // USD amount
+                1, // investor id
+                BigInteger.ZERO); // tomics amount
+
+        try {
+            baseMonitor.savePaymentLog(paymentLog2);
+        } catch (Exception e) {
+            return;
+        }
+        fail("Saving a second payment log with tx identifier that already exists in table should " +
+                "have failed.");
     }
 
     @Test
-    public void testBuyTokensNotExceedingFirstTier() {
-        final BigDecimal currency = new BigDecimal(200);
-        final BigInteger expectedTokensSold = BigInteger.valueOf(400);
-        final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = null;
+    public void testSavePaymentLog2() {
+        PaymentLog paymentLog1 = new PaymentLog(
+                null, // TxIdentifier
+                new Date(), // payment log timestamp
+                new Date(), // Block Timestamp
+                CurrencyType.ETH,
+                new BigDecimal(1), // cryptocurrency amount
+                new BigDecimal(1), // USD to cryptocurrency rate
+                new BigDecimal(1), // USD amount
+                1, // investor id
+                BigInteger.ZERO); // tomics amount
         try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Throwable e) {
-            fail(e.getMessage());
+            baseMonitor.savePaymentLog(paymentLog1);
+        } catch (Exception e) {
+            return;
         }
-        assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
-        assertEquals(0, result.getTokens().compareTo(expectedTokensSold));
-
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
-        if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T1_NO, T1_START_DATE, T1_END_DATE, expectedTokensSold, true);
-        } else {
-            fail("Should have found active tier, but didn't.");
-        }
-
-        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T2_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T2_NO, T2_START_DATE, T2_END_DATE, BigInteger.ZERO, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T2_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T3_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
-        }
-    }
-
-    @Test
-    public void testBuyTokensFillingUpFirstTier() {
-        final BigDecimal currency = BigDecimal.valueOf(500L);
-        final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = null;
-        try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Throwable e) {
-            fail(e.getMessage());
-        }
-        assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
-        assertEquals(0, result.getTokens().compareTo(T1_MAX));
-
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
-        if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, BigInteger.ZERO, true);
-        } else {
-            fail("Should have found active tier, but didn't.");
-        }
-
-        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T3_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
-        }
-    }
-
-    @Test
-    public void testBuyTokensReachingIntoSecondTier() {
-        final BigDecimal currency = BigDecimal.valueOf(500L + 160L);
-        final BigInteger tokensFromT2 = BigInteger.valueOf(200L);
-        final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = null;
-        try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Throwable e) {
-            fail(e.getMessage());
-        }
-        assertEquals(0, result.getOverflow().compareTo(BigDecimal.ZERO));
-        assertEquals(0, result.getTokens().compareTo(T1_MAX.add(tokensFromT2)));
-
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
-        if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime, T2_END_DATE, tokensFromT2, true);
-        } else {
-            fail("Should have found active tier, but didn't.");
-        }
-
-        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T3_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
-        }
-    }
-
-    @Test
-    public void testMultipleBuyTokensReachingIntoSecondTier() {
-        final BigDecimal currency1 = BigDecimal.valueOf(400L);
-        final BigDecimal currency2 = BigDecimal.valueOf(100L + 20L);
-        final BigInteger tokensFromT2 = BigInteger.valueOf(25L);
-        final Date blockTime1 = Date.valueOf("2018-01-02");
-        final Date blockTime2 = Date.valueOf("2018-01-03");
-
-        BigDecimal overflow = BigDecimal.ZERO;
-        BigInteger tokens = BigInteger.ZERO;
-        try {
-            ConversionResult result = baseMonitor.convertToTokensAndUpdateTiers(currency1, blockTime1);
-            overflow = overflow.add(result.getOverflow());
-            tokens = tokens.add(result.getTokens());
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency2, blockTime2);
-            overflow = overflow.add(result.getOverflow());
-            tokens = tokens.add(result.getTokens());
-        } catch (Throwable e) {
-            fail(e.getMessage());
-        }
-        assertEquals(0, overflow.compareTo(BigDecimal.ZERO));
-        assertEquals(0, tokens.compareTo(T1_MAX.add(tokensFromT2)));
-
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
-        if (oActiveTier.isPresent()) {
-            assertTier(oActiveTier.get(), T2_NO, blockTime2, T2_END_DATE, tokensFromT2, true);
-        } else {
-            fail("Should have found active tier, but didn't.");
-        }
-
-        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime2, T1_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T3_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, T3_START_DATE, T3_END_DATE, BigInteger.ZERO, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
-        }
-    }
-
-    @Test
-    public void testBuyTokensOverflowingThirdTier() {
-        final BigDecimal currency = BigDecimal.valueOf(500L + 1600L + 2790L);
-        final BigDecimal expectedOverflow = BigDecimal.valueOf(90L);
-        final Date blockTime = Date.valueOf("2018-01-02");
-        ConversionResult result = null;
-        try {
-            result = baseMonitor.convertToTokensAndUpdateTiers(currency, blockTime);
-        } catch (Throwable e) {
-            fail(e.getMessage());
-        }
-        assertEquals(0, result.getOverflow().compareTo(expectedOverflow));
-        assertEquals(0, result.getTokens().compareTo(T1_MAX.add(T2_MAX).add(T3_MAX)));
-
-        Optional<SaleTier> oActiveTier = saleTierRepository.findByIsActiveTrue();
-        if (oActiveTier.isPresent()) {
-            fail("There shouldn't be any active tear anymore, but was.");
-        }
-
-        Optional<SaleTier> oTier = saleTierRepository.findByTierNo(T1_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T1_NO, T1_START_DATE, blockTime, T1_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T1_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T2_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T2_NO, blockTime, blockTime, T2_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T2_NO));
-        }
-
-        oTier = saleTierRepository.findByTierNo(T3_NO);
-        if (oTier.isPresent()) {
-            assertTier(oTier.get(), T3_NO, blockTime, blockTime, T3_MAX, false);
-        } else {
-            fail(String.format("Should have found tier %d, but didn't.", T3_NO));
-        }
-    }
-
-//    @Test
-//    public void testTransactional() {
-//        try {
-//            doSomething();
-//        } catch (OptimisticLockException e) {
-//            return;
-//        } catch (Exception e) {
-//            fail("Other exception than OptimisticLockException was thrown.");
-//        }
-//        fail("Should have thrown an OptimisticLockException, but didn't");
-//    }
-//
-//    @Transactional(propagation = Propagation.REQUIRES_NEW,
-//            rollbackFor = OptimisticLockException.class,
-//            isolation = Isolation.SERIALIZABLE)
-//    public void doSomething() throws OptimisticLockException, InterruptedException {
-//        CountDownLatch latch = new CountDownLatch(1);
-//        Runnable r = () -> {
-//            doSomethingInBetween();
-//            latch.countDown();
-//        };
-//
-//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
-//        tier.setDiscount(BigDecimal.ZERO);
-//        new Thread(r).start();
-//        latch.await();
-//        tier.setTokensSold(BigInteger.ZERO);
-//    }
-//
-//    @Transactional(propagation = Propagation.REQUIRES_NEW,
-//            rollbackFor = OptimisticLockException.class,
-//            isolation = Isolation.SERIALIZABLE)
-//    public void doSomethingInBetween() throws OptimisticLockException{
-//        saleTierRepository.save(createTier(1, T1_START_DATE, T1_END_DATE, T1_DISCOUNT, 1000L, true));
-//        SaleTier tier = saleTierRepository.findByIsActiveTrue().get();
-//        tier.setTokensSold(BigInteger.TEN);
-//    }
-
-    private void assertTier(SaleTier tier, int tierNo, Date startDate, Date endDate,
-                            BigInteger tokensSold, boolean isActive) {
-
-        assertEquals(tierNo, tier.getTierNo());
-        assertEquals(startDate, tier.getStartDate());
-        assertEquals(endDate, tier.getEndDate());
-        assertEquals(0, tokensSold.compareTo(tier.getTokensSold()));
-        assertEquals(isActive, tier.isActive());
-    }
-
-    private SaleTier createTier(int tierNo, Date startDate, Date endDate, BigDecimal discount,
-                                long tokenMax, boolean active) {
-
-        return new SaleTier(
-                tierNo,
-                "test tier",
-                startDate,
-                endDate,
-                discount,
-                BigInteger.valueOf(tokenMax),
-                active);
+        fail("Saving a payment log with null tx identifier should fail.");
     }
 }

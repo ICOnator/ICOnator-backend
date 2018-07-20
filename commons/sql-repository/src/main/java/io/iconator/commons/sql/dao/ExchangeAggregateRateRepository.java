@@ -19,6 +19,8 @@ public interface ExchangeAggregateRateRepository extends JpaRepository<ExchangeA
 
     Optional<ExchangeAggregateRate> findFirstOptionalByOrderByBlockNrEthDesc();
 
+    Optional<ExchangeAggregateRate> findFirstOptionalByOrderByCreationDateDesc();
+
     Optional<ExchangeAggregateRate> findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateAsc(Date creationDate);
 
     Optional<ExchangeAggregateRate> findFirstOptionalByCreationDateGreaterThanEqualOrderByCreationDateDesc(Date creationDate);

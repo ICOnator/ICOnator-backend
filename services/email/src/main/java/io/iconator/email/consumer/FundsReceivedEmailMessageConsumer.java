@@ -2,7 +2,6 @@ package io.iconator.email.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
-import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.mailservice.MailService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
@@ -18,12 +17,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.FUNDS_RECEIVED_EMAIL_QUEUE;
-import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_SUMMARY_EMAIL_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.FUNDS_RECEIVED_ROUTING_KEY;
-import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
 
 @Component
 public class FundsReceivedEmailMessageConsumer {
