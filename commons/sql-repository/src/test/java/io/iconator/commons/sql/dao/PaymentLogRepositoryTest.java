@@ -67,7 +67,7 @@ public class PaymentLogRepositoryTest {
                 new Date(),
                 new Date(),
                 CurrencyType.BTC,
-                new BigDecimal(1),
+                new BigInteger("1"),
                 new BigDecimal(2),
                 new BigDecimal(3),
                 investor.getId(),

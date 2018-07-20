@@ -34,7 +34,7 @@ public class BaseMonitorTest {
                 new Date(), // payment log timestamp
                 new Date(), // Block Timestamp
                 CurrencyType.ETH,
-                new BigDecimal(1), // cryptocurrency amount
+                new BigInteger("1"), // cryptocurrency amount
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
@@ -47,7 +47,7 @@ public class BaseMonitorTest {
                 new Date(), // payment log timestamp
                 new Date(), // Block Timestamp
                 CurrencyType.ETH,
-                new BigDecimal(1), // cryptocurrency amount
+                new BigInteger("1"), // cryptocurrency amount
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id
@@ -69,7 +69,7 @@ public class BaseMonitorTest {
                 new Date(), // payment log timestamp
                 new Date(), // Block Timestamp
                 CurrencyType.ETH,
-                new BigDecimal(1), // cryptocurrency amount
+                new BigInteger("1"), // cryptocurrency amount
                 new BigDecimal(1), // USD to cryptocurrency rate
                 new BigDecimal(1), // USD amount
                 1, // investor id

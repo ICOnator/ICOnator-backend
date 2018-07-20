@@ -232,7 +232,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 new Date(),
                 timestamp,
                 CurrencyType.BTC,
-                new BigDecimal(satoshi),
+                satoshi,
                 USDperBTC,
                 usdReceived,
                 investor.getId(),

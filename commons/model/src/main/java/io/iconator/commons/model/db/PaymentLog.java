@@ -33,7 +33,7 @@ public class PaymentLog {
     private CurrencyType currency;
 
     @Column(name = "payment_amount", nullable = false, precision = 34, scale = 0)
-    private BigDecimal paymentAmount;
+    private BigInteger paymentAmount;
 
     @Column(name = "fx_rate", nullable = false)
     private BigDecimal fxRate;
@@ -51,7 +51,7 @@ public class PaymentLog {
     }
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
-                      BigDecimal paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
+                      BigInteger paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
                       long investorId, BigInteger tomicsAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
@@ -84,7 +84,7 @@ public class PaymentLog {
         return currency;
     }
 
-    public BigDecimal getPaymentAmount() {
+    public BigInteger getPaymentAmount() {
         return paymentAmount;
     }
 

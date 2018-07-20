@@ -173,7 +173,7 @@ public class EthereumMonitor extends BaseMonitor {
                 new Date(),
                 timestamp,
                 CurrencyType.ETH,
-                new BigDecimal(wei),
+                wei,
                 USDperETH,
                 usdReceived,
                 investor.getId(),
