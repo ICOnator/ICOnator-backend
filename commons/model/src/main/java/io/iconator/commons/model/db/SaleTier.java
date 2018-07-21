@@ -9,6 +9,12 @@ import java.util.Date;
 @Table(name = "sale_tier")
 public class SaleTier {
 
+    public enum StatusType {
+        CLOSED,
+        ACTIVE,
+        INCOMING
+    }
+
     @Version
     private Long version = 0L;
 
@@ -140,5 +146,22 @@ public class SaleTier {
 
     public BigInteger getRemainingTomics() {
         return tomicsMax.subtract(tomicsSold);
+    }
+
+    public StatusType getStatusAtDate(Date date) {
+        StatusType status;
+        if (this.getEndDate().compareTo(date) <= 0) {
+            status = StatusType.CLOSED;
+        } else if (this.getStartDate().compareTo(date) <= 0 &&
+                this.getEndDate().compareTo(date) > 0) {
+            if (this.getTomicsSold().compareTo(this.getTomicsMax()) >= 0) {
+                status = StatusType.CLOSED;
+            } else {
+                status = StatusType.ACTIVE;
+            }
+        } else {
+            status = StatusType.INCOMING;
+        }
+        return status;
     }
 }
