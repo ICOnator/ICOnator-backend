@@ -4,9 +4,9 @@ import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.model.db.Investor;
 
-import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
-
 import java.net.URI;
+
+import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 
 public class AmqpMessageFactory {
 

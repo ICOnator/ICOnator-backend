@@ -1,11 +1,7 @@
 package io.iconator.commons.recaptcha;
 
 import io.iconator.commons.recaptcha.config.RecaptchaConfigHolder;
-import io.iconator.commons.recaptcha.exceptions.InvalidInputResponseException;
-import io.iconator.commons.recaptcha.exceptions.InvalidInputSecretException;
-import io.iconator.commons.recaptcha.exceptions.MissingInputResponseException;
-import io.iconator.commons.recaptcha.exceptions.MissingInputSecretException;
-import io.iconator.commons.recaptcha.exceptions.RecaptchaException;
+import io.iconator.commons.recaptcha.exceptions.*;
 import io.iconator.commons.recaptcha.model.RecaptchaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,8 +13,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-
-import static java.util.Optional.ofNullable;
 
 @Service
 public class RecaptchaClientService {

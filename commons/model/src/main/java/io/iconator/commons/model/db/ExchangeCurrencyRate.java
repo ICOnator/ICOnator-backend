@@ -2,11 +2,7 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 import static javax.persistence.GenerationType.SEQUENCE;

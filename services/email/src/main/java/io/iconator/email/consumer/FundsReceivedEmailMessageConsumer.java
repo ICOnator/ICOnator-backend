@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.FUNDS_RECEIVED_EMAIL_QUEUE;

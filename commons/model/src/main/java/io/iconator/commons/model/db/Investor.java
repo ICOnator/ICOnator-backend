@@ -1,12 +1,6 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
+import javax.persistence.*;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;

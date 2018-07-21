@@ -5,7 +5,6 @@ import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
 import io.iconator.commons.model.CurrencyType;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FundsReceivedEmailMessage extends IncludeInvestorMessage {

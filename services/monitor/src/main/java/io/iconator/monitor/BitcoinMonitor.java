@@ -22,13 +22,15 @@ import org.bitcoinj.core.TransactionConfidence.Listener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
-import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import static io.iconator.commons.amqp.model.utils.MessageDTOHelper.build;
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;

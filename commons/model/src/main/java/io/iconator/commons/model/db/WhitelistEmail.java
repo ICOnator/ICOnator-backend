@@ -1,6 +1,5 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.Id;
 import javax.persistence.*;
 import java.util.Date;
 

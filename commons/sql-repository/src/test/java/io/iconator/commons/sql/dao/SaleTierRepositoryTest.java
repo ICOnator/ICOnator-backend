@@ -3,7 +3,6 @@ package io.iconator.commons.sql.dao;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.config.TestConfig;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;

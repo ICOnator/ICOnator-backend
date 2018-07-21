@@ -1,13 +1,13 @@
 package io.iconator.core.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.iconator.commons.bitcoin.BitcoinKeyGenerator;
+import io.iconator.commons.ethereum.EthereumKeyGenerator;
+import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.core.BaseApplicationTest;
 import io.iconator.core.dto.AddressRequest;
 import io.iconator.core.dto.RegisterRequest;
 import io.iconator.core.utils.Constants;
-import io.iconator.commons.bitcoin.BitcoinKeyGenerator;
-import io.iconator.commons.ethereum.EthereumKeyGenerator;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;

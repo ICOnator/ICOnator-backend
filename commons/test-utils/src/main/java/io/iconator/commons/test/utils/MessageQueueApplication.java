@@ -3,12 +3,8 @@ package io.iconator.commons.test.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-
-import javax.annotation.PostConstruct;
 
 import static org.springframework.boot.SpringApplication.run;
 

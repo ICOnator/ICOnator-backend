@@ -10,7 +10,6 @@ import io.iconator.rates.client.etherscan.model.ReturnSingleValue;
 import io.iconator.rates.client.etherscan.model.ReturnValues;
 import io.iconator.rates.client.etherscan.model.ReturnValuesResult;
 import io.iconator.rates.config.RatesAppConfig;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;

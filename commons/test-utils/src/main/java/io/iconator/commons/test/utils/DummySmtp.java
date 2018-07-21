@@ -7,7 +7,6 @@ import org.subethamail.wiser.WiserMessage;
 
 import javax.mail.Address;
 import javax.mail.internet.MimeMessage;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;

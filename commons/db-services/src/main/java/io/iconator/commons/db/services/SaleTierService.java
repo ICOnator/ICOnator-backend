@@ -2,11 +2,8 @@ package io.iconator.commons.db.services;
 
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigInteger;
 import java.util.Date;
@@ -41,5 +38,4 @@ public class SaleTierService {
     public Optional<SaleTier> getTierAtDate(Date date) {
         return saleTierRepository.findTierAtDate(date);
     }
-
 }

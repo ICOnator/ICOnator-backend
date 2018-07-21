@@ -3,8 +3,6 @@ package io.iconator.commons.amqp.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
 
-import java.math.BigDecimal;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConfirmationEmailMessage extends IncludeInvestorMessage {
 

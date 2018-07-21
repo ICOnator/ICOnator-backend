@@ -1,10 +1,8 @@
 package io.iconator.email.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.mailservice.MailService;
-import io.iconator.commons.model.db.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -18,9 +16,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
-import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_CONFIRMATION_EMAIL_QUEUE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_SUMMARY_EMAIL_QUEUE;
-import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
 
 @Component

@@ -1,11 +1,8 @@
 package io.iconator.email.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
 import io.iconator.commons.mailservice.MailService;
-import io.iconator.commons.mailservice.exceptions.EmailNotPreparedException;
-import io.iconator.commons.mailservice.exceptions.EmailNotSentException;
 import io.iconator.commons.model.db.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +12,6 @@ import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

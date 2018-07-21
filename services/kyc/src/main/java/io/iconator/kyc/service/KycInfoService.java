@@ -4,7 +4,6 @@ import io.iconator.commons.model.db.KycInfo;
 import io.iconator.commons.sql.dao.KycInfoRepository;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
-import org.aspectj.apache.bcel.generic.LocalVariableGen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

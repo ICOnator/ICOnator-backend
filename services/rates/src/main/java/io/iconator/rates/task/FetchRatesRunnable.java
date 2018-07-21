@@ -1,6 +1,5 @@
 package io.iconator.rates.task;
 
-import io.iconator.rates.config.RatesAppConfig;
 import io.iconator.rates.service.ExchangeRateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
