@@ -6,13 +6,13 @@ import io.iconator.commons.bitcoin.BitcoinUnit;
 import io.iconator.commons.bitcoin.BitcoinUnitConverter;
 import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.bitcoin.exception.BitcoinUnitConversionNotImplementedException;
+import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
@@ -60,13 +60,13 @@ public class BitcoinMonitor extends BaseMonitor {
                           NetworkParameters bitcoinNetworkParameters,
                           PeerGroup bitcoinPeerGroup,
                           InvestorRepository investorRepository,
-                          PaymentLogRepository paymentLogRepository,
+                          PaymentLogService paymentLogService,
                           TokenConversionService tokenConversionService,
-                          EligibleForRefundRepository eligibleForRefundRepository,
+                          EligibleForRefundService eligibleForRefundService,
                           ICOnatorMessageService messageService) {
 
-        super(tokenConversionService, investorRepository, paymentLogRepository,
-                eligibleForRefundRepository, fxService);
+        super(tokenConversionService, investorRepository, paymentLogService,
+                eligibleForRefundService, fxService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
@@ -90,7 +90,7 @@ public class BitcoinMonitor extends BaseMonitor {
     /**
      * Add a public key we want to monitor
      *
-     * @param publicKey Bitcoin public key as hex string
+     * @param addressString Bitcoin address
      * @param timestamp Timestamp in seconds when this key was created
      */
     public synchronized void addMonitoredAddress(String addressString, long timestamp) {
@@ -240,9 +240,9 @@ public class BitcoinMonitor extends BaseMonitor {
                 investor.getId(),
                 BigInteger.ZERO);
         try {
-            savePaymentLog(paymentLog);
+            paymentLogService.saveTransactionless(paymentLog);
         } catch (Exception e) {
-            if (paymentLogRepository.existsByTxIdentifier(txoIdentifier)) {
+            if (paymentLogService.existsByTxIdentifier(txoIdentifier)) {
                 LOG.info("Couldn't create payment log entry because an entry already existed for " +
                         "transaction {}. I.e. transaction was already processed.", txoIdentifier);
             } else {
@@ -258,13 +258,13 @@ public class BitcoinMonitor extends BaseMonitor {
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
-            paymentLogRepository.delete(paymentLog);
+            paymentLogService.delete(paymentLog);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
         BigInteger tomics = result.getDistributedTomics();
         paymentLog.setTomicsAmount(tomics);
-        paymentLog = savePaymentLog(paymentLog);
+        paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperBTC);
             eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);

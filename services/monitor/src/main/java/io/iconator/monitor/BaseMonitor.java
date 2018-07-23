@@ -4,14 +4,13 @@ import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
+import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
-import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
@@ -21,9 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
@@ -44,59 +40,58 @@ public class BaseMonitor {
 
     protected final TokenConversionService tokenConversionService;
     protected final InvestorRepository investorRepository;
-    protected final PaymentLogRepository paymentLogRepository;
-    protected final EligibleForRefundRepository eligibleForRefundRepository;
+    protected final EligibleForRefundService eligibleForRefundService;
+    protected final PaymentLogService paymentLogService;
     protected final FxService fxService;
 
     public BaseMonitor(TokenConversionService tokenConversionService,
                        InvestorRepository investorRepository,
-                       PaymentLogRepository paymentLogRepository,
-                       EligibleForRefundRepository eligibleForRefundRepository,
+                       PaymentLogService paymentLogService,
+                       EligibleForRefundService eligibleForRefundService,
                        FxService fxService) {
         this.tokenConversionService = tokenConversionService;
         this.investorRepository = investorRepository;
-        this.paymentLogRepository = paymentLogRepository;
-        this.eligibleForRefundRepository = eligibleForRefundRepository;
+        this.paymentLogService = paymentLogService;
+        this.eligibleForRefundService = eligibleForRefundService;
         this.fxService = fxService;
     }
 
     protected boolean isTransactionUnprocessed(String txIdentifier) {
-        return !paymentLogRepository.existsByTxIdentifier(txIdentifier)
-                && !eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
+        return !paymentLogService.existsByTxIdentifier(txIdentifier)
+                && !eligibleForRefundService.existsByTxIdentifier(txIdentifier);
     }
 
+    /**
+     *
+     * @param amount
+     * @param currencyType
+     * @param txIdentifier
+     * @param reason
+     * @param investor
+     */
     protected void eligibleForRefund(BigInteger amount,
                                      CurrencyType currencyType,
-                                     String txoIdentifier,
+                                     String txIdentifier,
                                      RefundReason reason,
                                      Investor investor) {
 
-        EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType, investor.getId(), txoIdentifier);
+        long investorId = investor != null ? investor.getId() : 0;
+        EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType,
+                investorId, txIdentifier);
         try {
-            LOG.info("Creating refund entry for transaction {}.", txoIdentifier);
-            saveEligibleForRefund(eligibleForRefund);
+            LOG.info("Creating refund entry for transaction {}.", txIdentifier);
+            // Saving without a transaction will persist to the database immediatly which makes sure
+            // that other monitor apps that run concurrently will see that this transaction has
+            // already been processed by a monitor app.
+            eligibleForRefundService.saveTransactionless(eligibleForRefund);
         } catch (Exception e) {
-            if (eligibleForRefundRepository.existsByTxIdentifier(txoIdentifier)) {
+            if (eligibleForRefundService.existsByTxIdentifier(txIdentifier)) {
                 LOG.info("Couldn't create refund entry because it already existed. " +
                         "I.e. transaction was already processed.", e);
             } else {
                 LOG.error("Failed creating refund entry.", e);
             }
         }
-    }
-
-    @Transactional(rollbackFor = Exception.class,
-            isolation = Isolation.READ_COMMITTED,
-            propagation = Propagation.REQUIRES_NEW)
-    protected PaymentLog savePaymentLog(PaymentLog log) {
-        return paymentLogRepository.saveAndFlush(log);
-    }
-
-    @Transactional(rollbackFor = Exception.class,
-            isolation = Isolation.READ_COMMITTED,
-            propagation = Propagation.REQUIRES_NEW)
-    protected EligibleForRefund saveEligibleForRefund(EligibleForRefund eligibleForRefund) {
-        return eligibleForRefundRepository.save(eligibleForRefund);
     }
 
     /**

@@ -3,6 +3,8 @@ package io.iconator.monitor;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
+import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.ethereum.EthereumUnit;
 import io.iconator.commons.ethereum.EthereumUnitConverter;
 import io.iconator.commons.ethereum.exception.EthereumUnitConversionNotImplementedException;
@@ -10,9 +12,7 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
@@ -50,14 +50,14 @@ public class EthereumMonitor extends BaseMonitor {
 
     public EthereumMonitor(FxService fxService,
                            InvestorRepository investorRepository,
-                           PaymentLogRepository paymentLogRepository,
+                           PaymentLogService paymentLogService,
                            TokenConversionService tokenConversionService,
-                           EligibleForRefundRepository eligibleForRefundRepository,
+                           EligibleForRefundService eligibleForRefundService,
                            ICOnatorMessageService messageService,
                            Web3j web3j) {
 
-        super(tokenConversionService, investorRepository, paymentLogRepository,
-                eligibleForRefundRepository, fxService);
+        super(tokenConversionService, investorRepository, paymentLogService,
+                eligibleForRefundService, fxService);
 
         this.web3j = web3j;
         this.messageService = messageService;
@@ -129,7 +129,6 @@ public class EthereumMonitor extends BaseMonitor {
         Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddress(receivingAddress);
         if(!oInvestor.isPresent()) {
             LOG.error("Couldn't fetch investor with public address {} for transaction {}.", receivingAddress, txIdentifier);
-            //TODO: this throws an NullPointer when investor is null
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
                     RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS, null);
             return;
@@ -182,9 +181,9 @@ public class EthereumMonitor extends BaseMonitor {
                 investor.getId(),
                 BigInteger.ZERO);
         try {
-            savePaymentLog(paymentLog);
+            paymentLogService.saveTransactionless(paymentLog);
         } catch (Exception e) {
-            if (paymentLogRepository.existsByTxIdentifier(txIdentifier)) {
+            if (paymentLogService.existsByTxIdentifier(txIdentifier)) {
                 LOG.info("Couldn't create payment log entry because an entry already existed for " +
                         "transaction {}. I.e. transaction was already processed.", txIdentifier);
             } else {
@@ -200,13 +199,13 @@ public class EthereumMonitor extends BaseMonitor {
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
-            paymentLogRepository.delete(paymentLog);
+            paymentLogService.delete(paymentLog);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
         BigInteger tomics = result.getDistributedTomics();
         paymentLog.setTomicsAmount(tomics);
-        paymentLog = savePaymentLog(paymentLog);
+        paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);

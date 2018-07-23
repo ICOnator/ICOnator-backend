@@ -1,10 +1,10 @@
 package io.iconator.monitor.config;
 
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
-import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.TokenConversionService;
@@ -32,19 +32,34 @@ public class EthereumMonitorTestConfig {
     }
 
     @Bean
+    public PaymentLogService paymentLogService() {
+        return new PaymentLogService();
+    }
+
+    @Bean
+    public EligibleForRefundService eligibleForRefundService() {
+        return new EligibleForRefundService();
+    }
+
+    @Bean
+    public FxService fxService() {
+        return new FxService();
+    }
+
+    @Bean
     public EthereumMonitor ethereumMonitor(Web3j web3j,
                                            FxService fxService,
                                            TokenConversionService tokenConversionService,
                                            InvestorRepository investorRepository,
-                                           PaymentLogRepository paymentLogRepository,
-                                           EligibleForRefundRepository eligibleForRefundRepository,
+                                           PaymentLogService paymentLogService,
+                                           EligibleForRefundService eligibleForRefundService,
                                            ICOnatorMessageService messageService) {
         return new EthereumMonitor(
                 fxService,
                 investorRepository,
-                paymentLogRepository,
+                paymentLogService,
                 tokenConversionService,
-                eligibleForRefundRepository,
+                eligibleForRefundService,
                 messageService,
                 web3j
         );

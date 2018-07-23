@@ -7,6 +7,7 @@ import io.iconator.monitor.config.MonitorAppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -26,10 +27,6 @@ public class TokenConversionService {
 
     @Autowired
     private MonitorAppConfig appConfig;
-
-    // TODO [claude, 2018-07-19], Remove as soon as concurrency tests are through.
-//    @Autowired
-//    private PlatformTransactionManager txManager;
 
     /**
      * @param usd      the USD amount to convert to tokens.
@@ -77,12 +74,8 @@ public class TokenConversionService {
         return value.multiply(new BigDecimal(appConfig.getAtomicUnitFactor()));
     }
 
-    @Transactional(rollbackFor = Exception.class, isolation = Isolation.REPEATABLE_READ)
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.REPEATABLE_READ, propagation = Propagation.REQUIRES_NEW)
     public TokenDistributionResult convertAndDistributeToTiers(BigDecimal usd, Date blockTime) {
-        // TODO [claude, 2018-07-19], Remove as soon as concurrency tests are through.
-//        DefaultTransactionDefinition dtd = new DefaultTransactionDefinition();
-//        dtd.setPropagationBehavior(PROPAGATION_MANDATORY);
-//        TransactionStatus s = txManager.getTransaction(dtd);
 
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
