@@ -66,6 +66,17 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    public KycInfo setKycCompleteByUuid(UUID uuid, boolean isKycComplete) throws InvestorNotFoundException {
+        Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(uuid);
+
+        if(kycInfoFromDb.isPresent()) {
+            KycInfo kycInfo = kycInfoFromDb.get().setKycComplete(isKycComplete);
+            kycInfoFromDb = Optional.of(kycInfoRepository.save(kycInfo));
+        }
+
+        return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
     public KycInfo setKycUri(long investorId, String kycUri) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
 

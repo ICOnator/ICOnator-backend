@@ -7,8 +7,10 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
 import io.iconator.kyc.dto.Identification;
+import io.iconator.kyc.dto.KycStartRequestDTO;
 import io.iconator.kyc.service.*;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
+import io.iconator.kyc.service.idnow.dto.IdNowIdentificationProcess;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @RunWith(MockitoJUnitRunner.class)
 public class KycControllerTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(KycControllerTest.class);
 
     private static final long INVESTOR_ID = 1;
@@ -46,8 +49,6 @@ public class KycControllerTest {
     private static final String KYC_FETCH_ALL_IDENTIFICATIONS = "/kyc/fetchall";
     private static final String KYC_LINK = "http://www.kyctestlink.com/investor/12345678";
     private static final String INVESTOR_NOT_FOUND = "Investor not found in database.";
-
-    private ObjectMapper mapper;
 
     @Mock
     private ICOnatorMessageService mockMessageService;
@@ -71,11 +72,14 @@ public class KycControllerTest {
     private KycController kycController;
 
     private MockMvc mockMvc;
+    private ObjectMapper mapper;
+    private KycStartRequestDTO kycStartRequest;
 
     @Before
     public void setUp() {
         mapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(kycController).build();
+        kycStartRequest = new KycStartRequestDTO(KYC_LINK);
     }
 
     @Test
@@ -90,7 +94,7 @@ public class KycControllerTest {
         // start with link
         MvcResult result1 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(KYC_LINK))
+                .content(mapper.writeValueAsString(kycStartRequest)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
@@ -101,7 +105,8 @@ public class KycControllerTest {
         // start without providing link
         when(mockLinkCreatorService.getKycLink(INVESTOR_ID)).thenReturn(KYC_LINK);
 
-        MvcResult result2 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START))
+        MvcResult result2 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
@@ -119,7 +124,7 @@ public class KycControllerTest {
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(KYC_LINK))
+                .content(mapper.writeValueAsString(kycStartRequest)))
                 .andExpect(status().isBadRequest())
                 .andDo(print())
                 .andReturn();
@@ -130,11 +135,12 @@ public class KycControllerTest {
 
     @Test
     public void testStartKycWithMalformedUri() throws Exception {
+        KycStartRequestDTO requestWithMalformedUri = new KycStartRequestDTO("this is not a url");
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenThrow(new InvestorNotFoundException());
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("this is not a correct url"))
+                .content(mapper.writeValueAsString(requestWithMalformedUri)))
                 .andExpect(status().isBadRequest())
                 .andDo(print())
                 .andReturn();
@@ -151,7 +157,7 @@ public class KycControllerTest {
 
         MvcResult result1 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(KYC_LINK))
+                .content(mapper.writeValueAsString(kycStartRequest)))
                 .andExpect(status().isBadRequest())
                 .andDo(print())
                 .andReturn();
@@ -170,7 +176,7 @@ public class KycControllerTest {
 
         MvcResult result2 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(KYC_LINK))
+                .content(mapper.writeValueAsString(kycStartRequest)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
@@ -186,7 +192,7 @@ public class KycControllerTest {
 
         MvcResult result3 = mockMvc.perform(MockMvcRequestBuilders.post(KYC_INVESTOR_START)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(KYC_LINK))
+                .content(mapper.writeValueAsString(kycStartRequest)))
                 .andExpect(status().isBadRequest())
                 .andDo(print())
                 .andReturn();
@@ -269,21 +275,22 @@ public class KycControllerTest {
 
     @Test
     public void testFetchAllKycIdentifications() throws Exception {
-        KycInfo kycInfo1 = createKycInfo(false);
-        Identification id1 = new Identification(kycInfo1.getKycUuid(), "SUCCESS", new Date());
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        Identification id1 = new IdNowIdentificationProcess("SUCCESS", new Date(), uuid1.toString());
+        Identification id2 = new IdNowIdentificationProcess("FAILURE", new Date(), uuid2.toString());
         List<Identification> idList = new ArrayList<>();
         idList.add(id1);
+        idList.add(id2);
 
         when(mockIdentificationService.fetchIdentifications()).thenReturn(idList);
-        when(mockKycInfoService.getKycInfoByKycUuid(id1.getKycUuid())).thenReturn(kycInfo1);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get(KYC_FETCH_ALL_IDENTIFICATIONS))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn();
 
-        verify(mockKycInfoService, times(1)).setKycComplete(INVESTOR_ID, true);
-
+        verify(mockKycInfoService, times(1)).setKycCompleteByUuid(uuid1, true);
 
     }
 

@@ -6,15 +6,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class IdentificationsResult {
+public class IdNowIdentificationResponse {
 
     @JsonProperty("identifications")
-    private List<IdentificationResult> identifications;
+    private List<IdNowIdentification> identifications;
 
-    public IdentificationsResult() {
+    public IdNowIdentificationResponse() {
     }
 
-    public List<IdentificationResult> getIdentifications() {
+    public List<IdNowIdentification> getIdentifications() {
         return identifications;
     }
 }

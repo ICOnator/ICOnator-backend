@@ -4,15 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class IdentificationResult {
+public class IdNowIdentification {
 
     @JsonProperty("identificationprocess")
-    private IdentificationProcess identificationProcess;
+    private IdNowIdentificationProcess idNowIdentificationProcess;
 
-    public IdentificationResult() {
+    public IdNowIdentification() {
     }
 
-    public IdentificationProcess getIdentificationProcess() {
-        return identificationProcess;
+    public IdNowIdentificationProcess getIdNowIdentificationProcess() {
+        return idNowIdentificationProcess;
     }
 }

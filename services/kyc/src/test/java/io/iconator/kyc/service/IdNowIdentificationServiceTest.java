@@ -27,7 +27,7 @@ import org.springframework.web.client.RestTemplate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.UUID;
+import java.util.TimeZone;
 
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
@@ -39,13 +39,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class IdNowIdentificationServiceTest {
     private static final String TEST_AUTH_TOKEN = "1234-ABCD-efgh";
 
-    @Value("${io.iconator.kyc.host}")
+    @Value("${io.iconator.services.kyc.idnow.host}")
     private String kycHost;
 
-    @Value("${io.iconator.kyc.companyId}")
+    @Value("${io.iconator.services.kyc.idnow.companyId}")
     private String companyId;
 
-    @Value("${io.iconator.kyc.apiKey}")
+    @Value("${io.iconator.services.kyc.idnow.apiKey}")
     private String apiKey;
 
     @Autowired
@@ -63,6 +63,7 @@ public class IdNowIdentificationServiceTest {
     @Before
     public void setUp() throws Exception {
         MockRestServiceServer mockServer = MockRestServiceServer.createServer(restTemplate);
+        format.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         String baseUri = kycHost + "/api/v1/" + companyId;
 
@@ -92,7 +93,7 @@ public class IdNowIdentificationServiceTest {
         assertThat(identificationList.size()).isEqualTo(1);
 
         Identification identification = identificationList.get(0);
-        assertThat(identification.getKycUuid()).isEqualTo(UUID.fromString("c02f9eea-bdef-4723-8ec3-eb254c2039f7"));
+        assertThat(identification.getTransactionNumber()).isEqualTo("c02f9eea-bdef-4723-8ec3-eb254c2039f7");
         assertThat(identification.getIdentificationTime()).isEqualTo((format.parse("2014-06-02T05:03:54Z")));
         assertThat(identification.getResult()).isEqualTo("SUCCESS");
     }

@@ -5,7 +5,9 @@ import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
+import io.iconator.kyc.dto.FetchAllResponseDTO;
 import io.iconator.kyc.dto.Identification;
+import io.iconator.kyc.dto.KycStartRequestDTO;
 import io.iconator.kyc.service.*;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
@@ -31,6 +33,7 @@ import java.util.UUID;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 @RestController
 public class KycController {
@@ -54,16 +57,14 @@ public class KycController {
 
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
-    // TODO:
-    // Instead of providing a raw String as the body, please provide a DTO with the kycLink attribute
-    // Important: the format of DTO class names, should be, e.g.:
-    // BLAHRequestDTO, BLAHResponseDTO
-    @RequestMapping(value = "/kyc/{investorId}/start", method = POST)
+    // TODO: refactor this method, add produces/consumes to all others
+    @RequestMapping(value = "/kyc/{investorId}/start", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
-                                      @RequestBody(required = false) String kycLink,
+                                      @RequestBody(required = false) KycStartRequestDTO kycStartRequest,
                                       @Context HttpServletRequest requestContext) {
         ResponseEntity response;
         URI kycUri;
+        String kycLink = kycStartRequest != null ? kycStartRequest.getKycLink() : null;
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         LOG.info("/start called from {} with investorId {}", ipAddress, investorId);
@@ -151,7 +152,7 @@ public class KycController {
         return response;
     }
 
-    @RequestMapping(value = "/kyc/{investorId}/status", method = GET)
+    @RequestMapping(value = "/kyc/{investorId}/status", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> getKycStatus(@PathVariable("investorId") Long investorId,
                                           @Context HttpServletRequest requestContext) {
         ResponseEntity response;
@@ -174,12 +175,8 @@ public class KycController {
         return response;
     }
 
-    // TODO:
-    // Instead of returning a string, please return a DTO with the information in JSON
-    // In all APIs, please specify the "consumes = APPLICATION_JSON_UTF8_VALUE" and/or "produces = APPLICATION_JSON_UTF8_VALUE",
-    // if necessary.
-    @RequestMapping(value = "/kyc/fetchall", method = GET)
-    public ResponseEntity<?> fetchAllKycIdentifications(@Context HttpServletRequest requestContext) {
+    @RequestMapping(value = "/kyc/fetchall", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<FetchAllResponseDTO> fetchAllKycIdentifications(@Context HttpServletRequest requestContext) {
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         LOG.info("/fetchall called from {}", ipAddress);
@@ -192,16 +189,12 @@ public class KycController {
         for(Identification id : identificationList) {
             if(id.getResult() != null && id.getResult().equals("SUCCESS")) {
                 try {
-                    UUID kycUuid = id.getKycUuid();
-                    // TODO:
-                    // Instead of getting by UUID and then set the KYC as complete by investorId,
-                    // just try to setKycCompleteByUuid() directly.
-                    KycInfo kycInfo = kycInfoService.getKycInfoByKycUuid(kycUuid);
-                    kycInfoService.setKycComplete(kycInfo.getInvestorId(), true);
+                    UUID kycUuid = UUID.fromString(id.getTransactionNumber());
+                    kycInfoService.setKycCompleteByUuid(kycUuid, true);
                     setCompleteList.add(kycUuid);
                 } catch(InvestorNotFoundException e) {
-                    LOG.info("No KYC data about investor with KYC-UUID {}.", id.getKycUuid());
-                    errorList.add(id.getKycUuid());
+                    LOG.info("No KYC data about investor with KYC-UUID {}.", id.getTransactionNumber());
+                    errorList.add(UUID.fromString(id.getTransactionNumber()));
                 }
             } else {
                 //TODO what to do with differing kyc status?
@@ -210,9 +203,7 @@ public class KycController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(setCompleteList.size() + " KYC-UUIDs set to complete: " + setCompleteList + "\n" +
-                        errorList.size() + " KYC-UUIDs not found in DB:" + errorList);
-
+                .body(new FetchAllResponseDTO().setKycCompletedList(setCompleteList).setErrorList(errorList));
     }
 
     // TODO:
@@ -265,9 +256,8 @@ public class KycController {
             investor = investorService.getInvestorByInvestorId(investorId);
 
             KycReminderEmailMessage kycReminderEmailMessage = messageFactory.makeKycReminderEmailMessage(investor, kycUri);
-            messageService.send(kycReminderEmailMessage);
 
-            kycInfoService.increaseNumberOfRemindersSent(investorId);
+            messageService.send(kycReminderEmailMessage);
 
             response = ResponseEntity
                     .status(HttpStatus.OK)

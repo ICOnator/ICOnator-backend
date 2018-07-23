@@ -3,11 +3,12 @@ package io.iconator.kyc.service.idnow.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.iconator.kyc.dto.Identification;
 
 import java.util.Date;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class IdentificationProcess {
+public class IdNowIdentificationProcess implements Identification {
 
     /**
      * "result": "SUCCESS",
@@ -23,16 +24,22 @@ public class IdentificationProcess {
     private String result;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
-    @JsonProperty("identificationTime")
+    @JsonProperty("identificationtime")
     private Date identificationTime;
 
-    @JsonProperty("transactionNumber")
+    @JsonProperty("transactionnumber")
     private String transactionNumber;
 
     @JsonProperty("id")
     private String id;
 
-    public IdentificationProcess() {
+    public IdNowIdentificationProcess() {
+    }
+
+    public IdNowIdentificationProcess(String result, Date identificationTime, String transactionNumber) {
+        this.result = result;
+        this.identificationTime = identificationTime;
+        this.transactionNumber = transactionNumber;
     }
 
     public String getResult() {
