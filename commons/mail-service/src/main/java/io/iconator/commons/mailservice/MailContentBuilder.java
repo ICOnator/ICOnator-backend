@@ -152,7 +152,7 @@ public class MailContentBuilder {
                 context.setVariable("amountFundsReceived", amountFundsReceived);
                 context.setVariable("currencyFundsReceived", currencyType.name());
                 context.setVariable("link", link);
-                context.setVariable("amountTokens", amountTokens);
+                context.setVariable("tomicsAmount", amountTokens);
                 context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
