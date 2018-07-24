@@ -49,7 +49,7 @@ public class InvestorRepositoryTest {
         Investor i = createInvestor();
         investorRepository.save(i);
 
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddress("payInEther1");
+        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddressIgnoreCase("payInEther1");
         assertTrue(oInvestor.isPresent());
         assertTrue(oInvestor.filter((investor) -> investor.getPayInEtherAddress().equals("payInEther1")).isPresent());
     }

@@ -118,7 +118,7 @@ public class EthereumMonitorTest {
         Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
 
         String receivingAddress = TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress());
-        when(investorRepository.findOptionalByPayInEtherAddress(eq(receivingAddress))).thenReturn(
+        when(investorRepository.findOptionalByPayInEtherAddressIgnoreCase(eq(receivingAddress))).thenReturn(
                 Optional.of(new Investor(
                         new Date(),
                         "email",

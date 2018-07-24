@@ -126,7 +126,7 @@ public class EthereumMonitor extends BaseMonitor {
         LOG.debug("Detected funds received: wei {}, receiving address {}, transaction hash {}, " +
                 "blockHeight {}.", wei, receivingAddress, txIdentifier, blockHeight);
 
-        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddress(receivingAddress);
+        Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddressIgnoreCase(receivingAddress);
         if(!oInvestor.isPresent()) {
             LOG.error("Couldn't fetch investor with public address {} for transaction {}.", receivingAddress, txIdentifier);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
