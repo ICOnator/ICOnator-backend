@@ -59,6 +59,20 @@ public class BitcoinUtils {
                 .min(Date::compareTo).get();
     }
 
+    public static Integer getBlockHeightOfTransaction(Transaction tx, SPVBlockStore blockStore) {
+        return tx.getAppearsInHashes().keySet().stream()
+                .map((blockHash) -> {
+                    try {
+                        return blockStore.get(blockHash);
+                    } catch (BlockStoreException e) {
+                        return null; // This can happen if the transaction was seen in a side-chain
+                    }
+                })
+                .filter(Objects::nonNull)
+                .map(StoredBlock::getHeight)
+                .min(Integer::compareTo).get();
+    }
+
     public static BigDecimal convertSatoshiToUsd(BigInteger satoshi, BigDecimal USDperBTC) {
         try {
             return BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN)

@@ -209,9 +209,19 @@ public class BitcoinMonitor extends BaseMonitor {
             return;
         }
 
+        Long blockHeight;
+        try {
+            blockHeight = BitcoinUtils.getBlockHeightOfTransaction(utxo.getParentTransaction(), bitcoinBlockStore).longValue();
+        } catch (RuntimeException e) {
+            LOG.error("Failed fetching block nr for transaction {}.", txoIdentifier);
+            eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier,
+                    RefundReason.MISSING_BLOCK_BTC_NR, investor);
+            return;
+        }
+
         BigDecimal USDperBTC, usdReceived, coins;
         try {
-            USDperBTC = fxService.getUSDPerBTC(timestamp);
+            USDperBTC = fxService.getUSDPerBTC(blockHeight);
             usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
             coins = BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
         } catch (USDBTCFxException e) {
