@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.SetWalletAddressMessage;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
+import org.bitcoinj.core.AddressFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -56,15 +57,18 @@ public class SetWalletAddressMessageConsumer {
             LOG.error("Message not valid.");
         }
 
-        Optional<SetWalletAddressMessage> optionalSetWalletAddressMessage = ofNullable(setWalletAddressMessage);
-        optionalSetWalletAddressMessage.ifPresent((m) -> {
-            ofNullable(m.getInvestor()).ifPresent((investor) -> {
-                long timestamp = investor.getCreationDate().getTime() / 1000L;
-                bitcoinMonitor.addMonitoredAddress(investor.getPayInBitcoinAddress(), timestamp);
-                ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
+        try {
+            Optional<SetWalletAddressMessage> optionalSetWalletAddressMessage = ofNullable(setWalletAddressMessage);
+            optionalSetWalletAddressMessage.ifPresent((m) -> {
+                ofNullable(m.getInvestor()).ifPresent((investor) -> {
+                    long timestamp = investor.getCreationDate().getTime() / 1000L;
+                    bitcoinMonitor.addMonitoredAddress(investor.getPayInBitcoinAddress(), timestamp);
+                    ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
+                });
             });
-        });
-
+        } catch (Exception e) {
+            LOG.error("Error adding addresses to be monited by 'iconator-monitor'.", e);
+        }
     }
 
 }
