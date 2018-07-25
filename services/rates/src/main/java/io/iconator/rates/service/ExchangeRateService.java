@@ -37,10 +37,10 @@ public class ExchangeRateService {
     private final static Logger LOG = LoggerFactory.getLogger(ExchangeRateService.class);
 
     @Autowired
-    private BlockNrEthereumConsumer etherScanClient;
+    private BlockNrEthereumConsumer blockNrEthereumConsumer;
 
     @Autowired
-    private BlockNrBitcoinConsumer blockchainInfoClient;
+    private BlockNrBitcoinConsumer blockNrBitcoinConsumer;
 
     @Autowired
     private ExchangeAggregateRateRepository exchangeAggregateRateRepository;
@@ -108,14 +108,14 @@ public class ExchangeRateService {
 
         Long blockNrETH = null;
         try {
-            blockNrETH = etherScanClient.getCurrentBlockNr();
+            blockNrETH = blockNrEthereumConsumer.getCurrentBlockNr();
         } catch (Throwable t) {
             LOG.error("Could not fetch current ETH block number.", t);
         }
 
         Long blockNrBTC = null;
         try {
-            blockNrBTC = blockchainInfoClient.getCurrentBlockNr();
+            blockNrBTC = blockNrBitcoinConsumer.getCurrentBlockNr();
         } catch (Throwable t) {
             LOG.error("Could not fetch current BTC block number.", t);
         }
