@@ -31,6 +31,7 @@ public class BlockNrBitcoinConsumer {
     private ObjectMapper objectMapper;
 
     private Long blockNr;
+    private Long timestamp;
 
     @RabbitListener(
             bindings = @QueueBinding(value = @Queue,
@@ -56,23 +57,25 @@ public class BlockNrBitcoinConsumer {
             Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(blockNRBitcoinMessage);
             optionalBlockNRBitcoinMessage.ifPresent((m) -> {
                 blockNr = optionalBlockNRBitcoinMessage.get().getBlockNr();
+                timestamp = optionalBlockNRBitcoinMessage.get().getTimestamp();
             });
         } catch (Exception e) {
             LOG.error("Error adding addresses to be monited by 'iconator-monitor'.", e);
         }
     }
 
-    public BlockNrBitcoinConsumer setCurrentBlockNr(Long blockNr) {
+    public BlockNrBitcoinConsumer setValues(Long blockNr, Long timestamp) {
         this.blockNr = blockNr;
+        this.timestamp = timestamp;
         return this;
     }
 
     public Long getCurrentBlockNr() {
-        if(blockNr == null) {
+        if(blockNr == null || timestamp == null) {
             LOG.error("No Bitcoin block since startup");
             return null;
         }
-        if(blockNr.longValue() + TWO_HOURS < new Date().getTime()) {
+        if(timestamp.longValue() + TWO_HOURS < new Date().getTime()) {
             LOG.error("Bitcoin block over two hours old, discarding");
             return null;
         }

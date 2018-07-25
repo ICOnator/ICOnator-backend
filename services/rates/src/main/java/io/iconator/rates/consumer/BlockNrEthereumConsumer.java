@@ -31,6 +31,7 @@ public class BlockNrEthereumConsumer {
     private ObjectMapper objectMapper;
 
     private Long blockNr;
+    private Long timestamp;
 
     @RabbitListener(
             bindings = @QueueBinding(value = @Queue,
@@ -56,23 +57,25 @@ public class BlockNrEthereumConsumer {
             Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(blockNREthereumMessage);
             optionalBlockNREthereumMessage.ifPresent((m) -> {
                 blockNr = optionalBlockNREthereumMessage.get().getBlockNr();
+                timestamp = optionalBlockNREthereumMessage.get().getTimestamp();
             });
         } catch (Exception e) {
             LOG.error("Error adding addresses to be monited by 'iconator-monitor'.", e);
         }
     }
 
-    public BlockNrEthereumConsumer setCurrentBlockNr(Long blockNr) {
+    public BlockNrEthereumConsumer setValues(Long blockNr, Long timestamp) {
         this.blockNr = blockNr;
+        this.timestamp = timestamp;
         return this;
     }
 
     public Long getCurrentBlockNr() {
-        if(blockNr == null) {
+        if(blockNr == null || timestamp == null) {
             LOG.error("No Ethereum block since startup");
             return null;
         }
-        if(blockNr.longValue() + HALF_HOUR < new Date().getTime()) {
+        if(timestamp.longValue() + HALF_HOUR < new Date().getTime()) {
             LOG.error("Ethereum block over 30 minutes old, discarding");
             return null;
         }
