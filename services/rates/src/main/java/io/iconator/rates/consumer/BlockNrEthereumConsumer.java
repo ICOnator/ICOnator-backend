@@ -55,9 +55,9 @@ public class BlockNrEthereumConsumer {
 
         try {
             Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(blockNREthereumMessage);
-            optionalBlockNREthereumMessage.ifPresent((m) -> {
-                blockNr = optionalBlockNREthereumMessage.get().getBlockNr();
-                timestamp = optionalBlockNREthereumMessage.get().getTimestamp();
+            optionalBlockNREthereumMessage.ifPresent((ethereumMessage) -> {
+                blockNr = ethereumMessage.getBlockNr();
+                timestamp = ethereumMessage.getTimestamp();
             });
         } catch (Exception e) {
             LOG.error("Error adding addresses to be monited by 'iconator-monitor'.", e);

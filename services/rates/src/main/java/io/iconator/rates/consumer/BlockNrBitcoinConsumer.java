@@ -55,9 +55,9 @@ public class BlockNrBitcoinConsumer {
 
         try {
             Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(blockNRBitcoinMessage);
-            optionalBlockNRBitcoinMessage.ifPresent((m) -> {
-                blockNr = optionalBlockNRBitcoinMessage.get().getBlockNr();
-                timestamp = optionalBlockNRBitcoinMessage.get().getTimestamp();
+            optionalBlockNRBitcoinMessage.ifPresent((bitcoinMessage) -> {
+                blockNr = bitcoinMessage.getBlockNr();
+                timestamp = bitcoinMessage.getTimestamp();
             });
         } catch (Exception e) {
             LOG.error("Error adding addresses to be monited by 'iconator-monitor'.", e);
