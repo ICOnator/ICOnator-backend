@@ -122,12 +122,12 @@ public class BitcoinMonitor extends BaseMonitor {
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
 
         final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
-        messageService.send(new BlockNRBitcoinMessage(Long.valueOf(startBlockHeighth)));
+        messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(startBlockHeighth)));
         bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
             @Override
             public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
                 if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
-                    messageService.send(new BlockNRBitcoinMessage(Long.valueOf(bitcoinBlockchain.getBestChainHeight())));
+                    messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(bitcoinBlockchain.getBestChainHeight())));
                 }
             }
         });

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
@@ -23,6 +24,8 @@ import static java.util.Optional.ofNullable;
 public class BlockNrEthereumConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockNrEthereumConsumer.class);
+
+    public static final int HALF_HOUR = 1000 * 60 * 30;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -64,16 +67,16 @@ public class BlockNrEthereumConsumer {
         return this;
     }
 
-    public long getCurrentBlockNr() {
-        while (blockNr == null) {
-            try {
-                Thread.sleep(2500);
-            } catch (InterruptedException e) {
-                LOG.error("not waiting for ethereum blocks...", e);
-            }
-            LOG.warn("block nr for ethereum not ready yet. waiting...");
+    public Long getCurrentBlockNr() {
+        if(blockNr == null) {
+            LOG.error("No Ethereum block since startup");
+            return null;
         }
-        return blockNr.longValue();
+        if(blockNr.longValue() + HALF_HOUR < new Date().getTime()) {
+            LOG.error("Ethereum block over 30 minutes old, discarding");
+            return null;
+        }
+        return blockNr;
     }
 
 }

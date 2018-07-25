@@ -13,10 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
-import static io.iconator.commons.amqp.model.constants.QueueConstants.BLOCK_NR_BITCOIN_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_BITCOIN_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
 
@@ -24,6 +24,8 @@ import static java.util.Optional.ofNullable;
 public class BlockNrBitcoinConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockNrBitcoinConsumer.class);
+
+    public static final int TWO_HOURS = 1000 * 60 * 60 * 2;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -65,16 +67,16 @@ public class BlockNrBitcoinConsumer {
         return this;
     }
 
-    public long getCurrentBlockNr() {
-        while(blockNr == null) {
-            try {
-                Thread.sleep(2500);
-            } catch (InterruptedException e) {
-                LOG.error("not waiting for bitcoin blocks...", e);
-            }
-            LOG.warn("block nr for bitcoin not ready yet. waiting...");
+    public Long getCurrentBlockNr() {
+        if(blockNr == null) {
+            LOG.error("No Bitcoin block since startup");
+            return null;
         }
-        return blockNr.longValue();
+        if(blockNr.longValue() + TWO_HOURS < new Date().getTime()) {
+            LOG.error("Bitcoin block over two hours old, discarding");
+            return null;
+        }
+        return blockNr;
     }
 
 }

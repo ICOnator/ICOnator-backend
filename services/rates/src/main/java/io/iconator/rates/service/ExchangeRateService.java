@@ -106,18 +106,16 @@ public class ExchangeRateService {
     public void fetchRates() {
         LOG.info("Fetching rates...");
 
-        Long blockNrETH = null;
-        try {
-            blockNrETH = blockNrEthereumConsumer.getCurrentBlockNr();
-        } catch (Throwable t) {
-            LOG.error("Could not fetch current ETH block number.", t);
+        Long blockNrETH = blockNrEthereumConsumer.getCurrentBlockNr();
+        if(blockNrETH == null) {
+            LOG.error("Could not fetch current ETH block number.");
+            return;
         }
 
-        Long blockNrBTC = null;
-        try {
-            blockNrBTC = blockNrBitcoinConsumer.getCurrentBlockNr();
-        } catch (Throwable t) {
-            LOG.error("Could not fetch current BTC block number.", t);
+        Long blockNrBTC = blockNrBitcoinConsumer.getCurrentBlockNr();
+        if(blockNrBTC == null) {
+            LOG.error("Could not fetch current BTC block number.");
+            return;
         }
 
         List<CurrencyType> enabledCryptoCurrencies = ratesAppConfig.getEnabledCryptoCurrencies();
