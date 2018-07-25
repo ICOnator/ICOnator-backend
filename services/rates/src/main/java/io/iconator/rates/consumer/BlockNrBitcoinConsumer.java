@@ -31,7 +31,7 @@ public class BlockNrBitcoinConsumer {
     private Long blockNr;
 
     @RabbitListener(
-            bindings = @QueueBinding(value = @Queue(value = BLOCK_NR_BITCOIN_QUEUE, autoDelete = "false"),
+            bindings = @QueueBinding(value = @Queue,
                     exchange = @Exchange(
                             value = ICONATOR_ENTRY_EXCHANGE,
                             type = ExchangeTypes.TOPIC,

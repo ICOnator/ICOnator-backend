@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
-import static io.iconator.commons.amqp.model.constants.QueueConstants.BLOCK_NR_ETHEREUM_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_ETHEREUM_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
 
@@ -31,7 +30,7 @@ public class BlockNrEthereumConsumer {
     private Long blockNr;
 
     @RabbitListener(
-            bindings = @QueueBinding(value = @Queue(value = BLOCK_NR_ETHEREUM_QUEUE, autoDelete = "false"),
+            bindings = @QueueBinding(value = @Queue,
                     exchange = @Exchange(
                             value = ICONATOR_ENTRY_EXCHANGE,
                             type = ExchangeTypes.TOPIC,
@@ -66,7 +65,7 @@ public class BlockNrEthereumConsumer {
     }
 
     public long getCurrentBlockNr() {
-        while(blockNr == null) {
+        while (blockNr == null) {
             try {
                 Thread.sleep(2500);
             } catch (InterruptedException e) {
