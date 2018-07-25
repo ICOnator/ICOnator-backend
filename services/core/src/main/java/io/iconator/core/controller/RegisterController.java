@@ -3,8 +3,6 @@ package io.iconator.core.controller;
 import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
-import io.iconator.commons.bitcoin.BitcoinAddressService;
-import io.iconator.commons.ethereum.EthereumAddressService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.recaptcha.RecaptchaClientService;
 import io.iconator.commons.sql.dao.InvestorRepository;
@@ -54,12 +52,6 @@ public class RegisterController {
 
     @Autowired
     private ICOnatorMessageService messageService;
-
-    @Autowired
-    private EthereumAddressService ethereumAddressService;
-
-    @Autowired
-    private BitcoinAddressService bitcoinAddressService;
 
     @Autowired
     private RecaptchaClientService recaptchaClientService;

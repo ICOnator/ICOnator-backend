@@ -47,6 +47,16 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
         sendExchange(KYC_REMINDER_EMAIL_ROUTING_KEY, kycReminderEmailMessage);
     }
 
+    @Override
+    public void send(BlockNRBitcoinMessage blockNRBitcoinMessage) {
+        sendExchange(BLOCK_NR_BITCOIN_ROUTING_KEY, blockNRBitcoinMessage);
+    }
+
+    @Override
+    public void send(BlockNREthereumMessage blockNREthereumMessage) {
+        sendExchange(BLOCK_NR_ETHEREUM_ROUTING_KEY, blockNREthereumMessage);
+    }
+
     private void sendExchange(String routingKey, Object message) {
         this.amqpMessageService.send(routingKey, message);
         LOG.info("Message to <{}> exchange. Message content: {}", routingKey, message);

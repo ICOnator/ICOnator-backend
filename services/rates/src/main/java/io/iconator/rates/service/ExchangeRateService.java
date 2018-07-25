@@ -8,9 +8,9 @@ import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.model.db.ExchangeCurrencyRate;
 import io.iconator.commons.model.db.ExchangeEntryRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
-import io.iconator.rates.client.blockchaininfo.BlockchainInfoClient;
-import io.iconator.rates.client.etherscan.EtherScanClient;
 import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
+import io.iconator.rates.consumer.BlockNrEthereumConsumer;
 import io.iconator.rates.service.exceptions.USDBTCFxException;
 import io.iconator.rates.service.exceptions.USDETHFxException;
 import org.knowm.xchange.currency.Currency;
@@ -37,10 +37,10 @@ public class ExchangeRateService {
     private final static Logger LOG = LoggerFactory.getLogger(ExchangeRateService.class);
 
     @Autowired
-    private EtherScanClient etherScanClient;
+    private BlockNrEthereumConsumer etherScanClient;
 
     @Autowired
-    private BlockchainInfoClient blockchainInfoClient;
+    private BlockNrBitcoinConsumer blockchainInfoClient;
 
     @Autowired
     private ExchangeAggregateRateRepository exchangeAggregateRateRepository;

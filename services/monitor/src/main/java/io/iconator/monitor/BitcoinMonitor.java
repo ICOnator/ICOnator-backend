@@ -1,5 +1,7 @@
 package io.iconator.monitor;
 
+import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
+import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUnit;
@@ -19,12 +21,14 @@ import io.iconator.monitor.service.TokenConversionService.TokenDistributionResul
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.Listener;
+import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
@@ -116,6 +120,18 @@ public class BitcoinMonitor extends BaseMonitor {
             }
         };
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
+
+        final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
+        messageService.send(new BlockNRBitcoinMessage(Long.valueOf(startBlockHeighth)));
+        bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
+            @Override
+            public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
+                if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
+                    messageService.send(new BlockNRBitcoinMessage(Long.valueOf(bitcoinBlockchain.getBestChainHeight())));
+                }
+            }
+        });
+
         LOG.info("Downloading SPV blockchain...");
         downloadListener.await();
     }
@@ -225,7 +241,7 @@ public class BitcoinMonitor extends BaseMonitor {
             usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
             coins = BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
         } catch (USDBTCFxException e) {
-            LOG.error("Couldn't get USD to Ether exchange rate for transaction {}.", txoIdentifier, e);
+            LOG.error("Couldn't get USD to BTC exchange rate for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.MISSING_FX_RATE, investor);
             return;
         } catch (RuntimeException e) {

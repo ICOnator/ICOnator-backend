@@ -3,7 +3,8 @@ package io.iconator.rates.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
-import info.blockchain.api.blockexplorer.BlockExplorer;
+import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
+import io.iconator.rates.consumer.BlockNrEthereumConsumer;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
@@ -36,10 +37,6 @@ public class Beans {
         return new ObjectMapper();
     }
 
-    @Bean
-    public BlockExplorer blockExplorer() {
-        return new BlockExplorer();
-    }
 
     @Bean
     public Retryer retryer(RatesAppConfig ratesAppConfig) {

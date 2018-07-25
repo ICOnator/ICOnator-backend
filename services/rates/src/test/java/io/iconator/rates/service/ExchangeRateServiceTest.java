@@ -22,9 +22,8 @@ import static org.junit.Assert.assertTrue;
         TestConfig.class,
         AggregationServiceConfig.class,
         ExchangeRateServiceConfig.class,
-        BlockchainInfoClientConfig.class,
-        EtherScanClientConfig.class,
         RatesAppConfig.class,
+        BlockNrServiceConfig.class,
         Beans.class
 })
 @DataJpaTest

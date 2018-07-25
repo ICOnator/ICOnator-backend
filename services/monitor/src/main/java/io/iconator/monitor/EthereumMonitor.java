@@ -1,5 +1,6 @@
 package io.iconator.monitor;
 
+import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
@@ -80,6 +81,7 @@ public class EthereumMonitor extends BaseMonitor {
             // Check if node is up-to-date
             BigInteger blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
             Block highestBlock = web3j.ethGetBlockByNumber(() -> new DefaultBlockParameterNumber(blockNumber).getValue(), false).send().getBlock();
+            messageService.send(new BlockNREthereumMessage(highestBlock.getNumber().longValue()));
             Instant latestBlockTime = Instant.ofEpochSecond(highestBlock.getTimestamp().longValue());
             LOG.info("Highest ethereum block number from fullnode: {}. Time: {}", blockNumber, latestBlockTime);
             if (latestBlockTime.isBefore(Instant.now().minus(10, MINUTES))) {
@@ -93,6 +95,9 @@ public class EthereumMonitor extends BaseMonitor {
             web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(
                     new DefaultBlockParameterNumber(startBlock), false)
                     .subscribe(block -> {
+                        if(block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
+                            messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue()));
+                        }
                         LOG.info("Processing block number: {}", block.getBlock().getNumber());
                     });
 

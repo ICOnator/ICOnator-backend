@@ -15,6 +15,7 @@ testSets {
 
 dependencies {
 
+    compile project(':commons:amqp-service')
     compile project(':commons:model')
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
@@ -23,7 +24,6 @@ dependencies {
     compile 'org.apache.commons:commons-lang3:3.5'
     compile 'org.apache.commons:commons-math3:3.5'
 
-    compile 'info.blockchain:api:1.1.4'
     compile 'com.github.rholder:guava-retrying:2.0.0'
 
     compile 'org.knowm.xchange:xchange-kraken:4.3.4'

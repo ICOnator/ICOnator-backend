@@ -14,6 +14,8 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
     private List<SetWalletAddressMessage> newPayInAddressesMessages = new ArrayList<>();
     private List<KycStartEmailMessage> kycStartEmailMessages = new ArrayList<>();
     private List<KycReminderEmailMessage> kycReminderEmailMessages = new ArrayList<>();
+    private List<BlockNRBitcoinMessage> blockNRBitcoinMessages = new ArrayList<>();
+    private List<BlockNREthereumMessage> blockNREthereumMessages = new ArrayList<>();
 
     @Override
     public void send(ConfirmationEmailMessage confirmationEmailMessage) {
@@ -45,6 +47,17 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
         kycReminderEmailMessages.add(kycReminderEmailMessage);
     }
 
+    @Override
+    public void send(BlockNRBitcoinMessage blockNRBitcoinMessage) {
+        blockNRBitcoinMessages.add(blockNRBitcoinMessage);
+    }
+
+    @Override
+    public void send(BlockNREthereumMessage blockNREthereumMessage) {
+        blockNREthereumMessages.add(blockNREthereumMessage);
+
+    }
+
     public List<ConfirmationEmailMessage> getConfirmationEmailMessages() {
         return confirmationEmailMessages;
     }
@@ -67,5 +80,13 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
 
     public List<KycReminderEmailMessage> getKycReminderEmailMessages() {
         return kycReminderEmailMessages;
+    }
+
+    public List<BlockNRBitcoinMessage> getBlockNRBitcoinMessage() {
+        return blockNRBitcoinMessages;
+    }
+
+    public List<BlockNREthereumMessage> getBlockNREthereumMessage() {
+        return blockNREthereumMessages;
     }
 }
