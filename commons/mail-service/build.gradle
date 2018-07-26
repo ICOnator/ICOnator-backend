@@ -8,6 +8,7 @@ dependencies {
     compile project(':commons:model')
     compile project(':commons:bitcoin')
     compile project(':commons:ethereum')
+    compile project(':commons:amqp-service')
 
     // Spring Boot
     compile 'org.springframework.boot:spring-boot-starter-web'

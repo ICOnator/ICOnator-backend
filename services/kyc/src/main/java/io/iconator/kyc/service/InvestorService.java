@@ -27,4 +27,10 @@ public class InvestorService {
 
         return investorFromDb.orElseThrow(InvestorNotFoundException::new);
     }
+
+    public Investor getInvestorByEmail(String email) throws InvestorNotFoundException {
+        Optional<Investor> investorFromDb = investorRepository.findOptionalByEmail(email);
+
+        return investorFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
 }

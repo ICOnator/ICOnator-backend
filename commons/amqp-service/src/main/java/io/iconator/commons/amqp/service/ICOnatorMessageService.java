@@ -20,4 +20,8 @@ public interface ICOnatorMessageService {
 
     void send(BlockNREthereumMessage blockNREthereumMessage);
 
+    void send(KycStartEmailSentMessage kycStartEmailSentMessage);
+
+    void send(KycReminderEmailSentMessage kycReminderEmailSentMessage);
+
 }

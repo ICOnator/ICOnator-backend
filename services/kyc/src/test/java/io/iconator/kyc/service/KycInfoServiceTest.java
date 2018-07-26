@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -27,15 +28,16 @@ import static org.junit.Assert.fail;
 @DataJpaTest
 @TestPropertySource({"classpath:kyc.application.properties", "classpath:application-test.properties"})
 public class KycInfoServiceTest {
-    private static final String KYC_LINK = "http://www.kyctestlink.com/investor/12345678";
 
-    private URI kycUri;
+    private static final String KYC_LINK = "http://www.kyctestlink.com/investor/12345678";
 
     @Autowired
     private KycInfoService kycInfoService;
 
     @Autowired
     private KycInfoRepository kycInfoRepository;
+
+    private URI kycUri;
 
     @Before
     public void setUp() throws Exception {
@@ -74,12 +76,8 @@ public class KycInfoServiceTest {
     }
 
     @Test
-    public void testSetKycComplete() {
-        try {
-            kycInfoService.saveKycInfo(2, kycUri);
-        } catch(KycInfoNotSavedException e) {
-            fail(e.getMessage());
-        }
+    public void testSetKycComplete() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(2, kycUri);
 
         Optional<KycInfo> oKycInfo = kycInfoRepository.findOptionalByInvestorId(2);
         assertKycInfo(oKycInfo.get(), 2, false, 0, false, kycUri);
@@ -94,14 +92,10 @@ public class KycInfoServiceTest {
     }
 
     @Test
-    public void testSetMultipleKycCompleteAndFindAll() {
-        try {
-            kycInfoService.saveKycInfo(1, kycUri);
-            kycInfoService.saveKycInfo(2, kycUri);
-            kycInfoService.saveKycInfo(3, kycUri);
-        } catch(KycInfoNotSavedException e) {
-            fail(e.getMessage());
-        }
+    public void testSetMultipleKycCompleteAndFindAll() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(1, kycUri);
+        kycInfoService.saveKycInfo(2, kycUri);
+        kycInfoService.saveKycInfo(3, kycUri);
 
         try {
             kycInfoService.setKycComplete(1, true);
@@ -118,12 +112,46 @@ public class KycInfoServiceTest {
     }
 
     @Test
-    public void testGetKycInfoByInvestorId() {
+    public void testSetKycStartEmailSent() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(1, kycUri);
+
         try {
-            kycInfoService.saveKycInfo(2000, kycUri);
-        } catch (KycInfoNotSavedException e) {
+            kycInfoService.setKycStartEmailSent(1);
+        } catch(InvestorNotFoundException e) {
             fail(e.getMessage());
         }
+
+        Optional<KycInfo> oKycInfo = kycInfoRepository.findOptionalByInvestorId(1);
+        assertKycInfo(oKycInfo.get(), 1, true, 0, false, kycUri);
+    }
+
+    @Test
+    public void testIncreaseNumberOfRemindersSent() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(1, kycUri);
+
+        try {
+            kycInfoService.increaseNumberOfRemindersSent(1);
+        } catch(InvestorNotFoundException e) {
+            fail(e.getMessage());
+        }
+
+        Optional<KycInfo> oKycInfo = kycInfoRepository.findOptionalByInvestorId(1);
+        assertKycInfo(oKycInfo.get(), 1, false, 1, false, kycUri);
+
+        try {
+            kycInfoService.increaseNumberOfRemindersSent(1);
+            kycInfoService.increaseNumberOfRemindersSent(1);
+        } catch (InvestorNotFoundException e) {
+            fail(e.getMessage());
+        }
+
+        oKycInfo = kycInfoRepository.findOptionalByInvestorId(1);
+        assertKycInfo(oKycInfo.get(), 1, false, 3, false, kycUri);
+    }
+
+    @Test
+    public void testGetKycInfoByInvestorId() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(2000, kycUri);
 
         try {
             KycInfo kycInfo = kycInfoService.getKycInfoByInvestorId(2000);
@@ -137,6 +165,20 @@ public class KycInfoServiceTest {
             fail("InvestorNotFoundException should have been thrown but wasn't.");
         } catch(InvestorNotFoundException expectedException) {
 
+        }
+    }
+
+    @Test
+    public void testGetKycInfoByKycUuid() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(1, kycUri);
+
+        UUID uuid = kycInfoRepository.findOptionalByInvestorId(1).get().getKycUuid();
+
+        try {
+            KycInfo kycInfo = kycInfoService.getKycInfoByKycUuid(uuid);
+            assertKycInfo(kycInfo, 1, false, 0, false, kycUri);
+        } catch(InvestorNotFoundException e) {
+            fail(e.getMessage());
         }
     }
 

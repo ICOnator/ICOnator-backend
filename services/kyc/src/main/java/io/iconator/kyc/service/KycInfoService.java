@@ -9,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class KycInfoService {
@@ -26,13 +28,19 @@ public class KycInfoService {
         this.kycInfoRepository = kycInfoRepository;
     }
 
+    @Transactional
     public KycInfo saveKycInfo(long investorId, URI kycUri) throws KycInfoNotSavedException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
 
         if(kycInfoFromDb.isPresent()) {
             LOG.info("KycInfo for investor {} was already saved to database.", investorId);
         } else {
-            KycInfo kycInfo = new KycInfo(investorId, false, kycUri.toASCIIString());
+            KycInfo kycInfo;
+            if(kycUri != null) {
+                kycInfo = new KycInfo(investorId, false, kycUri.toASCIIString());
+            } else {
+                kycInfo = new KycInfo(investorId, false, null);
+            }
 
             try {
                 kycInfoFromDb = Optional.of(kycInfoRepository.save(kycInfo));
@@ -48,6 +56,7 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(KycInfoNotSavedException::new);
     }
 
+    @Transactional
     public KycInfo setKycComplete(long investorId, boolean isKycComplete) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
 
@@ -59,6 +68,43 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    @Transactional
+    public KycInfo setKycCompleteByUuid(UUID uuid, boolean isKycComplete) throws InvestorNotFoundException {
+        Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(uuid);
+
+        if(kycInfoFromDb.isPresent()) {
+            KycInfo kycInfo = kycInfoFromDb.get().setKycComplete(isKycComplete);
+            kycInfoFromDb = Optional.of(kycInfoRepository.save(kycInfo));
+        }
+
+        return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    @Transactional
+    public KycInfo setKycUri(long investorId, String kycUri) throws InvestorNotFoundException {
+        Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
+
+        if(kycInfoFromDb.isPresent()) {
+            KycInfo kycInfo = kycInfoFromDb.get().setKycUri(kycUri);
+            kycInfoFromDb = Optional.of(kycInfoRepository.save(kycInfo));
+        }
+
+        return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    @Transactional
+    public KycInfo setKycStartEmailSent(long investorId) throws InvestorNotFoundException {
+        Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
+
+        if(kycInfoFromDb.isPresent()) {
+            KycInfo kycInfo = kycInfoFromDb.get().setStartKycEmailSent(true);
+            kycInfoFromDb = Optional.of(kycInfoRepository.save(kycInfo));
+        }
+
+        return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    @Transactional
     public KycInfo increaseNumberOfRemindersSent(long investorId) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
 
@@ -72,6 +118,12 @@ public class KycInfoService {
 
     public KycInfo getKycInfoByInvestorId(long investorId) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
+
+        return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    public KycInfo getKycInfoByKycUuid(UUID kycUuid) throws InvestorNotFoundException {
+        Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(kycUuid);
 
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }

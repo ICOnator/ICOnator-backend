@@ -15,7 +15,7 @@ public class KycInfo {
     @Column(name = "kyc_uuid", updatable = false, nullable = false)
     private UUID kycUuid;
 
-    @Column(name = "investor_id", nullable = false)
+    @Column(name = "investor_id", unique = true, nullable = false)
     private long investorId;
 
     @Column(name = "is_start_kyc_email_sent")

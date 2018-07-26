@@ -17,4 +17,9 @@ public class RoutingKeyConstants {
     public static final String BLOCK_NR_BITCOIN_ROUTING_KEY = "iconator.block_nr.bitcoin";
     public static final String BLOCK_NR_ETHEREUM_ROUTING_KEY = "iconator.block_nr.ethereum";
 
+    public static final String KYC_START_EMAIL_SENT_ROUTING_KEY = "iconator.kyc.start.sent";
+    public static final String KYC_REMINDER_EMAIL_SENT_ROUTING_KEY = "iconator.kyc.reminder.sent";
+
+    public static final String EXCHANGE_RATE_REQUEST_ROUTING_KEY = "iconator.exchange.rate.request";
+
 }

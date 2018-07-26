@@ -1,0 +1,118 @@
+{
+  "identifications": [{
+    "identificationprocess": {
+      "result": "SUCCESS",
+      "agentname": "HMUELLER",
+      "identificationtime": "2014-06-02T05:03:54Z",
+      "type": "WEB",
+      "transactionnumber": "c02f9eea-bdef-4723-8ec3-eb254c2039f7",
+      "companyid": "ihrebank",
+      "id": "4c000024-bde8-4dd2-952f-f36ff91b0eb0"
+    },
+    "customdata": {
+      "custom1": "2740332",
+      "custom2": "ABCD"
+    },
+    "contactdata": {
+      "email": "muster@idnow.de",
+      "mobilephone": "+49176102030123"
+    },
+    "userdata": {
+      "firstname": {
+        "value": "ARMIN",
+        "status": "MATCH"
+      },
+      "lastname": {
+        "value": "BAUER",
+        "status": "MATCH"
+      },
+      "birthday": {
+        "value": "1983-05-22",
+        "status": "CHANGE",
+        "original": "1982-05-22"
+      },
+      "birthplace": {
+        "value": "MÜNCHEN",
+        "status": "MATCH"
+      },
+      "nationality": {
+        "value": "DE",
+        "status": "MATCH"
+      },
+      "gender": {
+        "value": "MALE",
+        "status": "MATCH"
+      },
+      "address": {
+        "street": {
+          "value": "UNERTLSTR.",
+          "status": "MATCH"
+        },
+        "streetnumber": {
+          "value": "40",
+          "status": "MATCH"
+        },
+        "city": {
+          "value": "MÜNCHEN",
+          "status": "MATCH"
+        },
+        "zipcode": {
+          "value": "80469",
+          "status": "MATCH"
+        },
+        "country": {
+          "value": "DE",
+          "status": "MATCH"
+        }
+      }
+    },
+    "identificationdocument": {
+      "type": {
+        "value": "IDCARD",
+        "status": "NEW"
+      },
+      "country": {
+        "value": "DE",
+        "status": "NEW"
+      },
+      "validuntil": {
+        "value": "2020-03-10",
+        "status": "NEW"
+      },
+      "number": {
+        "value": null,
+        "status": "REDACTION"
+      },
+      "issuedby": {
+        "value": "LANDESHAUPTSTADTMÜNCHEN, KREISVERWALTUNGSREFERAT",
+        "status": "NEW"
+      },
+      "dateissued": {
+        "value": "2012-03-27",
+        "status": "NEW"
+      }
+    },
+    "attachments": {
+      "videolog": "AH73JK3LM.mp4",
+      "idfrontside": "AH73JK3LM_idfrontside.jpg",
+      "idbackside": "AH73JK3LM_idbackside.jpg",
+      "userface": "AH73JK3LM_userface.jpg",
+      "security1": "AH73JK3LM_security1.jpg",
+      "security2": "AH73JK3LM_security2.jpg",
+      "security3": "AH73JK3LM_security3.jpg",
+      "security_covered": "AH73JK3LM_security_covered.jpg",
+      "customimage": "AH73JK3LM_customimage.jpg"
+    },
+    "questions": {
+      "question_key1": {
+        "value": 1
+      },
+      "question_key2": {
+        "value": "value"
+      },
+      "question_key3": {
+        "value": "2012-03-27"
+      }
+    }
+  }]
+}
