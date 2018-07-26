@@ -27,19 +27,16 @@ public class IdNowIdentificationProcess implements Identification {
     @JsonProperty("identificationtime")
     private Date identificationTime;
 
-    @JsonProperty("transactionnumber")
-    private String transactionNumber;
-
-    @JsonProperty("id")
+    @JsonProperty("transactionnumber") //using transactionnumber as id!
     private String id;
 
     public IdNowIdentificationProcess() {
     }
 
-    public IdNowIdentificationProcess(String result, Date identificationTime, String transactionNumber) {
+    public IdNowIdentificationProcess(String result, Date identificationTime, String id) {
         this.result = result;
         this.identificationTime = identificationTime;
-        this.transactionNumber = transactionNumber;
+        this.id = id;
     }
 
     public String getResult() {
@@ -48,10 +45,6 @@ public class IdNowIdentificationProcess implements Identification {
 
     public Date getIdentificationTime() {
         return identificationTime;
-    }
-
-    public String getTransactionNumber() {
-        return transactionNumber;
     }
 
     public String getId() {

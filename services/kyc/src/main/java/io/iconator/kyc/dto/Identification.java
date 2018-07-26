@@ -7,8 +7,6 @@ public interface Identification {
 
     Date getIdentificationTime();
 
-    String getTransactionNumber();
-
     String getId();
 
 }

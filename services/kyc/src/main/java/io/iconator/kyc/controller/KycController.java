@@ -57,13 +57,13 @@ public class KycController {
 
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
-    // TODO: refactor this method, add produces/consumes to all others
-    @RequestMapping(value = "/kyc/{investorId}/start", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/kyc/{investorId}/start", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
+            produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
                                       @RequestBody(required = false) KycStartRequestDTO kycStartRequest,
                                       @Context HttpServletRequest requestContext) {
         ResponseEntity response;
-        URI kycUri;
+        URI kycUri = null;
         String kycLink = kycStartRequest != null ? kycStartRequest.getKycLink() : null;
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
@@ -110,16 +110,15 @@ public class KycController {
                             .status(HttpStatus.BAD_REQUEST)
                             .body(use.getMessage());
                 }
-                response = initiateKyc(investorId, kycUri);
-            } else {
-                response = initiateKyc(investorId, null);
             }
+
+            response = initiateKyc(investorId, kycUri);
         }
 
         return response;
     }
 
-    @RequestMapping(value = "/kyc/{investorId}/complete", method = POST)
+    @RequestMapping(value = "/kyc/{investorId}/complete", method = POST, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<?> setInvestorComplete(@PathVariable("investorId") Long investorId,
                                                  @Context HttpServletRequest requestContext) {
         ResponseEntity response;
@@ -189,12 +188,12 @@ public class KycController {
         for(Identification id : identificationList) {
             if(id.getResult() != null && id.getResult().equals("SUCCESS")) {
                 try {
-                    UUID kycUuid = UUID.fromString(id.getTransactionNumber());
+                    UUID kycUuid = UUID.fromString(id.getId());
                     kycInfoService.setKycCompleteByUuid(kycUuid, true);
                     setCompleteList.add(kycUuid);
                 } catch(InvestorNotFoundException e) {
-                    LOG.info("No KYC data about investor with KYC-UUID {}.", id.getTransactionNumber());
-                    errorList.add(UUID.fromString(id.getTransactionNumber()));
+                    LOG.info("No KYC data about investor with KYC-UUID {}.", id.getId());
+                    errorList.add(UUID.fromString(id.getId()));
                 }
             } else {
                 //TODO what to do with differing kyc status?
@@ -206,8 +205,6 @@ public class KycController {
                 .body(new FetchAllResponseDTO().setKycCompletedList(setCompleteList).setErrorList(errorList));
     }
 
-    // TODO:
-    // Is this method @Transactional?
     private ResponseEntity<?> initiateKyc(long investorId, URI kycUri) {
         ResponseEntity response;
         Investor investor;

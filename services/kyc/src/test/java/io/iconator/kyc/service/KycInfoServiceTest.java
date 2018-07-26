@@ -28,15 +28,16 @@ import static org.junit.Assert.assertEquals;
 @DataJpaTest
 @TestPropertySource({"classpath:kyc.application.properties", "classpath:application-test.properties"})
 public class KycInfoServiceTest {
-    private static final String KYC_LINK = "http://www.kyctestlink.com/investor/12345678";
 
-    private URI kycUri;
+    private static final String KYC_LINK = "http://www.kyctestlink.com/investor/12345678";
 
     @Autowired
     private KycInfoService kycInfoService;
 
     @Autowired
     private KycInfoRepository kycInfoRepository;
+
+    private URI kycUri;
 
     @Before
     public void setUp() throws Exception {

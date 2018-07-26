@@ -69,7 +69,6 @@ public class IdNowIdentificationServiceTest {
 
         loginMap.add("apiKey", apiKey);
 
-
         String loginResponse = objectMapper.writeValueAsString(new LoginResponse(TEST_AUTH_TOKEN));
 
         mockServer.expect(requestTo(baseUri + "/login"))
@@ -93,7 +92,7 @@ public class IdNowIdentificationServiceTest {
         assertThat(identificationList.size()).isEqualTo(1);
 
         Identification identification = identificationList.get(0);
-        assertThat(identification.getTransactionNumber()).isEqualTo("c02f9eea-bdef-4723-8ec3-eb254c2039f7");
+        assertThat(identification.getId()).isEqualTo("c02f9eea-bdef-4723-8ec3-eb254c2039f7");
         assertThat(identification.getIdentificationTime()).isEqualTo((format.parse("2014-06-02T05:03:54Z")));
         assertThat(identification.getResult()).isEqualTo("SUCCESS");
     }
