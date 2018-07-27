@@ -133,7 +133,8 @@ public class BitcoinMonitor extends BaseMonitor {
         });
 
         LOG.info("Downloading SPV blockchain...");
-        downloadListener.await();
+        //TB: needed to disable this, otherwise it does not start within the 60s of HEROKU
+        //downloadListener.await();
     }
 
     /**
