@@ -111,7 +111,17 @@ public class BitcoinMonitor extends BaseMonitor {
         final DownloadProgressTracker downloadListener = new DownloadProgressTracker() {
             @Override
             protected void doneDownload() {
-                LOG.info("Download done");
+                LOG.info("Download done, now sending block numbers ");
+                final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
+                messageService.send(new BlockNRBitcoinMessage(Long.valueOf(startBlockHeighth), new Date().getTime()));
+                bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
+                    @Override
+                    public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
+                        if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
+                            messageService.send(new BlockNRBitcoinMessage(Long.valueOf(bitcoinBlockchain.getBestChainHeight()), new Date().getTime()));
+                        }
+                    }
+                });
             }
 
             @Override
@@ -120,18 +130,6 @@ public class BitcoinMonitor extends BaseMonitor {
             }
         };
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
-
-        final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
-        messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(startBlockHeighth)));
-        bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
-            @Override
-            public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
-                if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
-                    messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(bitcoinBlockchain.getBestChainHeight())));
-                }
-            }
-        });
-
         LOG.info("Downloading SPV blockchain...");
         //TB: needed to disable this, otherwise it does not start within the 60s of HEROKU
         //downloadListener.await();

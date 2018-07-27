@@ -81,7 +81,7 @@ public class EthereumMonitor extends BaseMonitor {
             // Check if node is up-to-date
             BigInteger blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
             Block highestBlock = web3j.ethGetBlockByNumber(() -> new DefaultBlockParameterNumber(blockNumber).getValue(), false).send().getBlock();
-            messageService.send(new BlockNREthereumMessage(new Date().getTime(), highestBlock.getNumber().longValue()));
+            messageService.send(new BlockNREthereumMessage(highestBlock.getNumber().longValue(), new Date().getTime()));
             Instant latestBlockTime = Instant.ofEpochSecond(highestBlock.getTimestamp().longValue());
             LOG.info("Highest ethereum block number from fullnode: {}. Time: {}", blockNumber, latestBlockTime);
             if (latestBlockTime.isBefore(Instant.now().minus(10, MINUTES))) {
@@ -96,8 +96,7 @@ public class EthereumMonitor extends BaseMonitor {
                     new DefaultBlockParameterNumber(startBlock), false)
                     .subscribe(block -> {
                         if(block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
-                            long now = new Date().getTime();
-                            messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue(), now));
+                            messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue(), new Date().getTime()));
                         }
                         LOG.info("Processing block number: {}", block.getBlock().getNumber());
                     });
