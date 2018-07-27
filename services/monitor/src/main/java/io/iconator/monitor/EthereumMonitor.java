@@ -96,7 +96,8 @@ public class EthereumMonitor extends BaseMonitor {
                     new DefaultBlockParameterNumber(startBlock), false)
                     .subscribe(block -> {
                         if(block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
-                            messageService.send(new BlockNREthereumMessage(new Date().getTime(), block.getBlock().getNumber().longValue()));
+                            long now = new Date().getTime();
+                            messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue(), now));
                         }
                         LOG.info("Processing block number: {}", block.getBlock().getNumber());
                     });
