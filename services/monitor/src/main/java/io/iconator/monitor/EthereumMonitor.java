@@ -146,7 +146,7 @@ public class EthereumMonitor extends BaseMonitor {
                     new DefaultBlockParameterNumber(tx.getBlockNumber()),
                     false);
             EthBlock blockRequest = ethBlockRequest.send();
-            timestamp = new Date(blockRequest.getBlock().getTimestamp().longValue());
+            timestamp = new Date(blockRequest.getBlock().getTimestamp().longValue() * 1000);
         } catch (Exception e) {
             LOG.error("Failed fetching block timestamp for transaction {}.", txIdentifier);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
