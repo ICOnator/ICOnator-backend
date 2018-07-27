@@ -4,6 +4,8 @@ import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -18,6 +20,8 @@ import java.util.Optional;
 
 @Service
 public class TokenConversionService {
+
+    private final static Logger LOG = LoggerFactory.getLogger(TokenConversionService.class);
 
     @Autowired
     private SaleTierRepository saleTierRepository;
@@ -94,22 +98,27 @@ public class TokenConversionService {
         // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
         BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
         BigInteger tomicsInteger = tomicsDecimal.toBigInteger();
-
+        LOG.debug("Distributing {} USD to tier {}.", usd, tier.getTierNo());
         if (tier.isAmountOverflowingTier(tomicsInteger)) {
             BigInteger remainingTomicsOnTier = tier.getRemainingTomics();
             BigDecimal overflowOverTier = tomicsDecimal.subtract(new BigDecimal(remainingTomicsOnTier));
             BigDecimal overflowInUsd = convertTomicsToUsd(overflowOverTier, tier.getDiscount());
             if (isOverflowingTotalMax(remainingTomicsOnTier)) {
+                LOG.debug("Distributing {} USD to tier {} lead to overflow over total max amount of tokens.", usd, tier.getTierNo());
                 return handleTotalMaxOverflow(tier, remainingTomicsOnTier).addToOverflow(overflowInUsd);
             } else {
+                LOG.debug("{} tomics distributed to tier {}", remainingTomicsOnTier, tier.getTierNo());
+                tier.setTomicsSold(tier.getTomicsMax());
                 tier.setTomicsSold(tier.getTomicsMax());
                 tier = saleTierRepository.save(tier);
                 if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
+                LOG.debug("Distributing {} USD to tier {} lead to overflow of {} tomics over tiers max amount.", usd, overflowOverTier, tier.getTierNo());
                 return distributeToNextTier(overflowInUsd, saleTierService.getSubsequentTier(tier), blockTime)
                         .addToDistributedTomics(remainingTomicsOnTier);
             }
         } else {
             if (isOverflowingTotalMax(tomicsInteger)) {
+                LOG.debug("Distributing {} USD to tier {} lead to overflow over total max amount of tokens.", usd, tier.getTierNo());
                 return handleTotalMaxOverflow(tier, tomicsInteger);
             } else {
                 tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
@@ -117,6 +126,7 @@ public class TokenConversionService {
                     if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
                     saleTierService.getSubsequentTier(tier).ifPresent(this::handleDynamicMax);
                 }
+                LOG.debug("{} tomics distributed to tier {}", tomicsInteger, tier.getTierNo());
                 saleTierRepository.save(tier);
                 return new TokenDistributionResult(tomicsInteger, BigDecimal.ZERO);
             }

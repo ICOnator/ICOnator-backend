@@ -200,6 +200,7 @@ public class EthereumMonitor extends BaseMonitor {
 
         TokenDistributionResult result;
         try {
+            LOG.debug("Distributing USD {} to Tiers for transaction {}.", usdReceived, txIdentifier);
             result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
             LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
@@ -209,6 +210,8 @@ public class EthereumMonitor extends BaseMonitor {
             return;
         }
         BigInteger tomics = result.getDistributedTomics();
+        LOG.debug("USD amount received was converted to {} atomic token units for transaction {}.", tomics, txIdentifier);
+
         paymentLog.setTomicsAmount(tomics);
         paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
