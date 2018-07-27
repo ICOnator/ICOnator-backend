@@ -14,12 +14,6 @@ public class RatesAppConfig {
     @Value("${io.iconator.services.rates.user-agent}")
     private String userAgent;
 
-    @Value("${io.iconator.services.rates.etherscan.api-token}")
-    private String etherScanApiToken;
-
-    @Value("${io.iconator.services.rates.etherscan.url}")
-    private String etherScanUrl;
-
     @Value("${io.iconator.services.rates.currencies.fiat.base}")
     private CurrencyType baseFiatCurrency;
 
@@ -52,14 +46,6 @@ public class RatesAppConfig {
 
     public String getUserAgent() {
         return userAgent;
-    }
-
-    public String getEtherScanApiToken() {
-        return etherScanApiToken;
-    }
-
-    public String getEtherScanUrl() {
-        return etherScanUrl;
     }
 
     public CurrencyType getBaseFiatCurrency() {
