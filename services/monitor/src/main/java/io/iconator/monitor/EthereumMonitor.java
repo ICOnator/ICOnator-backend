@@ -153,6 +153,7 @@ public class EthereumMonitor extends BaseMonitor {
                     RefundReason.MISSING_BLOCK_TIMESTAMP, investor);
             return;
         }
+        LOG.debug("Timestamp of transactions block is {}", timestamp);
 
         BigDecimal USDperETH, usdReceived, ethers;
         try {
@@ -212,10 +213,12 @@ public class EthereumMonitor extends BaseMonitor {
         BigInteger tomics = result.getDistributedTomics();
         LOG.debug("USD amount received was converted to {} atomic token units for transaction {}.", tomics, txIdentifier);
 
+        // TODO if no tokens have been converted
         paymentLog.setTomicsAmount(tomics);
         paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
+            LOG.debug("The payment of {} wei generated a overflow of {} wei, which go into the refund table.", wei, overflowWei);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         }
 

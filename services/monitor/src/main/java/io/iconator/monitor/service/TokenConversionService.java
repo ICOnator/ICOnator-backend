@@ -90,6 +90,7 @@ public class TokenConversionService {
                 return distributeToTier(usd, oTier.get(), blockTime);
             }
         } else {
+            LOG.debug("There is no available tier at date {}.", blockTime);
             return new TokenDistributionResult(BigInteger.ZERO, usd);
         }
     }
@@ -112,7 +113,7 @@ public class TokenConversionService {
                 tier.setTomicsSold(tier.getTomicsMax());
                 tier = saleTierRepository.save(tier);
                 if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                LOG.debug("Distributing {} USD to tier {} lead to overflow of {} tomics over tiers max amount.", usd, overflowOverTier, tier.getTierNo());
+                LOG.debug("Distributing {} USD to tier {} lead to overflow of {} tomics over tiers max amount.", usd, tier.getTierNo(), overflowOverTier);
                 return distributeToNextTier(overflowInUsd, saleTierService.getSubsequentTier(tier), blockTime)
                         .addToDistributedTomics(remainingTomicsOnTier);
             }
