@@ -281,7 +281,7 @@ public class BitcoinMonitor extends BaseMonitor {
         try {
             result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
-            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
+            LOG.error("Failed to distribute payment to tiers for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
             paymentLogService.delete(paymentLog);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);

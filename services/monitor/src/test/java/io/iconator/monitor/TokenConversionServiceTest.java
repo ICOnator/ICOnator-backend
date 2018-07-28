@@ -8,6 +8,7 @@ import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.TokenConversionService;
 import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
+import io.iconator.monitor.service.exceptions.NoTierAtDateException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -101,10 +102,12 @@ public class TokenConversionServiceTest {
 
     @Test
     public void testNoTierAvailableAtDate() throws Throwable {
-        TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-01"));
-        if (!r.hasOverflow()) fail();
-        assertEquals(0, r.getDistributedTomics().compareTo(BigInteger.ZERO));
-        assertEquals(0, r.getOverflow().compareTo(BigDecimal.TEN));
+        try {
+            TokenDistributionResult r = baseMonitor.convertAndDistributeToTiersWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-01"));
+        } catch (NoTierAtDateException e) {
+            return;
+        }
+        fail();
     }
 
     @Test

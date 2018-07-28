@@ -95,7 +95,7 @@ public class EthereumMonitor extends BaseMonitor {
             web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(
                     new DefaultBlockParameterNumber(startBlock), false)
                     .subscribe(block -> {
-                        if(block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
+                        if (block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
                             messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue(), new Date().getTime()));
                         }
                         LOG.info("Processing block number: {}", block.getBlock().getNumber());
@@ -132,7 +132,7 @@ public class EthereumMonitor extends BaseMonitor {
                 "blockHeight {}.", wei, receivingAddress, txIdentifier, blockHeight);
 
         Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddressIgnoreCase(receivingAddress);
-        if(!oInvestor.isPresent()) {
+        if (!oInvestor.isPresent()) {
             LOG.error("Couldn't fetch investor with public address {} for transaction {}.", receivingAddress, txIdentifier);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
                     RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS, null);
@@ -201,24 +201,25 @@ public class EthereumMonitor extends BaseMonitor {
 
         TokenDistributionResult result;
         try {
-            LOG.debug("Distributing USD {} to Tiers for transaction {}.", usdReceived, txIdentifier);
+            LOG.debug("Distributing {} USD for transaction {}.", usdReceived, txIdentifier);
             result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
-            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
+            LOG.error("Failed to distribute payment to tiers for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
             paymentLogService.delete(paymentLog);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
         BigInteger tomics = result.getDistributedTomics();
-        LOG.debug("USD amount received was converted to {} atomic token units for transaction {}.", tomics, txIdentifier);
+        LOG.debug("{} USD were converted to {} atomic token units for transaction {}.", usdReceived,
+                tomics, txIdentifier);
 
-        // TODO if no tokens have been converted
         paymentLog.setTomicsAmount(tomics);
         paymentLog = paymentLogService.save(paymentLog);
+
         if (result.hasOverflow()) {
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
-            LOG.debug("The payment of {} wei generated a overflow of {} wei, which go into the refund table.", wei, overflowWei);
+            LOG.debug("The payment of {} wei generated an overflow of {} wei, which go into the refund table.", wei, overflowWei);
             eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
         }
 
