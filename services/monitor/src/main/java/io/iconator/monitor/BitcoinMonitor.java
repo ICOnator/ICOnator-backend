@@ -1,7 +1,6 @@
 package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
-import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUnit;
@@ -292,7 +291,7 @@ public class BitcoinMonitor extends BaseMonitor {
         paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperBTC);
-            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
         }
 
         final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();

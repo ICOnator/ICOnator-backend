@@ -220,7 +220,7 @@ public class EthereumMonitor extends BaseMonitor {
         if (result.hasOverflow()) {
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
             LOG.debug("The payment of {} wei generated an overflow of {} wei, which go into the refund table.", wei, overflowWei);
-            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
         }
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;

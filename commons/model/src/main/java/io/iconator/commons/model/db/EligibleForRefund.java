@@ -13,7 +13,7 @@ public class EligibleForRefund {
 
     public enum RefundReason {
         NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
-        FINAL_TIER_OVERFLOW,
+        TOKEN_OVERFLOW,
         MISSING_FX_RATE,
         FAILED_CONVERSION_TO_TOKENS,
         FAILED_CONVERSION_TO_USD,
