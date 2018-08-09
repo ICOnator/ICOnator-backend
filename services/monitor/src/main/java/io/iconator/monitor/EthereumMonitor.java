@@ -170,7 +170,7 @@ public class EthereumMonitor extends BaseMonitor {
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (EthereumUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convertAndDistributeToTiers wei to ethers for transaction {}.", txIdentifier, e);
+            LOG.error("Failed to convert wei to ethers for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_FROM_WEI_TO_ETHER, investor);
             return;
         }
@@ -193,7 +193,8 @@ public class EthereumMonitor extends BaseMonitor {
                 LOG.info("Couldn't create payment log entry because an entry already existed for " +
                         "transaction {}. I.e. transaction was already processed.", txIdentifier);
             } else {
-                LOG.error("Failed creating payment log for transaction {}.", txIdentifier, e);
+                LOG.error("Failed creating payment log for transaction {} even though no entry " +
+                        "for that transaction existed.", txIdentifier, e);
                 eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CREATING_PAYMENTLOG, investor);
             }
             return;

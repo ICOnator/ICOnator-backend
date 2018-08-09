@@ -240,7 +240,7 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (BitcoinUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convertAndDistributeToTiers satoshi to bitcoin for transaction {}.", txoIdentifier, e);
+            LOG.error("Failed to convert satoshi to bitcoin for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_FROM_SATOSHI_TO_COIN, investor);
             return;
         }
