@@ -49,11 +49,6 @@ public class BitcoinMonitor extends BaseMonitor {
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
 
-    /* Used in addition to the PaymentLog entries because processing of transactions can fail and
-     * lead to a refund but must still be marked as processed.
-     */
-    private Set<String> monitoredAddresses = new HashSet<>();
-
     private ICOnatorMessageService messageService;
 
     public BitcoinMonitor(FxService fxService,
@@ -100,7 +95,6 @@ public class BitcoinMonitor extends BaseMonitor {
         final Address address = Address.fromBase58(bitcoinNetworkParameters, addressString);
         LOG.info("Add monitored Bitcoin Address: {}", addressString);
         wallet.addWatchedAddress(address, timestamp);
-        monitoredAddresses.add(addressString);
     }
 
     public void start() throws InterruptedException {
@@ -149,7 +143,6 @@ public class BitcoinMonitor extends BaseMonitor {
                             && utxo.getScriptPubKey().isSentToAddress()) {
 
                         if (BitcoinUtils.isBuilding(tx)) {
-                            // Transaction is coverd by 1 block or more on best chain.
                             processTransactionOutput(utxo);
                         } else if (BitcoinUtils.isPending(tx) || BitcoinUtils.isUnknown(tx)) {
                             // If pending or unknown we add a confidence changed listener and wait for block inclusion
