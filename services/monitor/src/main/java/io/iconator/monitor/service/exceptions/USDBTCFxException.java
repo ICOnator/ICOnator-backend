@@ -1,6 +1,6 @@
 package io.iconator.monitor.service.exceptions;
 
-public class USDBTCFxException extends Exception {
+public class USDBTCFxException extends FxException {
 
     public USDBTCFxException(String message) {
         super(message);

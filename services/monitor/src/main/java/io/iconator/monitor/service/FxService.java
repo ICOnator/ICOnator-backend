@@ -3,12 +3,15 @@ package io.iconator.monitor.service;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
+import io.iconator.monitor.service.exceptions.FxException;
 import io.iconator.monitor.service.exceptions.USDBTCFxException;
 import io.iconator.monitor.service.exceptions.USDETHFxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.Optional;
 
 @Service
@@ -19,6 +22,19 @@ public class FxService {
 
     @Autowired
     private ExchangeAggregateRateRepository aggregateRateRepository;
+
+    public BigDecimal getUSDperCryptoCurrency(Long blockHeight, CurrencyType currencyType)
+            throws FxException {
+
+        switch (currencyType) {
+            case BTC:
+                return getUSDPerBTC(blockHeight);
+            case ETH:
+                return getUSDperETH(blockHeight);
+            default:
+                throw new NotImplementedException();
+        }
+    }
 
     public BigDecimal getUSDperETH(Long blockHeight) throws USDETHFxException {
         Optional<ExchangeAggregateRate> exchangeAggregateRate =

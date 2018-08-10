@@ -7,7 +7,7 @@ import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.TokenAllocationService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +27,8 @@ public class EthereumMonitorTestConfig {
     }
 
     @Bean
-    public TokenConversionService tokenConversionService() {
-        return new TokenConversionService();
+    public TokenAllocationService tokenConversionService() {
+        return new TokenAllocationService();
     }
 
     @Bean
@@ -49,7 +49,7 @@ public class EthereumMonitorTestConfig {
     @Bean
     public EthereumMonitor ethereumMonitor(Web3j web3j,
                                            FxService fxService,
-                                           TokenConversionService tokenConversionService,
+                                           TokenAllocationService tokenAllocationService,
                                            InvestorRepository investorRepository,
                                            PaymentLogService paymentLogService,
                                            EligibleForRefundService eligibleForRefundService,
@@ -58,7 +58,7 @@ public class EthereumMonitorTestConfig {
                 fxService,
                 investorRepository,
                 paymentLogService,
-                tokenConversionService,
+                tokenAllocationService,
                 eligibleForRefundService,
                 messageService,
                 web3j

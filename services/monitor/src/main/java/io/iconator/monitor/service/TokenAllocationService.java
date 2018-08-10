@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +19,9 @@ import java.util.Date;
 import java.util.Optional;
 
 @Service
-public class TokenConversionService {
+public class TokenAllocationService {
 
-    private final static Logger LOG = LoggerFactory.getLogger(TokenConversionService.class);
+    private final static Logger LOG = LoggerFactory.getLogger(TokenAllocationService.class);
 
     @Autowired
     private SaleTierRepository saleTierRepository;
@@ -80,7 +79,7 @@ public class TokenConversionService {
     }
 
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-    public TokenDistributionResult convertAndDistributeToTiers(BigDecimal usd, Date blockTime)
+    public TokenAllocationResult allocateTokens(BigDecimal usd, Date blockTime)
             throws NoTierAtDateException {
 
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
@@ -96,7 +95,7 @@ public class TokenConversionService {
         }
     }
 
-    private TokenDistributionResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
+    private TokenAllocationResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
         // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
         BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
         BigInteger tomicsInteger = tomicsDecimal.toBigInteger();
@@ -131,22 +130,22 @@ public class TokenConversionService {
                 }
                 LOG.debug("{} tomics distributed to tier {}", tomicsInteger, tier.getTierNo());
                 saleTierRepository.save(tier);
-                return new TokenDistributionResult(tomicsInteger, BigDecimal.ZERO);
+                return new TokenAllocationResult(tomicsInteger, BigDecimal.ZERO);
             }
         }
     }
 
-    private TokenDistributionResult handleTotalMaxOverflow(SaleTier tier, BigInteger tomicsForTier) {
-        TokenDistributionResult result = distributeTotalRemainingTokensToTier(tier);
+    private TokenAllocationResult handleTotalMaxOverflow(SaleTier tier, BigInteger tomicsForTier) {
+        TokenAllocationResult result = distributeTotalRemainingTokensToTier(tier);
         BigInteger totalMaxOverflow = tomicsForTier.subtract(result.getDistributedTomics());
         return result.addToOverflow(convertTomicsToUsd(totalMaxOverflow, tier.getDiscount()));
     }
 
-    private TokenDistributionResult distributeTotalRemainingTokensToTier(SaleTier tier) {
+    private TokenAllocationResult distributeTotalRemainingTokensToTier(SaleTier tier) {
         BigInteger totalRemainingTokens = getTotalRemainingTomics();
         tier.setTomicsSold(tier.getTomicsSold().add(totalRemainingTokens));
         saleTierRepository.save(tier);
-        return new TokenDistributionResult(totalRemainingTokens, BigDecimal.ZERO);
+        return new TokenAllocationResult(totalRemainingTokens, BigDecimal.ZERO);
     }
 
     private BigInteger getTotalRemainingTomics() {
@@ -168,12 +167,12 @@ public class TokenConversionService {
         });
     }
 
-    private TokenDistributionResult distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) {
+    private TokenAllocationResult distributeToNextTier(BigDecimal usd, Optional<SaleTier> oTier, Date blockTime) {
         if (oTier.isPresent()) {
             handleDynamicMax(oTier.get());
             return distributeToTier(usd, oTier.get(), blockTime);
         } else {
-            return new TokenDistributionResult(BigInteger.ZERO, usd);
+            return new TokenAllocationResult(BigInteger.ZERO, usd);
         }
     }
 
@@ -190,17 +189,17 @@ public class TokenConversionService {
                 .toBigInteger();
     }
 
-    public static class TokenDistributionResult {
+    public static class TokenAllocationResult {
 
         private BigInteger tomics;
         private BigDecimal overflow;
 
-        public TokenDistributionResult(BigInteger tomics, BigDecimal overflow) {
+        public TokenAllocationResult(BigInteger tomics, BigDecimal overflow) {
             this.tomics = tomics;
             this.overflow = overflow;
         }
 
-        public TokenDistributionResult() {
+        public TokenAllocationResult() {
             this.tomics = BigInteger.ZERO;
             this.overflow = BigDecimal.ZERO;
         }
@@ -217,12 +216,12 @@ public class TokenConversionService {
             return tomics;
         }
 
-        public TokenDistributionResult addToDistributedTomics(BigInteger tomics) {
+        public TokenAllocationResult addToDistributedTomics(BigInteger tomics) {
             this.tomics = this.tomics.add(tomics);
             return this;
         }
 
-        public TokenDistributionResult addToOverflow(BigDecimal overflow) {
+        public TokenAllocationResult addToOverflow(BigDecimal overflow) {
             this.overflow = this.overflow.add(overflow);
             return this;
         }

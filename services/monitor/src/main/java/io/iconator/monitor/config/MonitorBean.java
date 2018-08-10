@@ -9,7 +9,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.TokenAllocationService;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
@@ -125,12 +125,12 @@ public class MonitorBean {
                                            Web3j web3j,
                                            InvestorRepository investorRepository,
                                            PaymentLogService paymentLogService,
-                                           TokenConversionService tokenConversionService,
+                                           TokenAllocationService tokenAllocationService,
                                            EligibleForRefundService eligibleForRefundService,
                                            ICOnatorMessageService messageService) {
 
         return new EthereumMonitor(fxService, investorRepository, paymentLogService,
-                tokenConversionService, eligibleForRefundService, messageService, web3j);
+                tokenAllocationService, eligibleForRefundService, messageService, web3j);
     }
 
     @Bean
@@ -142,12 +142,12 @@ public class MonitorBean {
                                          PeerGroup peerGroup,
                                          InvestorRepository investorRepository,
                                          PaymentLogService paymentLogService,
-                                         TokenConversionService tokenConversionService,
+                                         TokenAllocationService tokenAllocationService,
                                          EligibleForRefundService eligibleForRefundService,
                                          ICOnatorMessageService messageService) {
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogService, tokenConversionService,
+                investorRepository, paymentLogService, tokenAllocationService,
                 eligibleForRefundService, messageService);
     }
 

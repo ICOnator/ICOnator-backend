@@ -12,16 +12,16 @@ import static javax.persistence.GenerationType.SEQUENCE;
 public class EligibleForRefund {
 
     public enum RefundReason {
-        NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
+        INVESTOR_MISSING,
         TOKEN_OVERFLOW,
-        MISSING_FX_RATE,
-        FAILED_CONVERSION_TO_TOKENS,
-        FAILED_CONVERSION_TO_USD,
-        FAILED_CONVERSION_FROM_WEI_TO_ETHER,
-        FAILED_CONVERSION_FROM_SATOSHI_TO_COIN,
-        MISSING_BLOCK_TIMESTAMP,
-        MISSING_BLOCK_BTC_NR,
-        FAILED_CREATING_PAYMENTLOG
+        FX_RATE_MISSING,
+        CONVERSION_TO_TOKENS_FAILED,
+        CONVERSION_TO_USD_FAILED,
+        BLOCK_TIME_MISSING,
+        BLOCK_HEIGHT_MISSING,
+        CREATING_PAYMENTLOG_FAILED,
+        RECEIVING_ADDRESS_MISSING,
+        TRANSACTION_VALUE_MISSING
     }
 
     @Id
@@ -46,9 +46,6 @@ public class EligibleForRefund {
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
 
-    protected EligibleForRefund() {
-    }
-
     public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
                              long investorId, String txIdentifier) {
         this.refundReason = refundReason;
@@ -56,6 +53,14 @@ public class EligibleForRefund {
         this.currency = currency;
         this.investorId = investorId;
         this.txIdentifier = txIdentifier;
+    }
+
+    private EligibleForRefund(Builder builder) {
+        this.refundReason = builder.refundReason;
+        this.amount = builder.amount;
+        this.currency = builder.currency;
+        this.investorId = builder.investorId;
+        this.txIdentifier = builder.txIdentifier;
     }
 
     public long getId() {
@@ -104,5 +109,53 @@ public class EligibleForRefund {
 
     public void setTxIdentifier(String txIdentifier) {
         this.txIdentifier = txIdentifier;
+    }
+
+    public static class Builder {
+
+        private RefundReason refundReason;
+        private BigInteger amount;
+        private CurrencyType currency;
+        private long investorId;
+        private String txIdentifier;
+
+        public Builder() {}
+
+        public EligibleForRefund build() {
+            return new EligibleForRefund(this);
+        }
+
+        public Builder refundReason(RefundReason reason) {
+            if (reason == null) throw new NullPointerException("refund reason cannot be null.");
+            this.refundReason = reason;
+            return this;
+        }
+
+        public Builder amount(BigInteger amount) {
+            if (amount == null) throw new NullPointerException("amount cannot be null.");
+            this.amount = amount;
+            return this;
+        }
+
+        public Builder currency(CurrencyType currency) {
+            if (currency == null) throw new NullPointerException("currency type cannot be null.");
+            this.currency = currency;
+            return this;
+        }
+
+        public Builder investorId(long investorId) {
+            if (investorId == 0) throw new IllegalArgumentException("Investor Id must not be 0.");
+            this.investorId = investorId;
+            return this;
+        }
+
+        public Builder txIdentifier(String txIdentifier) {
+            if (txIdentifier == null)
+                throw new NullPointerException("transaction id cannot be null.");
+            if (txIdentifier.isEmpty())
+                throw new IllegalArgumentException("transaction id must not " + "be empty.");
+            this.txIdentifier = txIdentifier;
+            return this;
+        }
     }
 }

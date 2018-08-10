@@ -62,44 +62,60 @@ public class PaymentLog {
         this.tomicsAmount = tomicsAmount;
     }
 
-    public long getId() {
-        return id;
-    }
-
     public String getTxIdentifier() {
         return txIdentifier;
+    }
+
+    public void setTxIdentifier(String txIdentifier) {
+        this.txIdentifier = txIdentifier;
     }
 
     public Date getCreateDate() {
         return createDate;
     }
 
+    public void setCreateDate(Date createDate) {
+        this.createDate = createDate;
+    }
+
     public Date getBlockDate() {
         return blockDate;
+    }
+
+    public void setBlockDate(Date blockDate) {
+        this.blockDate = blockDate;
     }
 
     public CurrencyType getCurrency() {
         return currency;
     }
 
+    public void setCurrency(CurrencyType currency) {
+        this.currency = currency;
+    }
+
     public BigInteger getPaymentAmount() {
         return paymentAmount;
+    }
+
+    public void setPaymentAmount(BigInteger paymentAmount) {
+        this.paymentAmount = paymentAmount;
     }
 
     public BigDecimal getFxRate() {
         return fxRate;
     }
 
+    public void setFxRate(BigDecimal fxRate) {
+        this.fxRate = fxRate;
+    }
+
     public BigDecimal getUsdValue() {
         return usdValue;
     }
 
-    public BigInteger getTomicsAmount() {
-        return tomicsAmount;
-    }
-
-    public void setTomicsAmount(BigInteger amount) {
-        this.tomicsAmount = amount;
+    public void setUsdValue(BigDecimal usdValue) {
+        this.usdValue = usdValue;
     }
 
     public long getInvestorId() {
@@ -108,5 +124,13 @@ public class PaymentLog {
 
     public void setInvestorId(long investorId) {
         this.investorId = investorId;
+    }
+
+    public BigInteger getTomicsAmount() {
+        return tomicsAmount;
+    }
+
+    public void setTomicsAmount(BigInteger tomicsAmount) {
+        this.tomicsAmount = tomicsAmount;
     }
 }
