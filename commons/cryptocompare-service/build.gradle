@@ -1,0 +1,14 @@
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+jar.enabled = true
+bootJar.enabled = false
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-data-rest'
+
+    compile 'org.apache.commons:commons-lang3:3.5'
+
+    testCompile project(':commons:test-utils')
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
