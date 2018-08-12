@@ -2,6 +2,7 @@ package io.iconator.rates.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
+import io.iconator.rates.service.BlockchainInfoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -29,6 +30,9 @@ public class BlockNrBitcoinConsumer {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private BlockchainInfoService blockchainInfoService;
 
     private Long blockNr;
     private Long timestamp;
@@ -72,12 +76,24 @@ public class BlockNrBitcoinConsumer {
 
     public Long getCurrentBlockNr() {
         if(blockNr == null || timestamp == null) {
-            LOG.error("No Bitcoin block since startup");
-            return null;
+            //fallback is API call to blockchaininfo
+            try {
+                LOG.warn("No Bitcoin block since startup");
+                return blockchainInfoService.getLatestBitcoinHeight();
+            } catch (IOException e) {
+                LOG.error("Bitcoin block height fallback failed - start, discarding", e);
+                return null;
+            }
         }
         if(timestamp.longValue() + TWO_HOURS < new Date().getTime()) {
-            LOG.error("Bitcoin block over two hours old, discarding");
-            return null;
+            //fallback is API call to blockchaininfo
+            try {
+                LOG.warn("Bitcoin block over two hours old, using fallback");
+                return blockchainInfoService.getLatestBitcoinHeight();
+            } catch (IOException e) {
+                LOG.error("Bitcoin block height fallback failed, discarding", e);
+                return null;
+            }
         }
         return blockNr;
     }

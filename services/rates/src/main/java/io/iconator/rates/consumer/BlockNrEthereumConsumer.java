@@ -2,6 +2,7 @@ package io.iconator.rates.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
+import io.iconator.rates.service.EtherscanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -29,6 +30,9 @@ public class BlockNrEthereumConsumer {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private EtherscanService etherscanService;
 
     private Long blockNr;
     private Long timestamp;
@@ -72,12 +76,24 @@ public class BlockNrEthereumConsumer {
 
     public Long getCurrentBlockNr() {
         if(blockNr == null || timestamp == null) {
-            LOG.error("No Ethereum block since startup");
-            return null;
+            //fallback is API call to etherscan
+            try {
+                LOG.warn("No Ethereum block since startup");
+                return etherscanService.getLatestEthereumHeight();
+            } catch (IOException e) {
+                LOG.error("Ethereum block height fallback failed - starting, discarding", e);
+                return null;
+            }
         }
         if(timestamp.longValue() + HALF_HOUR < new Date().getTime()) {
-            LOG.error("Ethereum block over 30 minutes old, discarding");
-            return null;
+            //fallback is API call to etherscan
+            try {
+                LOG.warn("Ethereum block over 30 min old, using fallback");
+                return etherscanService.getLatestEthereumHeight();
+            } catch (IOException e) {
+                LOG.error("Ethereum block height fallback failed, discarding", e);
+                return null;
+            }
         }
         return blockNr;
     }

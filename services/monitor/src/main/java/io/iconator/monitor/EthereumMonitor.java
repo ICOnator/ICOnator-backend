@@ -81,7 +81,7 @@ public class EthereumMonitor extends BaseMonitor {
             // Check if node is up-to-date
             BigInteger blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
             Block highestBlock = web3j.ethGetBlockByNumber(() -> new DefaultBlockParameterNumber(blockNumber).getValue(), false).send().getBlock();
-            messageService.send(new BlockNREthereumMessage(new Date().getTime(), highestBlock.getNumber().longValue()));
+            messageService.send(new BlockNREthereumMessage(highestBlock.getNumber().longValue(), new Date().getTime()));
             Instant latestBlockTime = Instant.ofEpochSecond(highestBlock.getTimestamp().longValue());
             LOG.info("Highest ethereum block number from fullnode: {}. Time: {}", blockNumber, latestBlockTime);
             if (latestBlockTime.isBefore(Instant.now().minus(10, MINUTES))) {
@@ -95,8 +95,8 @@ public class EthereumMonitor extends BaseMonitor {
             web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(
                     new DefaultBlockParameterNumber(startBlock), false)
                     .subscribe(block -> {
-                        if(block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
-                            messageService.send(new BlockNREthereumMessage(new Date().getTime(), block.getBlock().getNumber().longValue()));
+                        if (block.getBlock().getNumber().compareTo(highestBlock.getNumber()) > 0) {
+                            messageService.send(new BlockNREthereumMessage(block.getBlock().getNumber().longValue(), new Date().getTime()));
                         }
                         LOG.info("Processing block number: {}", block.getBlock().getNumber());
                     });
@@ -132,7 +132,7 @@ public class EthereumMonitor extends BaseMonitor {
                 "blockHeight {}.", wei, receivingAddress, txIdentifier, blockHeight);
 
         Optional<Investor> oInvestor = investorRepository.findOptionalByPayInEtherAddressIgnoreCase(receivingAddress);
-        if(!oInvestor.isPresent()) {
+        if (!oInvestor.isPresent()) {
             LOG.error("Couldn't fetch investor with public address {} for transaction {}.", receivingAddress, txIdentifier);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
                     RefundReason.NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS, null);
@@ -146,13 +146,14 @@ public class EthereumMonitor extends BaseMonitor {
                     new DefaultBlockParameterNumber(tx.getBlockNumber()),
                     false);
             EthBlock blockRequest = ethBlockRequest.send();
-            timestamp = new Date(blockRequest.getBlock().getTimestamp().longValue());
+            timestamp = new Date(blockRequest.getBlock().getTimestamp().longValue() * 1000);
         } catch (Exception e) {
             LOG.error("Failed fetching block timestamp for transaction {}.", txIdentifier);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier,
                     RefundReason.MISSING_BLOCK_TIMESTAMP, investor);
             return;
         }
+        LOG.debug("Timestamp of transactions block is {}", timestamp);
 
         BigDecimal USDperETH, usdReceived, ethers;
         try {
@@ -169,7 +170,7 @@ public class EthereumMonitor extends BaseMonitor {
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (EthereumUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convertAndDistributeToTiers wei to ethers for transaction {}.", txIdentifier, e);
+            LOG.error("Failed to convert wei to ethers for transaction {}.", txIdentifier, e);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_FROM_WEI_TO_ETHER, investor);
             return;
         }
@@ -192,7 +193,8 @@ public class EthereumMonitor extends BaseMonitor {
                 LOG.info("Couldn't create payment log entry because an entry already existed for " +
                         "transaction {}. I.e. transaction was already processed.", txIdentifier);
             } else {
-                LOG.error("Failed creating payment log for transaction {}.", txIdentifier, e);
+                LOG.error("Failed creating payment log for transaction {} even though no entry " +
+                        "for that transaction existed.", txIdentifier, e);
                 eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CREATING_PAYMENTLOG, investor);
             }
             return;
@@ -200,20 +202,26 @@ public class EthereumMonitor extends BaseMonitor {
 
         TokenDistributionResult result;
         try {
+            LOG.debug("Distributing {} USD for transaction {}.", usdReceived, txIdentifier);
             result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
-            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
+            LOG.error("Failed to distribute payment to tiers for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txIdentifier, e);
             paymentLogService.delete(paymentLog);
             eligibleForRefund(wei, CurrencyType.ETH, txIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
             return;
         }
         BigInteger tomics = result.getDistributedTomics();
+        LOG.debug("{} USD were converted to {} atomic token units for transaction {}.", usdReceived,
+                tomics, txIdentifier);
+
         paymentLog.setTomicsAmount(tomics);
         paymentLog = paymentLogService.save(paymentLog);
+
         if (result.hasOverflow()) {
             BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
-            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            LOG.debug("The payment of {} wei generated an overflow of {} wei, which go into the refund table.", wei, overflowWei);
+            eligibleForRefund(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
         }
 
         final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;

@@ -3,7 +3,9 @@ package io.iconator.local;
 import io.iconator.commons.baseservice.ConfigNaming;
 import io.iconator.core.CoreApplication;
 import io.iconator.email.EmailApplication;
+import io.iconator.monitor.MonitorApplication;
 import io.iconator.rates.RatesApplication;
+import io.iconator.testrpcj.TestBlockchain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,10 +29,11 @@ public class ICOnatorLocalDevApplication {
         try {
             startMessageQueue();
             startDummySmtp();
+            startEthereumTest();
             new SpringApplicationBuilder().sources(
                     CoreApplication.class,
                     EmailApplication.class,
-                    //MonitorApplication.class,
+                    MonitorApplication.class,
                     RatesApplication.class,
                     io.iconator.testrpcj.TestBlockchain.class).run(args);
         } catch (Throwable t) {
@@ -62,6 +65,12 @@ public class ICOnatorLocalDevApplication {
     private static void startDummySmtp() throws Exception {
         if (!Thread.currentThread().getName().equals("restartedMain")) {
             io.iconator.commons.test.utils.DummySmtp.start();
+        }
+    }
+
+    private static void startEthereumTest() throws Exception {
+        if (!Thread.currentThread().getName().equals("restartedMain")) {
+            TestBlockchain.run();
         }
     }
 

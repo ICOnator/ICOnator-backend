@@ -11,14 +11,17 @@ import java.util.List;
 @Configuration
 public class RatesAppConfig {
 
+    @Value("${io.iconator.services.rates.bitcoin-net:}")
+    private String bitcoinNet;
+
+    @Value("${io.iconator.services.rates.ethereum-net:}")
+    private String ethereumNet;
+
+    @Value("${io.iconator.services.rates.ethereum-key:}")
+    private String ethereumKey;
+
     @Value("${io.iconator.services.rates.user-agent}")
     private String userAgent;
-
-    @Value("${io.iconator.services.rates.etherscan.api-token}")
-    private String etherScanApiToken;
-
-    @Value("${io.iconator.services.rates.etherscan.url}")
-    private String etherScanUrl;
 
     @Value("${io.iconator.services.rates.currencies.fiat.base}")
     private CurrencyType baseFiatCurrency;
@@ -50,16 +53,20 @@ public class RatesAppConfig {
     @Value("${io.iconator.services.rates.outliers.std-dev.threshold.upper-bound}")
     private Double outlierStdDevThresholdUpperBound;
 
+    public String getBitcoinNet() {
+        return bitcoinNet;
+    }
+
+    public String getEthereumNet() {
+        return ethereumNet;
+    }
+
+    public String getEthereumKey() {
+        return ethereumKey;
+    }
+
     public String getUserAgent() {
         return userAgent;
-    }
-
-    public String getEtherScanApiToken() {
-        return etherScanApiToken;
-    }
-
-    public String getEtherScanUrl() {
-        return etherScanUrl;
     }
 
     public CurrencyType getBaseFiatCurrency() {

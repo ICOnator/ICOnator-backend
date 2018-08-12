@@ -19,5 +19,5 @@ dependencies {
     compile project(':services:rates')
     compile project(':commons:test-utils')
 
-    compile 'io.iconator:testrpcj:1.0.13'
+    compile 'io.iconator:testrpcj:1.0.20'
 }

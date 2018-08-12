@@ -1,4 +1,4 @@
-package io.iconator.rates.integration;
+package io.iconator.core.integration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -6,9 +6,9 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class CorsConfiguration implements WebMvcConfigurer {
+public class CoreCorsConfiguration implements WebMvcConfigurer {
 
-    @Value("${io.iconator.services.rates.cors.urls}")
+    @Value("${io.iconator.services.core.cors.urls}")
     private String[] corsUrls;
 
     @Override

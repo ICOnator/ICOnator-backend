@@ -1,7 +1,6 @@
 package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
-import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUnit;
@@ -50,11 +49,6 @@ public class BitcoinMonitor extends BaseMonitor {
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
 
-    /* Used in addition to the PaymentLog entries because processing of transactions can fail and
-     * lead to a refund but must still be marked as processed.
-     */
-    private Set<String> monitoredAddresses = new HashSet<>();
-
     private ICOnatorMessageService messageService;
 
     public BitcoinMonitor(FxService fxService,
@@ -101,7 +95,6 @@ public class BitcoinMonitor extends BaseMonitor {
         final Address address = Address.fromBase58(bitcoinNetworkParameters, addressString);
         LOG.info("Add monitored Bitcoin Address: {}", addressString);
         wallet.addWatchedAddress(address, timestamp);
-        monitoredAddresses.add(addressString);
     }
 
     public void start() throws InterruptedException {
@@ -111,7 +104,17 @@ public class BitcoinMonitor extends BaseMonitor {
         final DownloadProgressTracker downloadListener = new DownloadProgressTracker() {
             @Override
             protected void doneDownload() {
-                LOG.info("Download done");
+                LOG.info("Download done, now sending block numbers ");
+                final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
+                messageService.send(new BlockNRBitcoinMessage(Long.valueOf(startBlockHeighth), new Date().getTime()));
+                bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
+                    @Override
+                    public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
+                        if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
+                            messageService.send(new BlockNRBitcoinMessage(Long.valueOf(bitcoinBlockchain.getBestChainHeight()), new Date().getTime()));
+                        }
+                    }
+                });
             }
 
             @Override
@@ -120,20 +123,9 @@ public class BitcoinMonitor extends BaseMonitor {
             }
         };
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
-
-        final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
-        messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(startBlockHeighth)));
-        bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
-            @Override
-            public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
-                if(bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
-                    messageService.send(new BlockNRBitcoinMessage(new Date().getTime(), Long.valueOf(bitcoinBlockchain.getBestChainHeight())));
-                }
-            }
-        });
-
         LOG.info("Downloading SPV blockchain...");
-        downloadListener.await();
+        //TB: needed to disable this, otherwise it does not start within the 60s of HEROKU
+        //downloadListener.await();
     }
 
     /**
@@ -151,7 +143,6 @@ public class BitcoinMonitor extends BaseMonitor {
                             && utxo.getScriptPubKey().isSentToAddress()) {
 
                         if (BitcoinUtils.isBuilding(tx)) {
-                            // Transaction is coverd by 1 block or more on best chain.
                             processTransactionOutput(utxo);
                         } else if (BitcoinUtils.isPending(tx) || BitcoinUtils.isUnknown(tx)) {
                             // If pending or unknown we add a confidence changed listener and wait for block inclusion
@@ -249,7 +240,7 @@ public class BitcoinMonitor extends BaseMonitor {
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_USD, investor);
             return;
         } catch (BitcoinUnitConversionNotImplementedException e) {
-            LOG.error("Failed to convertAndDistributeToTiers satoshi to bitcoin for transaction {}.", txoIdentifier, e);
+            LOG.error("Failed to convert satoshi to bitcoin for transaction {}.", txoIdentifier, e);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_FROM_SATOSHI_TO_COIN, investor);
             return;
         }
@@ -282,7 +273,7 @@ public class BitcoinMonitor extends BaseMonitor {
         try {
             result = convertAndDistributeToTiersWithRetries(usdReceived, timestamp);
         } catch (Throwable e) {
-            LOG.error("Failed to convertAndDistributeToTiers payment to tokens for transaction {}. " +
+            LOG.error("Failed to distribute payment to tiers for transaction {}. " +
                     "Deleting PaymentLog created for this transaction", txoIdentifier, e);
             paymentLogService.delete(paymentLog);
             eligibleForRefund(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_TO_TOKENS, investor);
@@ -293,7 +284,7 @@ public class BitcoinMonitor extends BaseMonitor {
         paymentLog = paymentLogService.save(paymentLog);
         if (result.hasOverflow()) {
             BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperBTC);
-            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FINAL_TIER_OVERFLOW, investor);
+            eligibleForRefund(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
         }
 
         final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();

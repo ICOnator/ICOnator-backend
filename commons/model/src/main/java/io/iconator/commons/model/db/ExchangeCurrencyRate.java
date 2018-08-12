@@ -17,6 +17,7 @@ public class ExchangeCurrencyRate {
     private long id;
 
     @Column(name = "currency_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private CurrencyType currencyType;
 
     @Column(name = "exchange_rate", precision = 18, scale = 6)
