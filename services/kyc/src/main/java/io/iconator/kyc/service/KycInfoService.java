@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class KycInfoService {
@@ -126,6 +128,13 @@ public class KycInfoService {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(kycUuid);
 
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    public List<Long> getAllInvestorIdWhereStartKycEmailSent() {
+        return kycInfoRepository.findAll().stream()
+                .filter(KycInfo::isStartKycEmailSent)
+                .map(KycInfo::getInvestorId)
+                .collect(Collectors.toList());
     }
 
 }
