@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -32,5 +33,9 @@ public class InvestorService {
         Optional<Investor> investorFromDb = investorRepository.findOptionalByEmail(email);
 
         return investorFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    public List<Investor> getAllInvestors() {
+        return investorRepository.findAll();
     }
 }

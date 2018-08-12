@@ -92,6 +92,23 @@ public class KycInfoServiceTest {
     }
 
     @Test
+    public void testSetKycCompleteByUuid() throws KycInfoNotSavedException {
+        kycInfoService.saveKycInfo(50, kycUri);
+
+        Optional<KycInfo> oKycInfo = kycInfoRepository.findOptionalByInvestorId(50);
+        assertKycInfo(oKycInfo.get(), 50, false, 0, false, kycUri);
+
+        try {
+            kycInfoService.setKycCompleteByUuid(oKycInfo.get().getKycUuid(), true);
+        } catch(InvestorNotFoundException e) {
+            fail(e.getMessage());
+        }
+
+        oKycInfo = kycInfoRepository.findOptionalByInvestorId(50);
+        assertKycInfo(oKycInfo.get(), 50, false, 0, true, kycUri);
+    }
+
+    @Test
     public void testSetMultipleKycCompleteAndFindAll() throws KycInfoNotSavedException {
         kycInfoService.saveKycInfo(1, kycUri);
         kycInfoService.saveKycInfo(2, kycUri);
@@ -180,6 +197,21 @@ public class KycInfoServiceTest {
         } catch(InvestorNotFoundException e) {
             fail(e.getMessage());
         }
+    }
+
+    @Test
+    public void testSetKycUri() throws KycInfoNotSavedException, URISyntaxException {
+        URI newKycUri = new URI("http://www.newtestlink.com/test");
+        kycInfoService.saveKycInfo(1, kycUri);
+
+        try {
+            kycInfoService.setKycUri(1, newKycUri.toASCIIString());
+        } catch(InvestorNotFoundException e) {
+            fail(e.getMessage());
+        }
+
+        Optional<KycInfo> oKycInfo = kycInfoRepository.findOptionalByInvestorId(1);
+        assertKycInfo(oKycInfo.get(), 1, false, 0, false, newKycUri);
     }
 
     private void assertKycInfo(KycInfo kycInfo,

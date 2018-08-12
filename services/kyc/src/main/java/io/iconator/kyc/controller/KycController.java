@@ -8,6 +8,7 @@ import io.iconator.commons.model.db.KycInfo;
 import io.iconator.kyc.dto.FetchAllResponseDTO;
 import io.iconator.kyc.dto.Identification;
 import io.iconator.kyc.dto.KycStartRequestDTO;
+import io.iconator.kyc.dto.StartAllKycResponseDTO;
 import io.iconator.kyc.service.*;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
@@ -56,11 +57,42 @@ public class KycController {
 
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
+    // TODO: handle errors better
+
+    @RequestMapping(value = "/kyc/start", method = POST)
+    public ResponseEntity<StartAllKycResponseDTO> startKyc(@Context HttpServletRequest requestContext) {
+        List<Long> kycStartedList = new ArrayList<>();
+        List<Long> errorList = new ArrayList<>();
+        ResponseEntity response;
+        String ipAddress = IPAddressUtil.getIPAddress(requestContext);
+
+        LOG.info("/start called from {}", ipAddress);
+
+        List<Investor> investorList = investorService.getAllInvestors();
+        List<Long> alreadySentList = kycInfoService.getAllInvestorIdWhereStartKycEmailSent();
+
+        for(Investor investor : investorList) {
+            if(!alreadySentList.contains(investor.getId())) {
+                response = initiateKyc(investor.getId(), null);
+                if(response.getStatusCode() == HttpStatus.OK) {
+                    kycStartedList.add(investor.getId());
+                } else {
+                    LOG.error("Error while initiating KYC for investor {}", investor.getId());
+                    errorList.add(investor.getId());
+                }
+            }
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new StartAllKycResponseDTO().setKycStartedList(kycStartedList).setErrorList(errorList));
+    }
+
     @RequestMapping(value = "/kyc/{investorId}/start", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<?> startKyc(@PathVariable("investorId") Long investorId,
-                                      @RequestBody(required = false) KycStartRequestDTO kycStartRequest,
-                                      @Context HttpServletRequest requestContext) {
+    public ResponseEntity<?> startKycForInvestor(@PathVariable("investorId") Long investorId,
+                                                 @RequestBody(required = false) KycStartRequestDTO kycStartRequest,
+                                                 @Context HttpServletRequest requestContext) {
         ResponseEntity response;
         URI kycUri = null;
         String kycLink = kycStartRequest != null ? kycStartRequest.getKycLink() : null;
@@ -92,6 +124,7 @@ public class KycController {
                     response = ResponseEntity
                             .status(HttpStatus.BAD_REQUEST)
                             .body("KYC for investor with ID " + investorId + " started but start email not yet sent.");
+                    // TODO: resend start email
                 }
             } else {
                 response = ResponseEntity

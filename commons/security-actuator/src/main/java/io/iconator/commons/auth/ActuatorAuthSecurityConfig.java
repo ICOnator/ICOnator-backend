@@ -36,9 +36,11 @@ public class ActuatorAuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/actuator/**").hasRole(ROLE)
                 .antMatchers("/cloudfoundryapplication/**").hasRole(ROLE)
+                .antMatchers("/kyc/**").hasRole(ROLE)
                 .and()
                 .antMatcher("/actuator/**")
                 .antMatcher("/cloudfoundryapplication/**")
+                .antMatcher("/kyc/**")
                 .httpBasic();
     }
 

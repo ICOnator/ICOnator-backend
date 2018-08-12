@@ -1,4 +1,4 @@
-package io.iconator.kyc.service;
+package io.iconator.kyc.service.idnow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;

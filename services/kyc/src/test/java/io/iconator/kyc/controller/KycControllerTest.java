@@ -8,6 +8,7 @@ import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
 import io.iconator.kyc.dto.Identification;
 import io.iconator.kyc.dto.KycStartRequestDTO;
+import io.iconator.kyc.dto.StartAllKycResponseDTO;
 import io.iconator.kyc.service.*;
 import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.idnow.dto.IdNowIdentificationProcess;
@@ -43,6 +44,7 @@ public class KycControllerTest {
     private static final Logger LOG = LoggerFactory.getLogger(KycControllerTest.class);
 
     private static final long INVESTOR_ID = 1;
+    private static final String KYC_START_ALL = "/kyc/start";
     private static final String KYC_INVESTOR_START = "/kyc/" + INVESTOR_ID + "/start";
     private static final String KYC_INVESTOR_COMPLETE = "/kyc/" + INVESTOR_ID + "/complete";
     private static final String KYC_INVESTOR_STATUS = "/kyc/" + INVESTOR_ID + "/status";
@@ -80,6 +82,35 @@ public class KycControllerTest {
         mapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(kycController).build();
         kycStartRequest = new KycStartRequestDTO(KYC_LINK);
+    }
+
+    @Test
+    public void testStartKycForAll() throws Exception {
+        List<Investor> investorList = new ArrayList<>();
+        List<Long> kycStartedList = new ArrayList<>();
+        Investor investor1 = new Investor(new Date(), "investor1@test.com", "investor1token").setId(1);
+        Investor investor2 = new Investor(new Date(), "investor2@test.com", "investor2token").setId(2);
+        Investor investor3 = new Investor(new Date(), "investor3@test.com", "investor3token").setId(3);
+        investorList.add(investor1);
+        investorList.add(investor2);
+        investorList.add(investor3);
+        kycStartedList.add(2L);
+
+        when(mockInvestorService.getAllInvestors()).thenReturn(investorList);
+        when(mockKycInfoService.getAllInvestorIdWhereStartKycEmailSent()).thenReturn(kycStartedList);
+        when(mockLinkCreatorService.getKycLink(anyLong())).thenReturn(KYC_LINK);
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post(KYC_START_ALL)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        StartAllKycResponseDTO responseDTO =
+                mapper.readValue(result.getResponse().getContentAsString(), StartAllKycResponseDTO.class);
+
+        assertThat(responseDTO.getKycStartedList()).containsExactly(1L, 3L);
+        assertThat(responseDTO.getErrorList()).isEmpty();
     }
 
     @Test
