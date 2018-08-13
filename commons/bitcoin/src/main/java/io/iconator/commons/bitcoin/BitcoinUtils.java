@@ -29,6 +29,7 @@ public class BitcoinUtils {
         return tx.getConfidence().getConfidenceType().equals(ConfidenceType.BUILDING);
     }
 
+    // TODO This is only used in tests but no productive code.
     public static BigDecimal convertSatoshiToUsd(BigInteger satoshi, BigDecimal USDperBTC) {
         try {
             return BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN)
@@ -38,6 +39,7 @@ public class BitcoinUtils {
         }
     }
 
+    // TODO This is only used in tests but no productive code.
     public static BigInteger convertUsdToSatoshi(BigDecimal usd, BigDecimal USDperBTC) {
         try {
             BigDecimal coins = usd.divide(USDperBTC, MathContext.DECIMAL128);

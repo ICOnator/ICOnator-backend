@@ -1,7 +1,12 @@
 package io.iconator.monitor.service;
 
 import io.iconator.commons.db.services.SaleTierService;
+import io.iconator.commons.model.db.EligibleForRefund;
+import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
+import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
+import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
@@ -19,18 +24,122 @@ import java.util.Date;
 import java.util.Optional;
 
 @Service
-public class TokenAllocationService {
+public class MonitorService {
 
-    private final static Logger LOG = LoggerFactory.getLogger(TokenAllocationService.class);
+    private final static Logger LOG = LoggerFactory.getLogger(MonitorService.class);
 
     @Autowired
     private SaleTierRepository saleTierRepository;
+
+    @Autowired
+    private EligibleForRefundRepository eligibleForRefundRepository;
+
+    @Autowired
+    private PaymentLogRepository paymentLogRepository;
 
     @Autowired
     public SaleTierService saleTierService;
 
     @Autowired
     private MonitorAppConfig appConfig;
+
+    /**
+     * TODO [claude]: finish documentation
+     * @param refundEntry
+     * @param paymentLog
+     */
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
+    public void saveNewRefundEntryAndAddItToPaymentLog(EligibleForRefund refundEntry, PaymentLog paymentLog) {
+        String txId = refundEntry.getTxIdentifier();
+        if (!txId.contentEquals(paymentLog.getTxIdentifier())) {
+            throw new IllegalArgumentException("Transaction Id of refund entry and of payment log must not be different.");
+        }
+        if (eligibleForRefundRepository.existsByTxIdentifierAndCurrency(txId, refundEntry.getCurrency())) {
+            throw new IllegalArgumentException("Refund entry must not already exist in database.");
+        }
+        refundEntry = eligibleForRefundRepository.saveAndFlush(refundEntry);
+        paymentLog.setEligibleForRefundId(refundEntry.getId());
+        paymentLogRepository.saveAndFlush(paymentLog);
+        LOG.info("Saving new refund entry for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier());
+    }
+
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
+    public TokenAllocationResult allocateTokens(PaymentLog paymentLog, EligibleForRefund refundEntry)
+            throws NoTierAtDateException {
+
+        Date blockTime = paymentLog.getBlockDate();
+        BigDecimal usd = paymentLog.getUsdValue();
+        Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
+        if (oTier.isPresent()) {
+            handleDynamicMax(oTier.get());
+            TokenAllocationResult result;
+            if (oTier.get().isFull()) {
+                result = distributeToNextTier(usd, oTier, blockTime);
+            } else {
+                result = distributeToTier(usd, oTier.get(), blockTime);
+            }
+            updatePaymentLogAndPaymentLog(paymentLog, refundEntry, result);
+            return result;
+        } else {
+            throw new NoTierAtDateException();
+        }
+    }
+
+    private void updatePaymentLogAndPaymentLog(PaymentLog paymentLog, EligibleForRefund refundEntry,
+                                               TokenAllocationResult result) {
+
+        paymentLog.setTomicsAmount(result.getAllocatedTomics());
+        paymentLogRepository.saveAndFlush(paymentLog);
+        if (result.hasOverflow()) {
+            LOG.info("{} transaction {} generated a overflow of {} USD", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier(), result.getOverflow());
+            refundEntry.setAmount(result.getOverflow()
+                    .multiply(paymentLog.getUsdFxRate())
+                    .multiply(paymentLog.getCurrency().getAtomicUnitFactor())
+                    .toBigInteger());
+            refundEntry.setRefundReason(RefundReason.TOKEN_OVERFLOW);
+            eligibleForRefundRepository.saveAndFlush(refundEntry);
+        }
+    }
+
+    private TokenAllocationResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
+        // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
+        BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
+        BigInteger tomicsInteger = tomicsDecimal.toBigInteger();
+        if (tier.isAmountOverflowingTier(tomicsInteger)) {
+            BigInteger remainingTomicsOnTier = tier.getRemainingTomics();
+            BigDecimal overflowOverTier = tomicsDecimal.subtract(new BigDecimal(remainingTomicsOnTier));
+            BigDecimal overflowInUsd = convertTomicsToUsd(overflowOverTier, tier.getDiscount());
+            if (isOverflowingTotalMax(remainingTomicsOnTier)) {
+                LOG.debug("Distributing {} USD to tier {} lead to overflow over the total " +
+                        "available amount of tokens.", usd, tier.getTierNo());
+                return handleTotalMaxOverflow(tier, remainingTomicsOnTier).addToOverflow(overflowInUsd);
+            } else {
+                tier.setTomicsSold(tier.getTomicsMax());
+                tier.setTomicsSold(tier.getTomicsMax());
+                tier = saleTierRepository.save(tier);
+                if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
+                LOG.debug("Distributing {} USD to tier {}. Distributing Overflow of {} USD to " +
+                        "next tier.", usd, tier.getTierNo(), overflowInUsd);
+                return distributeToNextTier(overflowInUsd, saleTierService.getSubsequentTier(tier), blockTime)
+                        .addToAllocatedTomics(remainingTomicsOnTier);
+            }
+        } else {
+            if (isOverflowingTotalMax(tomicsInteger)) {
+                LOG.debug("Distributing {} USD to tier {} lead to overflow over the total " +
+                        "available amount of tokens.", usd, tier.getTierNo());
+                return handleTotalMaxOverflow(tier, tomicsInteger);
+            } else {
+                tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
+                if (tier.isFull()) {
+                    if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
+                    saleTierService.getSubsequentTier(tier).ifPresent(this::handleDynamicMax);
+                }
+                LOG.debug("{} tomics distributed to tier {}", tomicsInteger, tier.getTierNo());
+                saleTierRepository.save(tier);
+                return new TokenAllocationResult(tomicsInteger, BigDecimal.ZERO);
+            }
+        }
+    }
 
     /**
      * @param usd      the USD amount to convert to tokens.
@@ -78,66 +187,9 @@ public class TokenAllocationService {
         return value.multiply(new BigDecimal(appConfig.getAtomicUnitFactor()));
     }
 
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-    public TokenAllocationResult allocateTokens(BigDecimal usd, Date blockTime)
-            throws NoTierAtDateException {
-
-        Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
-        if (oTier.isPresent()) {
-            handleDynamicMax(oTier.get());
-            if (oTier.get().isFull()) {
-                return distributeToNextTier(usd, oTier, blockTime);
-            } else {
-                return distributeToTier(usd, oTier.get(), blockTime);
-            }
-        } else {
-            throw new NoTierAtDateException();
-        }
-    }
-
-    private TokenAllocationResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
-        // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
-        BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
-        BigInteger tomicsInteger = tomicsDecimal.toBigInteger();
-        if (tier.isAmountOverflowingTier(tomicsInteger)) {
-            BigInteger remainingTomicsOnTier = tier.getRemainingTomics();
-            BigDecimal overflowOverTier = tomicsDecimal.subtract(new BigDecimal(remainingTomicsOnTier));
-            BigDecimal overflowInUsd = convertTomicsToUsd(overflowOverTier, tier.getDiscount());
-            if (isOverflowingTotalMax(remainingTomicsOnTier)) {
-                LOG.debug("Distributing {} USD to tier {} lead to overflow over the total " +
-                        "available amount of tokens.", usd, tier.getTierNo());
-                return handleTotalMaxOverflow(tier, remainingTomicsOnTier).addToOverflow(overflowInUsd);
-            } else {
-                tier.setTomicsSold(tier.getTomicsMax());
-                tier.setTomicsSold(tier.getTomicsMax());
-                tier = saleTierRepository.save(tier);
-                if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                LOG.debug("Distributing {} USD to tier {}. Distributing Overflow of {} USD to " +
-                        "next tier.", usd, tier.getTierNo(), overflowInUsd);
-                return distributeToNextTier(overflowInUsd, saleTierService.getSubsequentTier(tier), blockTime)
-                        .addToDistributedTomics(remainingTomicsOnTier);
-            }
-        } else {
-            if (isOverflowingTotalMax(tomicsInteger)) {
-                LOG.debug("Distributing {} USD to tier {} lead to overflow over the total " +
-                        "available amount of tokens.", usd, tier.getTierNo());
-                return handleTotalMaxOverflow(tier, tomicsInteger);
-            } else {
-                tier.setTomicsSold(tier.getTomicsSold().add(tomicsInteger));
-                if (tier.isFull()) {
-                    if (tier.hasDynamicDuration()) shiftDates(tier, blockTime);
-                    saleTierService.getSubsequentTier(tier).ifPresent(this::handleDynamicMax);
-                }
-                LOG.debug("{} tomics distributed to tier {}", tomicsInteger, tier.getTierNo());
-                saleTierRepository.save(tier);
-                return new TokenAllocationResult(tomicsInteger, BigDecimal.ZERO);
-            }
-        }
-    }
-
     private TokenAllocationResult handleTotalMaxOverflow(SaleTier tier, BigInteger tomicsForTier) {
         TokenAllocationResult result = distributeTotalRemainingTokensToTier(tier);
-        BigInteger totalMaxOverflow = tomicsForTier.subtract(result.getDistributedTomics());
+        BigInteger totalMaxOverflow = tomicsForTier.subtract(result.getAllocatedTomics());
         return result.addToOverflow(convertTomicsToUsd(totalMaxOverflow, tier.getDiscount()));
     }
 
@@ -189,6 +241,12 @@ public class TokenAllocationService {
                 .toBigInteger();
     }
 
+    /**
+     * Holds the result from a token allocation.
+     * The tomics are the amount of allocated tokens in atomic units.
+     * The overflow is the amount of USD which could not be converted and
+     * allocated due to limited tier capacity.
+     */
     public static class TokenAllocationResult {
 
         private BigInteger tomics;
@@ -208,15 +266,21 @@ public class TokenAllocationService {
             return overflow.compareTo(BigDecimal.ZERO) > 0;
         }
 
+        /**
+         * @return the overflow from an token allocation in USD.
+         */
         public BigDecimal getOverflow() {
             return overflow;
         }
 
-        public BigInteger getDistributedTomics() {
+        /**
+         * @return the amount of allocated tokens in atomic units.
+         */
+        public BigInteger getAllocatedTomics() {
             return tomics;
         }
 
-        public TokenAllocationResult addToDistributedTomics(BigInteger tomics) {
+        public TokenAllocationResult addToAllocatedTomics(BigInteger tomics) {
             this.tomics = this.tomics.add(tomics);
             return this;
         }

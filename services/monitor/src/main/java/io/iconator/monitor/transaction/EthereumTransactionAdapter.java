@@ -1,13 +1,12 @@
 package io.iconator.monitor.transaction;
 
-import io.iconator.commons.ethereum.EthereumUnit;
-import io.iconator.commons.ethereum.EthereumUnitConverter;
 import io.iconator.commons.model.CurrencyType;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.Transaction;
+import org.web3j.utils.Convert;
 
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
@@ -15,7 +14,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
-public class EthereumTransaction implements io.iconator.monitor.transaction.Transaction {
+public class EthereumTransactionAdapter extends BaseTransactionAdapter {
+
+    private static final String ETHERSCAN_LINK  = "https://etherscan.io/tx/";
 
     private Transaction ethereumTx;
     private Web3j web3j;
@@ -26,7 +27,7 @@ public class EthereumTransaction implements io.iconator.monitor.transaction.Tran
      */
     private Date blockTime;
 
-    public EthereumTransaction(@NotNull Transaction tx, @NotNull Web3j web3j) {
+    public EthereumTransactionAdapter(@NotNull Transaction tx, @NotNull Web3j web3j) {
         this.ethereumTx = tx;
         this.web3j = web3j;
     }
@@ -43,15 +44,19 @@ public class EthereumTransaction implements io.iconator.monitor.transaction.Tran
 
     @Override
     public BigDecimal getTransactionValueInMainUnit() {
-        return EthereumUnitConverter.convert(
-                new BigDecimal(getTransactionValue()),
-                EthereumUnit.WEI,
-                EthereumUnit.ETHER);
+       return Convert.fromWei(new BigDecimal(getTransactionValue()), Convert.Unit.ETHER);
     }
 
     @Override
     public String getReceivingAddress() {
         return ethereumTx.getTo();
+    }
+
+    @Override
+    public Long getAssociatedInvestorId() {
+        return getInvestorRepository()
+                .findOptionalByPayInEtherAddressIgnoreCase(getReceivingAddress())
+                .get().getId();
     }
 
     @Override
@@ -78,5 +83,10 @@ public class EthereumTransaction implements io.iconator.monitor.transaction.Tran
                 throw new IllegalStateException();
             }
         } else return blockTime;
+    }
+
+    @Override
+    public String getWebLinkToTransaction() {
+        return ETHERSCAN_LINK + getTransactionId();
     }
 }

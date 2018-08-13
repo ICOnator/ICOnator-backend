@@ -3,13 +3,13 @@ package io.iconator.monitor;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
-import io.iconator.commons.db.services.EligibleForRefundService;
 import io.iconator.commons.db.services.PaymentLogService;
-import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.monitor.exception.IncompleteTransactoinInformationException;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenAllocationService;
+import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.transaction.BitcoinTransactionAdapter;
 import org.bitcoinj.core.*;
-import org.bitcoinj.core.TransactionConfidence.Listener;
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
@@ -33,7 +33,6 @@ public class BitcoinMonitor extends BaseMonitor {
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
 
-    private ICOnatorMessageService messageService;
 
     public BitcoinMonitor(FxService fxService,
                           BlockChain bitcoinBlockchain,
@@ -41,22 +40,17 @@ public class BitcoinMonitor extends BaseMonitor {
                           Context bitcoinContext,
                           NetworkParameters bitcoinNetworkParameters,
                           PeerGroup bitcoinPeerGroup,
-                          InvestorRepository investorRepository,
                           PaymentLogService paymentLogService,
-                          TokenAllocationService tokenAllocationService,
-                          EligibleForRefundService eligibleForRefundService,
+                          MonitorService monitorService,
                           ICOnatorMessageService messageService) {
 
-        super(tokenAllocationService, investorRepository, paymentLogService,
-                eligibleForRefundService, fxService);
+        super(monitorService, paymentLogService, fxService, messageService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
         this.bitcoinContext = bitcoinContext;
         this.bitcoinNetworkParameters = bitcoinNetworkParameters;
         this.bitcoinPeerGroup = bitcoinPeerGroup;
-
-        this.messageService = messageService;
 
         walletSetUp();
 
@@ -113,131 +107,57 @@ public class BitcoinMonitor extends BaseMonitor {
     }
 
     /**
-     * Listens for changes to watched addresses
+     * Adds a listener to the wallet which processes payments to monitored addresses.
      */
     private void addCoinsReceivedListener() {
-        wallet.addCoinsReceivedEventListener((wallet1, tx, prevBalance, newBalance) -> {
+        wallet.addCoinsReceivedEventListener((wallet_, bitcoinjTx, prevBalance, newBalance) -> {
             Context.propagate(this.bitcoinContext);
-            tx.getOutputs().forEach(utxo -> {
-                try {
-                    String txoIdentifier = BitcoinUtils.getTransactionOutputIdentifier(utxo);
-                    Address receivingAddress = utxo.getAddressFromP2PKHScript(this.bitcoinNetworkParameters);
-                    if (wallet1.getWatchedAddresses().contains(receivingAddress)
-                            && !txIsAlreadyProcessed(txoIdentifier)
-                            && utxo.getScriptPubKey().isSentToAddress()) {
-
-                        if (BitcoinUtils.isBuilding(tx)) {
-                            processTransactionOutput(utxo);
-                        } else if (BitcoinUtils.isPending(tx) || BitcoinUtils.isUnknown(tx)) {
-                            // If pending or unknown we add a confidence changed listener and wait for block inclusion
-                            LOG.info("Pending: {} satoshi received in transaction output {}", utxo.getValue(), txoIdentifier);
-                            Listener listener = new Listener() {
-                                @Override
-                                public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
-                                    if (!txIsAlreadyProcessed(txoIdentifier)) {
-                                        if (confidence.getConfidenceType().equals(BUILDING)) {
-                                            processTransactionOutput(utxo);
-                                            tx.getConfidence().removeEventListener(this);
-                                        } else if (confidence.getConfidenceType().equals(DEAD)
-                                                || confidence.getConfidenceType().equals(IN_CONFLICT)) {
-                                            tx.getConfidence().removeEventListener(this);
-                                        }
-                                    }
-                                }
-                            };
-                            tx.getConfidence().addEventListener(listener);
+            bitcoinjTx.getOutputs().stream()
+                    .filter(utxo -> utxo.getScriptPubKey().isSentToAddress())
+                    .map(utxo -> new BitcoinTransactionAdapter(utxo, bitcoinNetworkParameters, bitcoinBlockStore))
+                    .forEach(tx -> {
+                        try {
+                            if (BitcoinUtils.isBuilding(tx.getBitcoinjTransaction())) {
+                                processTransaction(tx);
+                            // TODO [claude] the transaction confidence check needs to be incorporated
+                            // into the BaseMonitor code. Otherwise we will track all transactions
+                            // which do not yet have high confidence.
+                            } else if (BitcoinUtils.isPending(tx.getBitcoinjTransaction())
+                                    || BitcoinUtils.isUnknown(tx.getBitcoinjTransaction())) {
+                                LOG.info("Confirmation for transaction {} is pending or unknown", tx.getTransactionId());
+                                tx.getBitcoinjTransaction().getConfidence()
+                                        .addEventListener(new TransactionConfidenceListener(tx));
+                            }
+                        } catch (Throwable t) {
+                            LOG.error("Error while processing transaction.", t);
                         }
-                    }
-                } catch (RuntimeException e) {
-                    LOG.error("Failed processing transaction output.", e);
-                }
-            });
+                    });
         });
     }
 
-    /**
-     * We have some funds send to us. This is called live or when catching-up at startup.
-     *
-     * @param utxo The transaction output we received
-     */
-    private void processTransactionOutput(TransactionOutput utxo) {
-//        BigDecimal USDperBTC, usdReceived, coins;
-//        try {
-//            USDperBTC = fxService.getUSDPerBTC(blockHeight);
-//            usdReceived = BitcoinUtils.convertSatoshiToUsd(satoshi, USDperBTC);
-//            coins = BitcoinUnitConverter.convert(satoshi, BitcoinUnit.SATOSHI, BitcoinUnit.COIN);
-//        } catch (USDBTCFxException e) {
-//            LOG.error("Couldn't get USD to BTC exchange rate for transaction {}.", txoIdentifier, e);
-//            saveRefundEntry(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FX_RATE_MISSING, investor);
-//            return;
-//        } catch (RuntimeException e) {
-//            LOG.error("Failed to fetch payment amount in US dollars for transaction {}.", txoIdentifier, e);
-//            saveRefundEntry(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.CONVERSION_TO_USD_FAILED, investor);
-//            return;
-//        } catch (BitcoinUnitConversionNotImplementedException e) {
-//            LOG.error("Failed to convert satoshi to bitcoin for transaction {}.", txoIdentifier, e);
-//            saveRefundEntry(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.FAILED_CONVERSION_FROM_SATOSHI_TO_COIN, investor);
-//            return;
-//        }
-//
-//        LOG.debug("USD {} to be converted to tokens, for transaction {}", usdReceived.toPlainString(), txoIdentifier);
-//        PaymentLog paymentLog = new PaymentLog(
-//                txoIdentifier,
-//                new Date(),
-//                timestamp,
-//                CurrencyType.BTC,
-//                satoshi,
-//                USDperBTC,
-//                usdReceived,
-//                investor.getId(),
-//                BigInteger.ZERO);
-//        try {
-//            trySavingPaymentLog(paymentLog);
-//        } catch (TransactionAlreadyProcessedException e) {
-//            LOG.info("Couldn't create payment log entry because transaction " +
-//                    "was already processed.", txoIdentifier);
-//            return;
-//        } catch (Throwable t) {
-//            LOG.error("Failed creating payment log for transaction {}.", txoIdentifier, t);
-//            saveRefundEntry(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.CREATING_PAYMENTLOG_FAILED, investor);
-//            return;
-//        }
-//
-//        TokenAllocationResult result;
-//        try {
-//            result = allocateTokensWithRetries(usdReceived, timestamp);
-//        } catch (Throwable e) {
-//            LOG.error("Failed to distribute payment to tiers for transaction {}. " +
-//                    "Deleting PaymentLog created for this transaction", txoIdentifier, e);
-//            paymentLogService.delete(paymentLog);
-//            saveRefundEntry(satoshi, CurrencyType.BTC, txoIdentifier, RefundReason.CONVERSION_TO_TOKENS_FAILED, investor);
-//            return;
-//        }
-//        BigInteger tomics = result.getDistributedTomics();
-//        paymentLog.setTomicsAmount(tomics);
-//        paymentLog = paymentLogService.save(paymentLog);
-//        if (result.hasOverflow()) {
-//            BigInteger overflowSatoshi = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperBTC);
-//            saveRefundEntry(overflowSatoshi, CurrencyType.BTC, txoIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
-//        }
-//
-//        final String blockChainInfoLink = "https://blockchain.info/tx/" + utxo.getParentTransaction().getHashAsString();
-//
-//        messageService.send(new FundsReceivedEmailMessage(
-//                build(investor),
-//                coins,
-//                CurrencyType.BTC,
-//                blockChainInfoLink,
-//                tokenAllocationService.convertTomicsToTokens(tomics)));
-//
-//        LOG.info("Pay-in received: {} / {} USD / {} FX / {} / Time: {} / Address: {} / " +
-//                        "Tomics Amount {}",
-//                utxo.getValue().toFriendlyString(),
-//                paymentLog.getPaymentAmount(),
-//                paymentLog.getFxRate(),
-//                investor.getEmail(),
-//                paymentLog.getCreateDate(),
-//                receivingAddress,
-//                paymentLog.getTomicsAmount());
+    @Override
+    protected boolean isAddressMonitored(String receivingAddress) {
+        return wallet.getWatchedAddresses().stream().anyMatch(
+                a -> a.toBase58().contentEquals(receivingAddress));
+    }
+
+    private class TransactionConfidenceListener implements TransactionConfidence.Listener {
+
+        private BitcoinTransactionAdapter tx;
+
+        TransactionConfidenceListener(BitcoinTransactionAdapter transactionAdapter) {
+            this.tx = transactionAdapter;
+        }
+
+        @Override
+        public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
+            if (confidence.getConfidenceType().equals(BUILDING)) {
+                processTransaction(tx);
+                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
+            } else if (confidence.getConfidenceType().equals(DEAD)
+                    || confidence.getConfidenceType().equals(IN_CONFLICT)) {
+                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
+            }
+        }
     }
 }

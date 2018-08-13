@@ -3,13 +3,11 @@ package io.iconator.monitor.config;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
-import io.iconator.commons.db.services.EligibleForRefundService;
 import io.iconator.commons.db.services.PaymentLogService;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenAllocationService;
+import io.iconator.monitor.service.MonitorService;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
@@ -123,14 +121,12 @@ public class MonitorBean {
     @Bean
     public EthereumMonitor ethereumMonitor(FxService fxService,
                                            Web3j web3j,
-                                           InvestorRepository investorRepository,
                                            PaymentLogService paymentLogService,
-                                           TokenAllocationService tokenAllocationService,
-                                           EligibleForRefundService eligibleForRefundService,
+                                           MonitorService monitorService,
                                            ICOnatorMessageService messageService) {
 
-        return new EthereumMonitor(fxService, investorRepository, paymentLogService,
-                tokenAllocationService, eligibleForRefundService, messageService, web3j);
+        return new EthereumMonitor(fxService, paymentLogService,
+                monitorService, messageService, web3j);
     }
 
     @Bean
@@ -140,15 +136,13 @@ public class MonitorBean {
                                          Context bitcoinContext,
                                          NetworkParameters bitcoinNetworkParameters,
                                          PeerGroup peerGroup,
-                                         InvestorRepository investorRepository,
                                          PaymentLogService paymentLogService,
-                                         TokenAllocationService tokenAllocationService,
-                                         EligibleForRefundService eligibleForRefundService,
+                                         MonitorService monitorService,
                                          ICOnatorMessageService messageService) {
+
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogService, tokenAllocationService,
-                eligibleForRefundService, messageService);
+                paymentLogService, monitorService, messageService);
     }
 
     @Bean

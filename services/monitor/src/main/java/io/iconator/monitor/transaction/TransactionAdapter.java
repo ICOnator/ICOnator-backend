@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
-public interface Transaction {
+public interface TransactionAdapter {
 
     /**
      * The id which uniquely identifies the transaction can be appended with
@@ -17,16 +17,20 @@ public interface Transaction {
     String getTransactionId();
 
     /**
-     * @return the value of this transaction in the atomic unit of the currency.
+     * @return the value of this transaction in the atomic unit of the currency
+     * (e.g Wei for Ethereum transactions)
      */
     BigInteger getTransactionValue();
 
     /**
      * @return the value of this transaction in the main unit of the currency.
+     * e.g. bitcoint
      */
     BigDecimal getTransactionValueInMainUnit();
 
     String getReceivingAddress();
+
+    Long getAssociatedInvestorId();
 
     Long getBlockHeight();
 
@@ -34,5 +38,12 @@ public interface Transaction {
 
     Date getBlockTime();
 
-//    BigDecimal getUSDperCurrencyFxRate();
+    String getWebLinkToTransaction();
+
+    /**
+     * The factor is the amount of atomic units that make up one main
+     * unit of the currency encapsulated by this transaction.
+     * @return the factor to convert atomic units to main units.
+     */
+    BigDecimal getAtomicUnitFactor();
 }

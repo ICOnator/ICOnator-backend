@@ -6,7 +6,7 @@ import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.BaseMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenAllocationService;
+import io.iconator.monitor.service.MonitorService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,8 +23,8 @@ public class MonitorTestConfig {
     }
 
     @Bean
-    public TokenAllocationService tokenConversionService() {
-        return new TokenAllocationService();
+    public MonitorService tokenConversionService() {
+        return new MonitorService();
     }
 
     @Bean
@@ -38,14 +38,14 @@ public class MonitorTestConfig {
     }
 
         @Bean
-    public BaseMonitor baseMonitor(TokenAllocationService tokenAllocationService,
+    public BaseMonitor baseMonitor(MonitorService monitorService,
                                    InvestorRepository investorRepository,
                                    PaymentLogService paymentLogService,
                                    EligibleForRefundService eligibleForRefundService,
                                    FxService fxService) {
 
-        return new BaseMonitor(tokenAllocationService, investorRepository, paymentLogService,
-                eligibleForRefundService, fxService);
+        return new BaseMonitor(monitorService, investorRepository, paymentLogService,
+                eligibleForRefundService, fxService, messageService);
     }
 
     @Bean

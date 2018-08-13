@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
-import java.util.Currency;
 import java.util.Optional;
 
 @Service
@@ -23,7 +22,14 @@ public class FxService {
     @Autowired
     private ExchangeAggregateRateRepository aggregateRateRepository;
 
-    public BigDecimal getUSDperCryptoCurrency(Long blockHeight, CurrencyType currencyType)
+    /**
+     *
+     * @param blockHeight the bumber of the block at which the rate shall be fetched.
+     * @param currencyType the crypto currency for which the exchange rate shall be fetched.
+     * @return the exchange rate in USD per crypto currency unit.
+     * @throws FxException if the exchange rate could could not be fetched.
+     */
+    public BigDecimal getUSDExchangeRate(Long blockHeight, CurrencyType currencyType)
             throws FxException {
 
         switch (currencyType) {

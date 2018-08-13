@@ -1,24 +1,23 @@
 package io.iconator.monitor;
 
-import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
-import com.google.common.base.VerifyException;
-import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.amqp.model.utils.MessageDTOHelper;
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.PaymentLogService;
+import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.config.MonitorAppConfig;
-import io.iconator.monitor.exception.TransactionAlreadyProcessedException;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenAllocationService;
-import io.iconator.monitor.service.TokenAllocationService.TokenAllocationResult;
+import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.service.MonitorService.TokenAllocationResult;
 import io.iconator.monitor.service.exceptions.FxException;
-import io.iconator.monitor.transaction.Transaction;
+import io.iconator.monitor.transaction.TransactionAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,318 +29,284 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
 @Component
-public class BaseMonitor {
+abstract public class BaseMonitor {
+
+    private final static Logger LOG = LoggerFactory.getLogger(BaseMonitor.class);
+
+    private final static long MINUTE_IN_MS = 60 * 1000;
+
+    private final MonitorService monitorService;
+    private final PaymentLogService paymentLogService;
+    private final FxService fxService;
+    final ICOnatorMessageService messageService;
 
     @Autowired
     private MonitorAppConfig appConfig;
 
-    private final static Logger LOG = LoggerFactory.getLogger(BaseMonitor.class);
-
-    protected final TokenAllocationService tokenAllocationService;
-    protected final InvestorRepository investorRepository;
-    protected final EligibleForRefundService eligibleForRefundService;
-    protected final PaymentLogService paymentLogService;
-    protected final FxService fxService;
-
-    public BaseMonitor(TokenAllocationService tokenAllocationService,
-                       InvestorRepository investorRepository,
+    public BaseMonitor(MonitorService monitorService,
                        PaymentLogService paymentLogService,
-                       EligibleForRefundService eligibleForRefundService,
-                       FxService fxService) {
-        this.tokenAllocationService = tokenAllocationService;
-        this.investorRepository = investorRepository;
+                       FxService fxService,
+                       ICOnatorMessageService messageService) {
+        this.monitorService = monitorService;
         this.paymentLogService = paymentLogService;
-        this.eligibleForRefundService = eligibleForRefundService;
         this.fxService = fxService;
+        this.messageService = messageService;
     }
 
     /**
-     * // TODO [claude, 2018-07-19], Finish documentation
+     * @param receivingAddress the address to which a payment has been made.
+     * @return true if this address is monitored. False otherwise.
+     */
+    abstract protected boolean isAddressMonitored(String receivingAddress);
+
+    protected void processTransaction(TransactionAdapter tx) {
+        try {
+            if (!isTransactionIdAvailable(tx)) return;
+            if (!isReceivingAddressAvailable(tx)) return;
+            if (!isAddressMonitored(tx.getReceivingAddress())) return;
+            String txId = tx.getTransactionId();
+            CurrencyType currency = tx.getCurrencyType();
+            PaymentLog paymentLog;
+            Date now = new Date();
+            if (paymentLogService.exists(txId, currency)) {
+                paymentLog = paymentLogService.getPaymentLog(txId, currency).get();
+                if (paymentLog.wasFullyProcessed()) return;
+                if (paymentLog.wasCreatedRecently(MINUTE_IN_MS)) return;
+                LOG.info("Found payment which was not fully processed. Resetting creation date and restarting processing over again.");
+                paymentLog.setCreateDate(now);
+            } else {
+                paymentLog = new PaymentLog(txId, now, currency);
+            }
+            paymentLogService.saveImmediately(paymentLog);
+            EligibleForRefund refundEntry = new EligibleForRefund(txId, currency);
+            if (!checkAttributesAndUpdatePaymentLog(tx, paymentLog, refundEntry)) return;
+            paymentLogService.saveImmediately(paymentLog);
+
+            LOG.debug("Calling token allocation with {} USD for {} transaction {}.", paymentLog.getUsdValue().toPlainString(), currency, txId);
+            TokenAllocationResult result;
+            result = allocateTokensWithRetries(paymentLog, refundEntry);
+            LOG.debug("Allocated {} tomics for {} transaction {}.", result.getAllocatedTomics(), tx.getCurrencyType().name(), tx.getTransactionId());
+            BigInteger tomics = result.getAllocatedTomics();
+            LOG.debug("For {} USD {} atomic tokens where allocated. {} transaction {}.", paymentLog.getUsdValue().toPlainString(), tomics, tx.getCurrencyType().name(), tx.getTransactionId());
+            createAndSendConfirmationMail(tx, tomics);
+            LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
+                    tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
+                    paymentLog.getUsdFxRate(), tx.getAssociatedInvestorId(), paymentLog.getCreateDate(),
+                    paymentLog.getTomicsAmount());
+
+        } catch (Throwable t) {
+            LOG.error("Failed to process {} transaction {}.", tx.getCurrencyType().name(), tx.getTransactionId(), t);
+        }
+    }
+
+    /*
+       * TODO [claude] finish documentation
      * This is method is not holding any of the conversoin or distribution functionality but sits in
      * this class because the method that it calls needs to be transactional and the transaction
      * behavior of spring does only work if one object calls the transactional methods of another
      * object. If this method where in the same class as the actual conversion and distribution
      * method calling that method would not lead to a transactional execution of the code.
-     *
-     * @param usd
-     * @param blockTime
-     * @return
-     * @throws Throwable
      */
-    public TokenAllocationService.TokenAllocationResult allocateTokensWithRetries(BigDecimal usd, Date blockTime)
+    private TokenAllocationResult allocateTokensWithRetries(PaymentLog paymentLog, EligibleForRefund refundEntry)
             throws Throwable {
 
-        if (blockTime == null) throw new IllegalArgumentException("Block time must not be null.");
-        if (usd == null) throw new IllegalArgumentException("USD amount must not be null.");
+        String txId = refundEntry.getTxIdentifier();
+        if (!txId.contentEquals(paymentLog.getTxIdentifier())) {
+            throw new IllegalArgumentException("Transaction Id of refund entry and of payment log must not be different.");
+        }
+        if (paymentLog.getUsdValue() == null) {
+            throw new IllegalArgumentException("PaymentLog's amount in USD must not be null.");
+        }
+        if (paymentLog.getBlockDate() == null) {
+            throw new IllegalArgumentException("PaymentLog's block time must not be null.");
+        }
 
         // Retry as long as there are database locking exceptions.
-        Retryer<TokenAllocationService.TokenAllocationResult> retryer =
-                RetryerBuilder.<TokenAllocationService.TokenAllocationResult>newBuilder()
+        Retryer<TokenAllocationResult> retryer =
+                RetryerBuilder.<MonitorService.TokenAllocationResult>newBuilder()
                         .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                         .retryIfExceptionOfType(OptimisticLockException.class)
-                        .withWaitStrategy(randomWait(appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
+                        .withWaitStrategy(randomWait(
+                                appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
                         .withStopStrategy(StopStrategies.neverStop())
                         .build();
 
         try {
-            return retryer.call(() -> tokenAllocationService.allocateTokens(usd, blockTime));
-        } catch (ExecutionException | RetryException e) {
-            LOG.error("Currency to token conversion failed.", e);
-            throw e.getCause();
-        }
-    }
-
-    /**
-     * Checks if the transaction of the given payment log has not yet been
-     * processed and saves the payment log transactionless, which means that it
-     * is immediatly commited to the database.
-     *
-     * @param paymentLog The PaymentLog entity to be stored.
-     * @throws TransactionAlreadyProcessedException if a PaymentLog entry or an EligibleForRefund
-     *                                              entry exists for the transaction of the given
-     *                                              PaymentLog entity.
-     */
-    protected PaymentLog savePaymentLog(PaymentLog paymentLog) {
-        if (txIsAlreadyProcessed(paymentLog.getTxIdentifier())) {
-            LOG.info("Couldn't create payment log entry because transaction " +
-                    "was already processed.", paymentLog.getTxIdentifier());
-            return null;
-        }
-        LOG.info("Creating payment log entry for transaction {}.", paymentLog.getTxIdentifier());
-        return paymentLogService.saveTransactionless(paymentLog);
-    }
-
-    /**
-     * Checks if the transaction referenced by the given EligibleForRefund has
-     * not yet been processed. If not, saves the given entry transactionless,
-     * which means that it is immediatly commited to the database.
-     *
-     * @throws TransactionAlreadyProcessedException if a PaymentLog entry or an EligibleForRefund
-     *                                              entry exists for the transaction of the given
-     *                                              PaymentLog entity.
-     */
-    protected EligibleForRefund saveRefundEntry(EligibleForRefund refundEntry) {
-        if (txIsAlreadyProcessed(refundEntry.getTxIdentifier())) {
-            LOG.info("Couldn't create refund entry because transaction " +
-                    "was already processed.", refundEntry.getTxIdentifier());
-            return null;
-        }
-        LOG.info("Creating refund entry for transaction {}.", refundEntry.getTxIdentifier());
-        return eligibleForRefundService.saveTransactionless(refundEntry);
-    }
-
-    protected boolean txIsAlreadyProcessed(String txId) {
-        return eligibleForRefundService.existsByTxIdentifier(txId) ||
-                paymentLogService.existsByTxIdentifier(txId);
-    }
-
-    protected void processTransaction(Transaction tx) {
-        try {
-            verifyTransaction(tx);
-        } catch (VerifyException e) {
-
-        }
-
-        EligibleForRefund.Builder refundBuilder = new EligibleForRefund.Builder();
-        Investor i = investorRepository.findOptionalByPayInEtherAddressIgnoreCase(tx.getReceivingAddress()).get();
-        refundBuilder.currency(tx.getCurrencyType())
-                .txIdentifier(tx.getTransactionId())
-                .amount(tx.getTransactionValue())
-                .investorId(i.getId());
-
-        BigDecimal USDperCurrency, usdReceived;
-        try {
-            USDperCurrency = fxService.getUSDperCryptoCurrency(tx.getBlockHeight(), tx.getCurrencyType());
-            LOG.debug("Got USD to {} rate {} from FxService, transaction id {}, receiving address {}",
-                    tx.getCurrencyType().toString(), USDperCurrency.toPlainString(),
-                    tx.getTransactionId(), tx.getReceivingAddress());
-            usdReceived = tx.getTransactionValueInMainUnit().multiply(USDperCurrency);
-        } catch (FxException e) {
-            LOG.error("Couldn't get USD to {} exchange rate for transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), e);
-            saveRefundEntry(refundBuilder.refundReason(RefundReason.FX_RATE_MISSING).build());
-            return;
-        } catch (RuntimeException e) {
-            LOG.error("Failed to fetch payment amount in US dollars for {} transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), e);
-            saveRefundEntry(refundBuilder.refundReason(RefundReason.CONVERSION_TO_USD_FAILED).build());
-            return;
-        }
-
-        LOG.debug("USD {} to be converted to tokens, for {} transaction {}",
-                usdReceived.toPlainString(), tx.getCurrencyType().toString(), tx.getTransactionId());
-        PaymentLog paymentLog = createAndSavePaymentLog(tx, refundBuilder, i, USDperCurrency, usdReceived);
-        if (paymentLog == null) return;
-
-        // TODO: if monitor stops at this point (e.g. due to an outage) the
-        // transaction will have a PaymentLog but was not fully processed.
-
-        TokenAllocationResult result;
-        try {
-            LOG.debug("Calling token allocation with {} USD for {} transaction {}.",
-                    usdReceived, tx.getCurrencyType().toString(), tx.getTransactionId());
-            result = allocateTokensWithRetries(usdReceived, tx.getBlockTime());
+            TokenAllocationResult result = retryer.call(
+                    () -> monitorService.allocateTokens(paymentLog, refundEntry));
+            if (result == null) throw new NoSuchElementException();
+            return result;
         } catch (Throwable e) {
-            LOG.error("Failed to distribute payment to tiers for {} transaction {}. " +
-                            "Deleting PaymentLog this transaction", tx.getCurrencyType().toString(),
-                    tx.getTransactionId(), e);
-            paymentLogService.delete(paymentLog);
-            saveRefundEntry(refundBuilder.refundReason(RefundReason.CONVERSION_TO_TOKENS_FAILED).build());
-            return;
-        }
-        BigInteger tomics = result.getDistributedTomics();
-        LOG.debug("For {} USD {} atomic tokens where allocated. {} transaction {}.",
-                usdReceived, tomics, tx.getCurrencyType().toString(), tx.getTransactionId());
-
-        paymentLog.setTomicsAmount(tomics);
-        paymentLog = paymentLogService.save(paymentLog);
-
-        if (result.hasOverflow()) {
-            BigInteger overflowWei = BitcoinUtils.convertUsdToSatoshi(result.getOverflow(), USDperETH);
-            LOG.debug("The payment of {} generated an overflow of {} {}, which go into the refund table.",
-                    tx.getTransactionValueInMainUnit(), tx.getCurrencyType().toString(), overflowWei);
-            saveRefundEntry(overflowWei, CurrencyType.ETH, txIdentifier, RefundReason.TOKEN_OVERFLOW, investor);
-        }
-//
-//        final String etherscanLink = "https://etherscan.io/tx/" + txIdentifier;
-//
-//        messageService.send(new FundsReceivedEmailMessage(
-//                build(investor),
-//                ethers,
-//                CurrencyType.ETH,
-//                etherscanLink,
-//                tokenAllocationService.convertTomicsToTokens(tomics)));
-//
-//        LOG.info("Pay-in received: {} ETH / {} USD / {} FX / {} / Time: {} / Address: {} / " +
-//                        "Tomics Amount {}",
-//                ethers,
-//                paymentLog.getPaymentAmount(),
-//                paymentLog.getFxRate(),
-//                investor.getEmail(),
-//                paymentLog.getCreateDate(),
-//                receivingAddress,
-//                paymentLog.getTomicsAmount());
-    }
-
-    private PaymentLog createAndSavePaymentLog(Transaction tx,
-                                               EligibleForRefund.Builder refundBuilder,
-                                               Investor i,
-                                               BigDecimal USDperCurrency,
-                                               BigDecimal usdReceived) {
-
-        PaymentLog paymentLog = new PaymentLog(
-                tx.getTransactionId(),
-                new Date(),
-                tx.getBlockTime(),
-                tx.getCurrencyType(),
-                tx.getTransactionValue(),
-                USDperCurrency,
-                usdReceived,
-                i.getId(),
-                BigInteger.ZERO);
-        try {
-            return savePaymentLog(paymentLog);
-        } catch (Throwable t) {
-            LOG.error("Failed creating payment log for transaction {}.", tx.getTransactionId(), t);
-            saveRefundEntry(refundBuilder.refundReason(RefundReason.CREATING_PAYMENTLOG_FAILED).build());
-            return null;
+            LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier(), e.getCause());
+            refundEntry.setRefundReason(RefundReason.CONVERSION_TO_TOKENS_FAILED);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            throw e;
         }
     }
 
-    private void verifyTransaction(Transaction tx)
-            throws VerifyException {
+    /**
+     * Checks if all necessary attributes on the transaction are available and
+     * updates the given payment log and refund entry with the available attributes.
+     * If an attribute can not be fetched the given refund entry is written to the
+     * database with a corresponding refund reason. The payment log is also saved with
+     * a reference to the refund entry.
+     *
+     * @param tx          the Transaction to be checked
+     * @param paymentLog  the payment log to be updated
+     * @param refundEntry the refund entry to be updated and used in case of
+     *                    missing attributes. It must not already exist on the
+     *                    database.
+     * @return true if all attributes are available. Flase otherwise.
+     */
+    private boolean checkAttributesAndUpdatePaymentLog(TransactionAdapter tx, PaymentLog paymentLog, EligibleForRefund refundEntry) {
+        if (!isPaymentAmountAvailable(tx)) {
+            refundEntry.setRefundReason(RefundReason.TRANSACTION_VALUE_MISSING);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            return false;
+        } else {
+            paymentLog.setPaymentAmount(tx.getTransactionValue());
+            refundEntry.setAmount(tx.getTransactionValue());
+        }
 
-        EligibleForRefund.Builder refundBuilder = new EligibleForRefund.Builder();
-        refundBuilder.currency(tx.getCurrencyType());
+        if (!isInvestorAvailable(tx)) {
+            refundEntry.setRefundReason(RefundReason.INVESTOR_MISSING);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            return false;
+        } else {
+            paymentLog.setInvestorId(tx.getAssociatedInvestorId());
+            refundEntry.setInvestorId(tx.getAssociatedInvestorId());
+        }
 
-        verifyTransactionId(tx);
-        refundBuilder.txIdentifier(tx.getTransactionId());
+        if (!isBlockTimeAvailable(tx)) {
+            refundEntry.setRefundReason(RefundReason.BLOCK_TIME_MISSING);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            return false;
+        } else {
+            paymentLog.setBlockDate(tx.getBlockTime());
+        }
 
-        verifyValue(tx, refundBuilder);
-        refundBuilder.amount(tx.getTransactionValue());
+        if (!isBlockHeightAvailable(tx)) {
+            refundEntry.setRefundReason(RefundReason.BLOCK_HEIGHT_MISSING);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            return false;
+        }
 
-        verifyReceivingAddress(tx, refundBuilder);
-        verifyInvestor(tx, refundBuilder);
-        Investor i = investorRepository.findOptionalByPayInEtherAddressIgnoreCase(tx.getReceivingAddress()).get();
-        refundBuilder.investorId(i.getId());
-
-        verifyBlockTime(tx, refundBuilder);
-        verifyBlockHeight(tx, refundBuilder);
+        if (!isUSDExchangeRateAvailable(tx)) {
+            refundEntry.setRefundReason(RefundReason.FX_RATE_MISSING);
+            monitorService.saveNewRefundEntryAndAddItToPaymentLog(refundEntry, paymentLog);
+            return false;
+        } else {
+            try {
+                paymentLog.setUsdFxRate(
+                        fxService.getUSDExchangeRate(tx.getBlockHeight(), tx.getCurrencyType()));
+                paymentLog.setUsdValue(
+                        tx.getTransactionValueInMainUnit().multiply(paymentLog.getUsdFxRate()));
+            } catch (FxException e) {
+                throw new IllegalStateException("Failed fetching Usd to " + tx.getCurrencyType().name() + " exchange rate for transaction " + tx.getTransactionId() + " even after availability check was successful.");
+            }
+        }
+        return true;
     }
 
-    private void verifyTransactionId(Transaction tx) {
+    private boolean isTransactionIdAvailable(TransactionAdapter tx) {
         try {
             String txId = tx.getTransactionId();
             if (txId == null || txId.isEmpty()) throw new NoSuchElementException();
         } catch (Throwable t) {
-            LOG.error("Failed fetching {} transaction identifier.", tx.getCurrencyType().toString(), t);
-            throw new VerifyException();
+            LOG.error("Failed fetching {} transaction identifier.", tx.getCurrencyType().name(), t);
+            return false;
         }
+        return true;
     }
 
-    private void verifyValue(Transaction tx, EligibleForRefund.Builder builder) {
-        try {
-            BigInteger value = tx.getTransactionValue();
-            if (value == null) throw new NoSuchElementException();
-        } catch (Throwable t) {
-            LOG.error("Failed fetching value for {} transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), t);
-            saveRefundEntry(builder.refundReason(RefundReason.TRANSACTION_VALUE_MISSING).build());
-            throw new VerifyException();
-        }
-    }
-
-    private void verifyReceivingAddress(Transaction tx, EligibleForRefund.Builder builder) {
+    /**
+     * Checks if the receiving address can be fetched from the given transaction.
+     * If no receiving address can be fetched the given transaction can not be
+     * processed since it cannot be checked if it is monitored.
+     *
+     * @param tx the transaction for which the receiving address should be verified.
+     */
+    private boolean isReceivingAddressAvailable(TransactionAdapter tx) {
         try {
             String address = tx.getReceivingAddress();
             if (address == null || address.isEmpty()) throw new NoSuchElementException();
         } catch (Throwable t) {
-            LOG.error("Failed fetching {} receiving address for transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), t);
-            saveRefundEntry(builder.refundReason(RefundReason.RECEIVING_ADDRESS_MISSING).build());
-            throw new VerifyException();
+            LOG.error("Failed fetching {} receiving address for transaction {}.", tx.getCurrencyType().name(), tx.getTransactionId(), t);
+            return false;
         }
+        return true;
     }
 
-    private void verifyInvestor(Transaction tx, EligibleForRefund.Builder builder) {
-        String address = tx.getReceivingAddress();
+    private boolean isPaymentAmountAvailable(TransactionAdapter tx) {
         try {
-            investorRepository.findOptionalByPayInEtherAddressIgnoreCase(address).get();
+            BigInteger value = tx.getTransactionValue();
+            if (value == null) throw new NoSuchElementException();
         } catch (Throwable t) {
-            LOG.error("Couldn't find investor with public address {} for {} transaction {}.",
-                    address, tx.getCurrencyType().toString(), tx.getTransactionId());
-            saveRefundEntry(builder.refundReason(RefundReason.INVESTOR_MISSING).build());
-            throw new VerifyException();
+            LOG.error("Failed fetching payment amount for {} transaction {}.", tx.getCurrencyType().name(), tx.getTransactionId(), t);
+            return false;
         }
+        return true;
     }
 
-    private void verifyBlockTime(Transaction tx, EligibleForRefund.Builder builder) {
+    private boolean isInvestorAvailable(TransactionAdapter tx) {
+        try {
+            Long id = tx.getAssociatedInvestorId();
+            if (id == null || id == 0) throw new NoSuchElementException();
+        } catch (Throwable t) {
+            LOG.error("Couldn't find investor with {} payment address {} for transaction {}.", tx.getCurrencyType().name(), tx.getReceivingAddress(), tx.getTransactionId());
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isBlockTimeAvailable(TransactionAdapter tx) {
         try {
             Date blockTime = tx.getBlockTime();
             if (blockTime == null) throw new NoSuchElementException();
         } catch (Throwable t) {
             LOG.error("Failed fetching block time for {} transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), t);
-            saveRefundEntry(builder.refundReason(RefundReason.BLOCK_TIME_MISSING).build());
-            throw new VerifyException();
+                    tx.getCurrencyType().name(), tx.getTransactionId(), t);
+            return false;
         }
+        return true;
     }
 
-    private void verifyBlockHeight(Transaction tx, EligibleForRefund.Builder builder) {
+    private boolean isBlockHeightAvailable(TransactionAdapter tx) {
         try {
             Long blockHeight = tx.getBlockHeight();
             if (blockHeight == null) throw new NoSuchElementException();
         } catch (Throwable t) {
             LOG.error("Failed fetching block height for {} transaction {}.",
-                    tx.getCurrencyType().toString(), tx.getTransactionId(), t);
-            saveRefundEntry(builder.refundReason(RefundReason.BLOCK_HEIGHT_MISSING).build());
-            throw new VerifyException();
+                    tx.getCurrencyType().name(), tx.getTransactionId(), t);
+            return false;
         }
+        return true;
+    }
+
+    private boolean isUSDExchangeRateAvailable(TransactionAdapter tx) {
+        try {
+            BigDecimal USDExchangeRate = fxService.getUSDExchangeRate(tx.getBlockHeight(), tx.getCurrencyType());
+            if (USDExchangeRate == null) throw new NoSuchElementException();
+        } catch (FxException | RuntimeException e) {
+            LOG.error("Couldn't get USD to {} exchange rate for transaction {}.", tx.getCurrencyType().name(), tx.getTransactionId(), e);
+            return false;
+        }
+        return true;
+    }
+
+    private void createAndSendConfirmationMail(TransactionAdapter tx, BigInteger tomics) {
+        Investor investor = investorService.getInvestorByInvestorId(tx.getAssociatedInvestorId());
+
+        messageService.send(new FundsReceivedEmailMessage(
+                MessageDTOHelper.build(investor),
+                tx.getTransactionValueInMainUnit(),
+                tx.getCurrencyType(),
+                tx.getWebLinkToTransaction(),
+                monitorService.convertTomicsToTokens(tomics)));
     }
 }

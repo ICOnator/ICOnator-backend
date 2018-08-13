@@ -2,20 +2,22 @@ package io.iconator.monitor.transaction;
 
 import io.iconator.commons.model.CurrencyType;
 import org.bitcoinj.core.*;
-import org.bitcoinj.core.Transaction;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Objects;
 
-public class BitcoinTransaction implements io.iconator.monitor.transaction.Transaction {
+public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
 
-    private TransactionOutput bitcoinTxOutput;
-    private NetworkParameters bitcoinNetworkParameters;
-    private BlockStore blockStore;
+    private static final String BLOCKCHAIN_INFO_LINK  = "https://etherscan.io/tx/";
+
+    private TransactionOutput bitcoinjTxOutput;
+    private NetworkParameters bitcoinjNetworkParameters;
+    private BlockStore bitcoinjBlockStore;
 
     /**
      * Remembering block height after first time getter is called. This is to save
@@ -31,44 +33,58 @@ public class BitcoinTransaction implements io.iconator.monitor.transaction.Trans
      */
     private Date blockTime;
 
-    public BitcoinTransaction(@NotNull TransactionOutput bitcoinTxOutput,
-                              @NotNull NetworkParameters bitcoinNetworkParameters,
-                              @NotNull BlockStore blockStore) {
-        this.bitcoinTxOutput = bitcoinTxOutput;
-        this.bitcoinNetworkParameters = bitcoinNetworkParameters;
-        this.blockStore = blockStore;
+    public BitcoinTransactionAdapter(@NotNull TransactionOutput bitcoinjTxOutput,
+                                     @NotNull NetworkParameters bitcoinjNetworkParameters,
+                                     @NotNull BlockStore bitcoinjBlockStore) {
+        this.bitcoinjTxOutput = bitcoinjTxOutput;
+        this.bitcoinjNetworkParameters = bitcoinjNetworkParameters;
+        this.bitcoinjBlockStore = bitcoinjBlockStore;
         this.blockHeight = null;
         this.blockTime = null;
     }
 
     @Override
     public String getTransactionId() {
-        Transaction transaction = bitcoinTxOutput.getParentTransaction();
+        Transaction transaction = bitcoinjTxOutput.getParentTransaction();
         if (transaction != null) {
-            return transaction.getHashAsString() + "_" + String.valueOf(bitcoinTxOutput.getIndex());
+            return transaction.getHashAsString() + "_" + String.valueOf(bitcoinjTxOutput.getIndex());
         } else {
-            throw new IllegalStateException("Transaction Output's parent transaction was null.");
+            throw new IllegalStateException("TransactionAdapter Output's parent transaction was null.");
         }
     }
 
     @Override
     public BigInteger getTransactionValue() {
-        return BigInteger.valueOf(bitcoinTxOutput.getValue().getValue());
+        return BigInteger.valueOf(bitcoinjTxOutput.getValue().getValue());
+    }
+
+    @Override
+    public BigDecimal getTransactionValueInMainUnit() {
+        return null;
     }
 
     @Override
     public String getReceivingAddress() {
-        return bitcoinTxOutput.getAddressFromP2PKHScript(this.bitcoinNetworkParameters).toBase58();
+        return bitcoinjTxOutput
+                .getAddressFromP2PKHScript(this.bitcoinjNetworkParameters)
+                .toBase58();
+    }
+
+    @Override
+    public Long getAssociatedInvestorId() {
+        return getInvestorRepository()
+                .findOptionalByPayInBitcoinAddress(getReceivingAddress())
+                .get().getId();
     }
 
     @Override
     public Long getBlockHeight() {
         if (blockHeight == null) {
-            blockHeight = bitcoinTxOutput.getParentTransaction()
+            blockHeight = bitcoinjTxOutput.getParentTransaction()
                     .getAppearsInHashes().keySet().stream()
                     .map((blockHash) -> {
                         try {
-                            return blockStore.get(blockHash);
+                            return bitcoinjBlockStore.get(blockHash);
                         } catch (BlockStoreException e) {
                             // This can happen if the transaction was seen in a side-chain
                             return null;
@@ -94,11 +110,11 @@ public class BitcoinTransaction implements io.iconator.monitor.transaction.Trans
     @Override
     public Date getBlockTime() {
         if (blockTime == null) {
-            blockTime = bitcoinTxOutput.getParentTransaction()
+            blockTime = bitcoinjTxOutput.getParentTransaction()
                     .getAppearsInHashes().keySet().stream()
                     .map((blockHash) -> {
                         try {
-                            return blockStore.get(blockHash);
+                            return bitcoinjBlockStore.get(blockHash);
                         } catch (BlockStoreException e) {
                             // This can happen if the transaction was seen in a side-chain
                             return null;
@@ -112,5 +128,14 @@ public class BitcoinTransaction implements io.iconator.monitor.transaction.Trans
         } else {
             return blockTime;
         }
+    }
+
+    @Override
+    public String getWebLinkToTransaction() {
+        return BLOCKCHAIN_INFO_LINK + bitcoinjTxOutput.getParentTransaction().getHashAsString();
+    }
+
+    public Transaction getBitcoinjTransaction() {
+        return bitcoinjTxOutput.getParentTransaction();
     }
 }

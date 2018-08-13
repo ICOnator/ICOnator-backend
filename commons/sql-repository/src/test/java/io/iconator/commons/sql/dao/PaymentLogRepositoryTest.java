@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 @DataJpaTest
 public class PaymentLogRepositoryTest {
 
+    private static final CurrencyType CURRENCY_TYPE = CurrencyType.BTC;
+
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
@@ -38,11 +40,12 @@ public class PaymentLogRepositoryTest {
     }
 
     @Test
-    public void testSaveAndFind() {
+    public void testSaveAndExistsAndFind() {
         Investor i = createInvestor(1);
         PaymentLog p = createPaymentLog(i.getId(), "1");
         paymentLogRepository.save(p);
-        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifier("1");
+        assertTrue(paymentLogRepository.existsByTxIdentifierAndCurrency("1", CURRENCY_TYPE));
+        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifierAndCurrency("1", CURRENCY_TYPE);
         assertTrue(oPaymentLog.isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) ->
                 investorRepository.findById(paymentLog.getInvestorId()).get().getEmail().equals("emailAddress1")
@@ -74,7 +77,7 @@ public class PaymentLogRepositoryTest {
                 txIdentifier,
                 new Date(),
                 new Date(),
-                CurrencyType.BTC,
+                CURRENCY_TYPE,
                 new BigInteger("1"),
                 new BigDecimal(2),
                 new BigDecimal(3),

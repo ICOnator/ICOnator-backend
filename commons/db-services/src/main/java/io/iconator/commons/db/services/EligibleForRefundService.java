@@ -7,19 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+// TODO [claude]: delete refund service
 @Service
 public class EligibleForRefundService {
 
     @Autowired
     private EligibleForRefundRepository eligibleForRefundRepository;
 
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
-    public EligibleForRefund saveTransactionless(EligibleForRefund eligibleForRefund) {
-        return eligibleForRefundRepository.save(eligibleForRefund);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existsByTxIdentifier(String txIdentifier) {
-        return eligibleForRefundRepository.existsByTxIdentifier(txIdentifier);
-    }
 }

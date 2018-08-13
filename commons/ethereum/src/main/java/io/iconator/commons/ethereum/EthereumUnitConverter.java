@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 
 public class EthereumUnitConverter {
 
+    // TODO This is only used in tests but no productive code.
     public static BigDecimal convert(BigDecimal value, EthereumUnit unitFrom, EthereumUnit unitTo)
             throws EthereumUnitConversionNotImplementedException {
         if (unitFrom.equals(EthereumUnit.WEI) && unitTo.equals(EthereumUnit.ETHER)) {
