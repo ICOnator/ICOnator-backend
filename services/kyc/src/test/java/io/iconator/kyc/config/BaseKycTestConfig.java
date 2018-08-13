@@ -1,10 +1,7 @@
 package io.iconator.kyc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.KycInfoRepository;
-import io.iconator.kyc.consumer.KycStartEmailSentMessageConsumer;
-import io.iconator.kyc.service.InvestorService;
 import io.iconator.kyc.service.KycInfoService;
 import io.iconator.kyc.service.KycLinkCreatorService;
 import io.iconator.kyc.service.idnow.IdNowKycLinkCreatorService;
@@ -31,11 +28,6 @@ public class BaseKycTestConfig {
     @Bean
     public KycInfoService kycInfoService(KycInfoRepository kycInfoRepository) {
         return new KycInfoService(kycInfoRepository);
-    }
-
-    @Bean
-    public InvestorService investorService(InvestorRepository investorRepository) {
-        return new InvestorService(investorRepository);
     }
 
     @Bean

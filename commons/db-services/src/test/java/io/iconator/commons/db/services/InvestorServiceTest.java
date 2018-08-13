@@ -1,16 +1,15 @@
-package io.iconator.kyc.service;
+package io.iconator.commons.db.services;
 
+import io.iconator.commons.db.services.config.TestConfig;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.kyc.config.BaseKycTestConfig;
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Date;
@@ -19,9 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {BaseKycTestConfig.class})
+@ContextConfiguration(classes = {TestConfig.class, InvestorService.class})
 @DataJpaTest
-@TestPropertySource({"classpath:kyc.application.properties", "classpath:application-test.properties"})
 public class InvestorServiceTest {
 
     @Autowired

@@ -1,8 +1,8 @@
-package io.iconator.kyc.service;
+package io.iconator.commons.db.services;
 
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

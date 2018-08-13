@@ -1,4 +1,4 @@
-package io.iconator.kyc.service.exception;
+package io.iconator.commons.db.services.exception;
 
 public class InvestorNotFoundException extends Exception {
 

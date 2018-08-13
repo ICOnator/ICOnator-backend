@@ -3,14 +3,17 @@ package io.iconator.kyc.controller;
 import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
 import io.iconator.kyc.dto.FetchAllResponseDTO;
 import io.iconator.kyc.dto.Identification;
 import io.iconator.kyc.dto.KycStartRequestDTO;
 import io.iconator.kyc.dto.StartAllKycResponseDTO;
-import io.iconator.kyc.service.*;
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
+import io.iconator.kyc.service.IdentificationService;
+import io.iconator.kyc.service.KycInfoService;
+import io.iconator.kyc.service.KycLinkCreatorService;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
 import io.iconator.kyc.utils.IPAddressUtil;
 import org.slf4j.Logger;
@@ -31,9 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 @RestController
 public class KycController {

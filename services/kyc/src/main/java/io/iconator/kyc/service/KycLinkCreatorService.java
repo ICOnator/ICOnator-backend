@@ -1,6 +1,7 @@
 package io.iconator.kyc.service;
 
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
+
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 
 public interface KycLinkCreatorService {
 

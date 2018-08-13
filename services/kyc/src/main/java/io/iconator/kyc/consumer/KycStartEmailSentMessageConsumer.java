@@ -2,9 +2,9 @@ package io.iconator.kyc.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
-import io.iconator.kyc.service.InvestorService;
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.KycInfoService;
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;

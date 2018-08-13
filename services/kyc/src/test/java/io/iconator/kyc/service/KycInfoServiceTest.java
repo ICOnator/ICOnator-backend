@@ -1,9 +1,9 @@
 package io.iconator.kyc.service;
 
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.KycInfo;
 import io.iconator.commons.sql.dao.KycInfoRepository;
 import io.iconator.kyc.config.BaseKycTestConfig;
-import io.iconator.kyc.service.exception.InvestorNotFoundException;
 import io.iconator.kyc.service.exception.KycInfoNotSavedException;
 import org.junit.Before;
 import org.junit.Test;

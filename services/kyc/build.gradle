@@ -15,6 +15,7 @@ dependencies {
     compile project(':commons:sql-repository')
     compile project(':commons:services-base')
     compile project(':commons:security-actuator')
+    compile project(':commons:db-services')
 
     compile 'com.github.rholder:guava-retrying:2.0.0'
 
