@@ -1,6 +1,11 @@
 package io.iconator.rates.service;
 
-import io.iconator.rates.config.*;
+import io.iconator.rates.config.AggregationServiceConfig;
+import io.iconator.rates.config.BlockNrServiceConfig;
+import io.iconator.rates.config.ExchangeRateServiceConfig;
+import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
+import io.iconator.rates.config.TestConfig;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,15 +22,16 @@ import java.io.IOException;
         TestConfig.class,
         AggregationServiceConfig.class,
         ExchangeRateServiceConfig.class,
-        RatesAppConfig.class,
+        RatesAppConfigHolder.class,
         BlockNrServiceConfig.class,
-        Beans.class,
+        RatesAppConfig.class,
         BlockchainInfoService.class,
         EtherscanService.class
 })
 @DataJpaTest
 @TestPropertySource({"classpath:rates.application.properties", "classpath:application-test.properties"})
 public class FallbackBlockHeight {
+
     @Autowired
     private BlockchainInfoService blockchainInfoService;
 

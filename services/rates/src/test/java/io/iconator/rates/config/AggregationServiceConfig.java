@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import(RatesAppConfig.class)
+@Import(RatesAppConfigHolder.class)
 public class AggregationServiceConfig {
 
     @Bean
-    public AggregationService aggregationService(RatesAppConfig ratesAppConfig) {
+    public AggregationService aggregationService(RatesAppConfigHolder ratesAppConfig) {
         return new AggregationService(ratesAppConfig);
     }
 

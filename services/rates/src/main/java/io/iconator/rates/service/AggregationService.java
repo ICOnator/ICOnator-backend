@@ -1,7 +1,7 @@
 package io.iconator.rates.service;
 
 import io.iconator.commons.model.db.ExchangeCurrencyRate;
-import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 @Service
 public class AggregationService {
 
-    private final RatesAppConfig ratesAppConfig;
+    private final RatesAppConfigHolder ratesAppConfig;
 
     @Autowired
-    public AggregationService(RatesAppConfig ratesAppConfig) {
+    public AggregationService(RatesAppConfigHolder ratesAppConfig) {
         this.ratesAppConfig = ratesAppConfig;
     }
 

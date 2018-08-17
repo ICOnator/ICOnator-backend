@@ -8,7 +8,7 @@ import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.model.db.ExchangeCurrencyRate;
 import io.iconator.commons.model.db.ExchangeEntryRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
-import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
 import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
 import io.iconator.rates.consumer.BlockNrEthereumConsumer;
 import io.iconator.rates.service.exceptions.USDBTCFxException;
@@ -49,7 +49,7 @@ public class ExchangeRateService {
     private AggregationService aggregationService;
 
     @Autowired
-    private RatesAppConfig ratesAppConfig;
+    private RatesAppConfigHolder ratesAppConfig;
 
     @Autowired
     @Qualifier("bitfinexMarketDataService")
@@ -107,13 +107,13 @@ public class ExchangeRateService {
         LOG.info("Fetching rates...");
 
         Long blockNrETH = blockNrEthereumConsumer.getCurrentBlockNr();
-        if(blockNrETH == null) {
+        if (blockNrETH == null) {
             LOG.error("Could not fetch current ETH block number.");
             return;
         }
 
         Long blockNrBTC = blockNrBitcoinConsumer.getCurrentBlockNr();
-        if(blockNrBTC == null) {
+        if (blockNrBTC == null) {
             LOG.error("Could not fetch current BTC block number.");
             return;
         }
