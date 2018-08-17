@@ -1,5 +1,6 @@
 package io.iconator.monitor.transaction;
 
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
 
 import java.math.BigDecimal;
@@ -30,7 +31,7 @@ public interface TransactionAdapter {
 
     String getReceivingAddress();
 
-    Long getAssociatedInvestorId();
+    Long getAssociatedInvestorId() throws InvestorNotFoundException;
 
     Long getBlockHeight();
 

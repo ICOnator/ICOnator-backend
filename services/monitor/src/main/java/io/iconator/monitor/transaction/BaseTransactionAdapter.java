@@ -1,5 +1,6 @@
 package io.iconator.monitor.transaction;
 
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -8,8 +9,11 @@ import java.math.MathContext;
 
 public abstract class BaseTransactionAdapter implements TransactionAdapter {
 
-    @Autowired
-    private InvestorRepository investorRepository;
+    final private InvestorService investorService;
+
+    public BaseTransactionAdapter(InvestorService investorService) {
+        this.investorService = investorService;
+    }
 
     @Override
     public BigDecimal getTransactionValueInMainUnit() {
@@ -17,8 +21,8 @@ public abstract class BaseTransactionAdapter implements TransactionAdapter {
                 .divide(getAtomicUnitFactor(), MathContext.DECIMAL128);
     }
 
-    protected InvestorRepository getInvestorRepository() {
-        return investorRepository;
+    protected InvestorService getInvestorService() {
+        return investorService;
     }
 
     public BigDecimal getAtomicUnitFactor() {

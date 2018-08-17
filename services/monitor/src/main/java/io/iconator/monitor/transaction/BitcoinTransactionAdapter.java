@@ -1,5 +1,7 @@
 package io.iconator.monitor.transaction;
 
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
 import org.bitcoinj.core.*;
 import org.bitcoinj.store.BlockStore;
@@ -35,7 +37,9 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
 
     public BitcoinTransactionAdapter(@NotNull TransactionOutput bitcoinjTxOutput,
                                      @NotNull NetworkParameters bitcoinjNetworkParameters,
-                                     @NotNull BlockStore bitcoinjBlockStore) {
+                                     @NotNull BlockStore bitcoinjBlockStore,
+                                     @NotNull InvestorService investorService) {
+        super(investorService);
         this.bitcoinjTxOutput = bitcoinjTxOutput;
         this.bitcoinjNetworkParameters = bitcoinjNetworkParameters;
         this.bitcoinjBlockStore = bitcoinjBlockStore;
@@ -71,10 +75,8 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public Long getAssociatedInvestorId() {
-        return getInvestorRepository()
-                .findOptionalByPayInBitcoinAddress(getReceivingAddress())
-                .get().getId();
+    public Long getAssociatedInvestorId() throws InvestorNotFoundException {
+        return getInvestorService().getInvestorByBitcoinAddress(getReceivingAddress()).getId();
     }
 
     @Override

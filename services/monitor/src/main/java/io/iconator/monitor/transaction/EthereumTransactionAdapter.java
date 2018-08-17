@@ -1,5 +1,7 @@
 package io.iconator.monitor.transaction;
 
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
@@ -27,7 +29,10 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
      */
     private Date blockTime;
 
-    public EthereumTransactionAdapter(@NotNull Transaction tx, @NotNull Web3j web3j) {
+    public EthereumTransactionAdapter(@NotNull Transaction tx,
+                                      @NotNull Web3j web3j,
+                                      @NotNull InvestorService investorService) {
+        super(investorService);
         this.ethereumTx = tx;
         this.web3j = web3j;
     }
@@ -53,10 +58,8 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public Long getAssociatedInvestorId() {
-        return getInvestorRepository()
-                .findOptionalByPayInEtherAddressIgnoreCase(getReceivingAddress())
-                .get().getId();
+    public Long getAssociatedInvestorId() throws InvestorNotFoundException {
+        return getInvestorService().getInvestorByEthereumAddress(getReceivingAddress()).getId();
     }
 
     @Override

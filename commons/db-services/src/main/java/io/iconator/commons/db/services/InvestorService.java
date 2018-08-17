@@ -38,4 +38,18 @@ public class InvestorService {
     public List<Investor> getAllInvestors() {
         return investorRepository.findAll();
     }
+
+    public Investor getInvestorByBitcoinAddress(String address) throws InvestorNotFoundException {
+        Optional<Investor> investorFromDb =
+                investorRepository.findOptionalByPayInBitcoinAddress(address);
+
+        return investorFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
+
+    public Investor getInvestorByEthereumAddress(String address) throws InvestorNotFoundException {
+        Optional<Investor> investorFromDb =
+                investorRepository.findOptionalByPayInEtherAddressIgnoreCase(address);
+
+        return investorFromDb.orElseThrow(InvestorNotFoundException::new);
+    }
 }
