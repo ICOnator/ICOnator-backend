@@ -76,8 +76,8 @@ public class PaymentLogRepositoryTest {
         return new PaymentLog(
                 txIdentifier,
                 new Date(),
-                new Date(),
                 CURRENCY_TYPE,
+                new Date(),
                 new BigInteger("1"),
                 new BigDecimal(2),
                 new BigDecimal(3),

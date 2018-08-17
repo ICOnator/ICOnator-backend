@@ -241,7 +241,7 @@ abstract public class BaseMonitor {
     private boolean isInvestorAvailable(TransactionAdapter tx) {
         try {
             Long id = tx.getAssociatedInvestorId();
-            if (id == null || id == 0) throw new NoSuchElementException();
+            if (id == null) throw new NoSuchElementException();
         } catch (Throwable t) {
             LOG.error("Couldn't find investor with {} payment address {} for transaction {}.", tx.getCurrencyType().name(), tx.getReceivingAddress(), tx.getTransactionId(), t);
             return false;
