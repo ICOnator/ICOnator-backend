@@ -49,6 +49,8 @@ public class PaymentLog {
     @Column(name = "eligible_for_refund_id")
     private Long eligibleForRefundId;
 
+    public PaymentLog() {}
+
     public PaymentLog(@NotNull String txIdentifier, @NotNull Date createDate,
                       @NotNull CurrencyType currency) {
         this.txIdentifier = txIdentifier;

@@ -1,12 +1,18 @@
 package io.iconator.monitor;
 
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
+import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.commons.sql.dao.EligibleForRefundRepository;
+import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.commons.test.utils.ThreadTestUtils;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.service.MonitorService.TokenAllocationResult;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
 import org.junit.After;
 import org.junit.Before;
@@ -17,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -41,6 +48,7 @@ import static org.mockito.Mockito.when;
 public class MonitorServiceTest {
 
     private final static Logger LOG = LoggerFactory.getLogger(MonitorServiceTest.class);
+    private final static BigDecimal USD_FX_RATE = new BigDecimal(400);
 
     @Autowired
     private MonitorService monitorService;
@@ -51,11 +59,20 @@ public class MonitorServiceTest {
     @Autowired
     private SaleTierService saleTierService;
 
+    @Autowired
+    private PaymentLogService paymentLogService;
+
+    @Autowired
+    private PaymentLogRepository paymentLogRepository;
+
+    @Autowired
+    private EligibleForRefundRepository eligibleForRefundRepository;
+
     @MockBean
     private MonitorAppConfig appConfig;
 
     @Autowired
-    private BaseMonitor baseMonitor;
+    private EthereumMonitor ethereumMonitor;
 
     @Before
     public void setUp() {
@@ -72,6 +89,8 @@ public class MonitorServiceTest {
     @After
     public void cleanUp() {
         saleTierRepository.deleteAll();
+        paymentLogRepository.deleteAll();
+        eligibleForRefundRepository.deleteAll();
     }
 
 
@@ -100,9 +119,10 @@ public class MonitorServiceTest {
     }
 
     @Test
-    public void testNoTierAvailableAtDate() throws Throwable {
+    public void testNoTierAvailableAtDate() {
+        PaymentLog log = createPaymentLog(BigDecimal.TEN, Date.valueOf("1970-01-01"));
         try {
-            MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-01"));
+            TokenAllocationResult r = monitorService.allocateTokens(log);
         } catch (NoTierAtDateException e) {
             return;
         }
@@ -121,7 +141,8 @@ public class MonitorServiceTest {
         final BigDecimal payment = monitorService.convertTomicsToUsd(tomicsToSell, tt.getDiscount());
 
         // test
-        MonitorService.TokenAllocationResult result = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult result = monitorService.allocateTokens(log);
         if (result.hasOverflow()) fail();
         assertEquals(0, result.getAllocatedTomics().compareTo(tomicsToSell));
         tt.assertTier();
@@ -140,7 +161,8 @@ public class MonitorServiceTest {
                 .add(overflow);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         // rounding the resulting USD overflow because that will be the actual precision with which the overflow
         // will be stored for refunds.
@@ -176,7 +198,8 @@ public class MonitorServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -212,7 +235,8 @@ public class MonitorServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -248,7 +272,8 @@ public class MonitorServiceTest {
         BigDecimal payment = paymentToTier1.add(paymentToTier2);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsToSellFromTier1.add(tomicsToSellFromTier2)));
         tt1.assertTier();
@@ -281,7 +306,8 @@ public class MonitorServiceTest {
                 .add(overflow);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tt1.getTomicsMax().add(tt2.getTomicsMax()).add(tt3.getTomicsMax())));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -289,7 +315,8 @@ public class MonitorServiceTest {
         tt2.assertTier();
         tt3.assertTier();
 
-        r = baseMonitor.allocateTokensWithRetries(BigDecimal.TEN, Date.valueOf("1970-01-06"));
+        log = createPaymentLog(BigDecimal.TEN, Date.valueOf("1970-01-06"));
+        r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(BigInteger.ZERO));
         assertEquals(0, r.getOverflow().compareTo(BigDecimal.TEN));
@@ -312,7 +339,8 @@ public class MonitorServiceTest {
         final BigDecimal overflow = payment.subtract(usdAmountConverted);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -332,7 +360,8 @@ public class MonitorServiceTest {
         final BigDecimal payment = monitorService.convertTomicsToUsd(totalTomicsAmount(), tt1.getDiscount()).add(overflow);
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -348,7 +377,8 @@ public class MonitorServiceTest {
 
         BigInteger tomicsFromTier = totalTomicsAmount().divide(new BigInteger("2"));
         BigDecimal payment = monitorService.convertTomicsToUsd(tomicsFromTier, t.getDiscount());
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         t.tomicsSoldMustBe(tomicsFromTier);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsFromTier));
@@ -358,7 +388,8 @@ public class MonitorServiceTest {
         payment = monitorService.convertTomicsToUsd(tomicsFromTier, t.getDiscount()).add(overflow);
         t.tomicsSoldMustBe(totalTomicsAmount());
 
-        r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        log = createPaymentLog(payment, blockTime);
+        r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsFromTier));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -389,7 +420,8 @@ public class MonitorServiceTest {
         final BigDecimal overflow = paymentToTier2.divide(new BigDecimal(2), new MathContext(6, RoundingMode.HALF_EVEN));
 
         // test
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(totalTomicsAmount()));
         assertEquals(0, r.getOverflow().round(new MathContext(6, RoundingMode.HALF_EVEN)).compareTo(overflow));
@@ -435,7 +467,8 @@ public class MonitorServiceTest {
                 .subtract(tiers.get(0).getTier().getTomicsSold())
                 .subtract(tiers.get(1).getTomicsMax()));
 
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(paymentToTier1, blockTime);
+        PaymentLog log = createPaymentLog(paymentToTier1, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         assertEquals(0, tomicsFromTier1.compareTo(r.getAllocatedTomics()));
         if (r.hasOverflow()) fail();
         tiers.forEach(TestTier::assertTier);
@@ -447,7 +480,8 @@ public class MonitorServiceTest {
         BigDecimal paymentToTier3 = monitorService.convertTomicsToUsd(tomicsFromTier3, tiers.get(3).getDiscount());
         tiers.get(3).tomicsMaxMustBe(overallRemainingTomics);
         tiers.get(3).tomicsSoldMustBe(tomicsFromTier3);
-        r = baseMonitor.allocateTokensWithRetries(paymentToTier3, blockTime);
+        log = createPaymentLog(paymentToTier3, blockTime);
+        r = monitorService.allocateTokens(log);
         assertEquals(0, tomicsFromTier3.compareTo(r.getAllocatedTomics()));
         if (r.hasOverflow()) fail();
         tiers.forEach(TestTier::assertTier);
@@ -464,7 +498,8 @@ public class MonitorServiceTest {
         tiers.get(5).datesMustBeShiftedBy(dateShift);
         tiers.get(5).newEndDateMustBe(blockTime);
 
-        r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        log = createPaymentLog(payment, blockTime);
+        r = monitorService.allocateTokens(log);
         assertEquals(0, overallRemainingTomics.compareTo(r.getAllocatedTomics()));
         if (!r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(overallRemainingTomics));
@@ -487,7 +522,8 @@ public class MonitorServiceTest {
         ThreadTestUtils.runMultiThread(
                 () -> {
                     try {
-                        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(singlePayment, blockTime);
+                        PaymentLog log = createPaymentLog(singlePayment, blockTime);
+                        TokenAllocationResult r = ethereumMonitor.allocateTokensWithRetries(log);
                         if (r.hasOverflow()) fail();
                         assertEquals(0, r.getAllocatedTomics().compareTo(singleSoldTomics));
                         LOG.info("Distributed tomics: {}", r.getAllocatedTomics().toString());
@@ -525,7 +561,8 @@ public class MonitorServiceTest {
         ThreadTestUtils.runMultiThread(
                 () -> {
                     try {
-                        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(singlePayment, blockTime);
+                        PaymentLog log = createPaymentLog(singlePayment, blockTime);
+                        TokenAllocationResult r = ethereumMonitor.allocateTokensWithRetries(log);
                         if (r.hasOverflow()) fail();
                         LOG.info("Distributed tomics: {}", r.getAllocatedTomics().toString());
                     } catch (Throwable throwable) {
@@ -568,9 +605,36 @@ public class MonitorServiceTest {
         BigInteger tomicsFromTier = t.getTomicsMax().divide(BigInteger.valueOf(divisor));
         BigDecimal payment = monitorService.convertTomicsToUsd(tomicsFromTier, t.getDiscount());
         t.tomicsSoldMustBe(t.tomicsSold.add(tomicsFromTier));
-        MonitorService.TokenAllocationResult r = baseMonitor.allocateTokensWithRetries(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime);
+        TokenAllocationResult r = monitorService.allocateTokens(log);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsFromTier));
+    }
+
+    private PaymentLog createPaymentLog(BigDecimal usdAmount, Date blockTime) {
+        String txId = "txId0";
+        java.util.Date creationDate = new java.util.Date();
+        CurrencyType currency = CurrencyType.ETH;
+        // Value doesn't matter, only the amount in usd matters.
+        BigInteger weiAmount = BigInteger.ONE;
+        // Value doesn't matter
+        long investorId = 1;
+        BigInteger tomicsAmount = null;
+
+        PaymentLog paymentLog = null;
+        boolean succeeded = false;
+        int i = 1;
+        while (!succeeded) {
+            try {
+                paymentLog = paymentLogService.saveTransactionless(
+                        new PaymentLog(txId, creationDate, currency, blockTime,
+                                weiAmount, USD_FX_RATE, usdAmount, investorId,
+                                tomicsAmount));
+                succeeded = true;
+            } catch (DataIntegrityViolationException ignore) { }
+            txId = "txId" + i++;
+        }
+        return paymentLog;
     }
 
     private BigInteger tomicsFactor() {
@@ -654,7 +718,7 @@ public class MonitorServiceTest {
                     tomicsMax,
                     hasDynamicDuration,
                     hasDynamicMax);
-            return saleTierRepository.saveAndFlush(t);
+            return saleTierService.saveTransactionless(t);
         }
 
         public void newStartDateMustBe(Date date) {

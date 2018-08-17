@@ -7,7 +7,7 @@ import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.EthereumMonitorTestConfig;
+import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {EthereumMonitorTestConfig.class})
+@ContextConfiguration(classes = {MonitorTestConfig.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)

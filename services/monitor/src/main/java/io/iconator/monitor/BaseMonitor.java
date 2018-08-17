@@ -103,7 +103,7 @@ abstract public class BaseMonitor {
      * object. If this method where in the same class as the actual conversion and distribution
      * method calling that method would not lead to a transactional execution of the code.
      */
-    private TokenAllocationResult allocateTokensWithRetries(PaymentLog paymentLog)
+    public TokenAllocationResult allocateTokensWithRetries(PaymentLog paymentLog)
             throws Throwable {
 
         if (paymentLog.getUsdValue() == null) {

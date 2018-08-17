@@ -43,6 +43,8 @@ public class EligibleForRefund {
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
 
+    public EligibleForRefund() {}
+
     public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
                              long investorId, String txIdentifier) {
         this.refundReason = refundReason;
@@ -51,12 +53,6 @@ public class EligibleForRefund {
         this.investorId = investorId;
         this.txIdentifier = txIdentifier;
     }
-
-    public EligibleForRefund(String txIdentifier, CurrencyType currency) {
-        this.txIdentifier =txIdentifier;
-        this.currency = currency;
-    }
-
 
     public long getId() {
         return id;

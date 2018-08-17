@@ -36,8 +36,13 @@ public class PaymentLogService {
                 .orElseThrow(PaymentLogNotFoundException::new);
     }
 
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRED)
     public PaymentLog saveAndCommit(PaymentLog log) {
+        return paymentLogRepository.saveAndFlush(log);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public PaymentLog saveTransactionless(PaymentLog log) {
         return paymentLogRepository.saveAndFlush(log);
     }
 
