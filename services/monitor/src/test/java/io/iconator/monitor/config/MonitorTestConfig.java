@@ -1,12 +1,15 @@
 package io.iconator.monitor.config;
 
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.BaseMonitor;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.utils.MockICOnatorMessageService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,15 +40,20 @@ public class MonitorTestConfig {
         return new EligibleForRefundService();
     }
 
-        @Bean
-    public BaseMonitor baseMonitor(MonitorService monitorService,
-                                   InvestorRepository investorRepository,
-                                   PaymentLogService paymentLogService,
-                                   EligibleForRefundService eligibleForRefundService,
-                                   FxService fxService) {
+    @Bean
+    public MockICOnatorMessageService mockICOnatorMessageService() {
+        return new MockICOnatorMessageService();
+    }
 
-        return new BaseMonitor(monitorService, investorRepository, paymentLogService,
-                eligibleForRefundService, fxService, messageService);
+    @Bean
+    public BaseMonitor baseMonitor(MonitorService monitorService,
+                                   PaymentLogService paymentLogService,
+                                   FxService fxService,
+                                   ICOnatorMessageService messageService,
+                                   InvestorService investorService) {
+
+        return new BaseMonitor(monitorService, paymentLogService, fxService,
+                messageService, investorService);
     }
 
     @Bean
@@ -56,6 +64,11 @@ public class MonitorTestConfig {
     @Bean
     public SaleTierService saleTierService() {
         return new SaleTierService();
+    }
+
+    @Bean
+    public InvestorService investorService(InvestorRepository investorRepository) {
+        return new InvestorService(investorRepository);
     }
 }
 

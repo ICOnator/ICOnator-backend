@@ -3,6 +3,7 @@ package io.iconator.monitor;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.monitor.exception.IncompleteTransactoinInformationException;
@@ -33,7 +34,6 @@ public class BitcoinMonitor extends BaseMonitor {
     private final BlockChain bitcoinBlockchain;
     private final SPVBlockStore bitcoinBlockStore;
 
-
     public BitcoinMonitor(FxService fxService,
                           BlockChain bitcoinBlockchain,
                           SPVBlockStore bitcoinBlockStore,
@@ -42,9 +42,10 @@ public class BitcoinMonitor extends BaseMonitor {
                           PeerGroup bitcoinPeerGroup,
                           PaymentLogService paymentLogService,
                           MonitorService monitorService,
-                          ICOnatorMessageService messageService) {
+                          ICOnatorMessageService messageService,
+                          InvestorService investorService) {
 
-        super(monitorService, paymentLogService, fxService, messageService);
+        super(monitorService, paymentLogService, fxService, messageService, investorService);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
@@ -114,7 +115,8 @@ public class BitcoinMonitor extends BaseMonitor {
             Context.propagate(this.bitcoinContext);
             bitcoinjTx.getOutputs().stream()
                     .filter(utxo -> utxo.getScriptPubKey().isSentToAddress())
-                    .map(utxo -> new BitcoinTransactionAdapter(utxo, bitcoinNetworkParameters, bitcoinBlockStore))
+                    .map(utxo -> new BitcoinTransactionAdapter(
+                            utxo, bitcoinNetworkParameters, bitcoinBlockStore, investorService))
                     .forEach(tx -> {
                         try {
                             if (BitcoinUtils.isBuilding(tx.getBitcoinjTransaction())) {

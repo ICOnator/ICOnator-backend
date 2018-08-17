@@ -2,6 +2,7 @@ package io.iconator.monitor;
 
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
@@ -35,9 +36,10 @@ public class EthereumMonitor extends BaseMonitor {
                            PaymentLogService paymentLogService,
                            MonitorService monitorService,
                            ICOnatorMessageService messageService,
+                           InvestorService investorService,
                            Web3j web3j) {
 
-        super(monitorService, paymentLogService, fxService, messageService);
+        super(monitorService, paymentLogService, fxService, messageService, investorService);
 
         this.web3j = web3j;
         this.messageService = messageService;
@@ -88,8 +90,8 @@ public class EthereumMonitor extends BaseMonitor {
         web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(new DefaultBlockParameterNumber(startBlock))
                 .subscribe(web3jTx -> {
                     try {
-                        EthereumTransactionAdapter tx = new EthereumTransactionAdapter(web3jTx, web3j);
-                        processTransaction(tx);
+                        processTransaction(
+                                new EthereumTransactionAdapter(web3jTx, web3j, investorService));
                     } catch (Throwable t) {
                         LOG.error("Error while processing transaction.", t);
                     }

@@ -3,6 +3,7 @@ package io.iconator.monitor.config;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
@@ -123,10 +124,11 @@ public class MonitorBean {
                                            Web3j web3j,
                                            PaymentLogService paymentLogService,
                                            MonitorService monitorService,
-                                           ICOnatorMessageService messageService) {
+                                           ICOnatorMessageService messageService,
+                                           InvestorService investorService) {
 
         return new EthereumMonitor(fxService, paymentLogService,
-                monitorService, messageService, web3j);
+                monitorService, messageService, investorService, web3j);
     }
 
     @Bean
@@ -138,11 +140,12 @@ public class MonitorBean {
                                          PeerGroup peerGroup,
                                          PaymentLogService paymentLogService,
                                          MonitorService monitorService,
-                                         ICOnatorMessageService messageService) {
+                                         ICOnatorMessageService messageService,
+                                         InvestorService investorService) {
 
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                paymentLogService, monitorService, messageService);
+                paymentLogService, monitorService, messageService, investorService);
     }
 
     @Bean
