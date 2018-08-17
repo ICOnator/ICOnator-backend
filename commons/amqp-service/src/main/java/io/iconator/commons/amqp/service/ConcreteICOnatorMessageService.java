@@ -48,16 +48,6 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     }
 
     @Override
-    public void send(BlockNRBitcoinMessage blockNRBitcoinMessage) {
-        sendExchange(BLOCK_NR_BITCOIN_ROUTING_KEY, blockNRBitcoinMessage);
-    }
-
-    @Override
-    public void send(BlockNREthereumMessage blockNREthereumMessage) {
-        sendExchange(BLOCK_NR_ETHEREUM_ROUTING_KEY, blockNREthereumMessage);
-    }
-
-    @Override
     public void send(KycStartEmailSentMessage kycStartEmailSentMessage) {
         sendExchange(KYC_START_EMAIL_SENT_ROUTING_KEY, kycStartEmailSentMessage);
     }
@@ -65,6 +55,18 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     @Override
     public void send(KycReminderEmailSentMessage kycReminderEmailSentMessage) {
         sendExchange(KYC_REMINDER_EMAIL_SENT_ROUTING_KEY, kycReminderEmailSentMessage);
+    }
+
+    @Override
+    public void send(BlockNrMessage blockNrMessage) {
+        String routingKey = null;
+        if (blockNrMessage instanceof BlockNRBitcoinMessage) {
+            routingKey = BLOCK_NR_BITCOIN_ROUTING_KEY;
+        } else if (blockNrMessage instanceof BlockNREthereumMessage) {
+            routingKey = BLOCK_NR_ETHEREUM_ROUTING_KEY;
+        }
+
+        if (routingKey != null) sendExchange(routingKey, blockNrMessage);
     }
 
     private void sendExchange(String routingKey, Object message) {
