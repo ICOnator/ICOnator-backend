@@ -1,5 +1,6 @@
 package io.iconator.commons.db.services;
 
+import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
@@ -21,12 +22,27 @@ public class PaymentLogService {
         return paymentLogRepository.existsByTxIdentifierAndCurrency(txIdentifier, currency);
     }
 
-    public Optional<PaymentLog> getPaymentLog(String txIdentifier, CurrencyType currency) {
-        return paymentLogRepository.findOptionalByTxIdentifierAndCurrency(txIdentifier, currency);
+    public PaymentLog getPaymentLogForUpdate(String txIdentifier, CurrencyType currency)
+            throws PaymentLogNotFoundException {
+        return paymentLogRepository
+                .findOptionalByTxIdentifierAndCurrency(txIdentifier, currency)
+                .orElseThrow(PaymentLogNotFoundException::new);
     }
 
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.NOT_SUPPORTED)
-    public PaymentLog saveImmediately(PaymentLog log) {
+    public PaymentLog getPaymentLogReadOnly(String txIdentifier, CurrencyType currency)
+            throws PaymentLogNotFoundException {
+        return paymentLogRepository
+                .readOptionalByTxIdentifierAndCurrency(txIdentifier, currency)
+                .orElseThrow(PaymentLogNotFoundException::new);
+    }
+
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
+    public PaymentLog saveAndCommit(PaymentLog log) {
         return paymentLogRepository.saveAndFlush(log);
     }
+
+    public PaymentLog save(PaymentLog log) {
+        return paymentLogRepository.saveAndFlush(log);
+    }
+
 }
