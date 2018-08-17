@@ -37,7 +37,7 @@ public class SetWalletAddressMessageConsumer {
     private BitcoinMonitor bitcoinMonitor;
 
     @RabbitListener(
-            bindings = @QueueBinding(value = @Queue(value = ADDRESS_SET_WALLET_QUEUE, autoDelete = "false"),
+            bindings = @QueueBinding(value = @Queue(value = "", autoDelete = "true"),
                     exchange = @Exchange(
                             value = ICONATOR_ENTRY_EXCHANGE,
                             type = ExchangeTypes.TOPIC,
