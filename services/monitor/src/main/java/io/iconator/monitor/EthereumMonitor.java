@@ -184,7 +184,7 @@ public class EthereumMonitor extends BaseMonitor {
                 wei,
                 USDperETH,
                 usdReceived,
-                investor.getId(),
+                investor,
                 BigInteger.ZERO);
         try {
             paymentLogService.saveTransactionless(paymentLog);

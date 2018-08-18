@@ -40,8 +40,9 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
-    @Column(name = "inverstor_id")
-    private long investorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "investor_id", nullable = false)
+    private Investor investor;
 
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
@@ -50,11 +51,11 @@ public class EligibleForRefund {
     }
 
     public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
-                             long investorId, String txIdentifier) {
+                             Investor investor, String txIdentifier) {
         this.refundReason = refundReason;
         this.amount = amount;
         this.currency = currency;
-        this.investorId = investorId;
+        this.investor = investor;
         this.txIdentifier = txIdentifier;
     }
 
@@ -90,12 +91,12 @@ public class EligibleForRefund {
         this.currency = currency;
     }
 
-    public long getInvestorId() {
-        return investorId;
+    public Investor getInvestor() {
+        return investor;
     }
 
-    public void setInvestorId(long investorId) {
-        this.investorId = investorId;
+    public void setInvestor(Investor investor) {
+        this.investor = investor;
     }
 
     public String getTxIdentifier() {

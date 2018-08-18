@@ -75,9 +75,8 @@ public class BaseMonitor {
                                      RefundReason reason,
                                      Investor investor) {
 
-        long investorId = investor != null ? investor.getId() : 0;
         EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType,
-                investorId, txIdentifier);
+                investor, txIdentifier);
         try {
             LOG.info("Creating refund entry for transaction {}.", txIdentifier);
             // Saving without a transaction will persist to the database immediatly which makes sure

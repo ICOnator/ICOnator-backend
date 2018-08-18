@@ -254,7 +254,7 @@ public class BitcoinMonitor extends BaseMonitor {
                 satoshi,
                 USDperBTC,
                 usdReceived,
-                investor.getId(),
+                investor,
                 BigInteger.ZERO);
         try {
             paymentLogService.saveTransactionless(paymentLog);

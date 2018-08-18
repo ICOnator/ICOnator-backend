@@ -1,11 +1,11 @@
 package io.iconator.monitor;
 
-
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.EthereumMonitorTestConfig;
 import io.iconator.monitor.service.FxService;
@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -34,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
@@ -43,7 +41,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
@@ -67,8 +64,11 @@ public class EthereumMonitorTest {
     @Autowired
     private Web3j web3j;
 
-    @MockBean
-    private InvestorRepository investorRepository;
+    @Autowired
+    private InvestorService investorService;
+
+    @Autowired
+    private SaleTierService saleTierService;
 
     @MockBean
     private FxService fxService;
@@ -90,10 +90,8 @@ public class EthereumMonitorTest {
     }
 
     @Before
-    @Transactional(propagation = Propagation.NOT_SUPPORTED) // Persist directly to DB without transactions.
     public void setUp() {
         createAndSaveTier();
-        createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
     }
 
     @After
@@ -103,7 +101,6 @@ public class EthereumMonitorTest {
 
     @Test
     public void testPayment() throws Exception {
-
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
         BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
@@ -115,30 +112,16 @@ public class EthereumMonitorTest {
         when(fxService.getUSDperETH(eq(ethBlockNumber)))
                 .thenReturn(usdPricePerETH);
 
-        Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
-
-        String receivingAddress = TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress());
-        when(investorRepository.findOptionalByPayInEtherAddressIgnoreCase(eq(receivingAddress))).thenReturn(
-                Optional.of(new Investor(
-                        new Date(),
-                        "email",
-                        "emailConfirmationToken",
-                        "walletAddress",
-                        receivingAddress,
-                        "payInBitcoinAddress",
-                        "refundEtherAddress" ,
-                        "refundBitcoinAddress",
-                        "ipAddress")));
-
-        ethereumMonitor.addMonitoredEtherAddress(receivingAddress);
+        Investor investor = createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
+        ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
         ethereumMonitor.start((long) 0);
 
-
-
-        TransactionReceipt r = Transfer.sendFunds(
+        Credentials credentials = Credentials.create(
+                ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
+        Transfer.sendFunds(
                 web3j,
                 credentials,
-                TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress()),
+                investor.getPayInEtherAddress(),
                 fundsAmountToSendInETH,
                 Convert.Unit.ETHER).send();
 
@@ -176,7 +159,7 @@ public class EthereumMonitorTest {
     }
 
     private Investor createAndSaveInvestor(ECKey key) {
-        return investorRepository.saveAndFlush(buildInvestor(key));
+        return investorService.saveTransactionless(buildInvestor(key));
     }
 
     private Investor buildInvestor(ECKey key) {
@@ -185,13 +168,11 @@ public class EthereumMonitorTest {
                 "email@email.com",
                 "emailConfirmationToken",
                 "walletAddress",
-                Hex.toHexString(key.getPubKey()),
+                TypeConverter.toJsonHex(key.getAddress()),
                 "payInBitcoinAddress",
                 "refundEtherAddress",
                 "refundBitcoinAddress",
                 "127.0.0.1"
-
-
         );
     }
 
@@ -200,8 +181,11 @@ public class EthereumMonitorTest {
         Date to = new Date();
         BigInteger tomics = tokenConversionService.convertTokensToTomics(new BigDecimal(1000L))
                 .toBigInteger();
-        saleTierRepository.saveAndFlush(
-                new SaleTier(4, "4", from, to, new BigDecimal("0.0"), BigInteger.ZERO, tomics, true, false));
+
+        saleTierService.saveTransactionless(
+                new SaleTier(4, "4", from, to, new BigDecimal("0.0"),
+                        BigInteger.ZERO, tomics, true, false));
     }
 
 }
+

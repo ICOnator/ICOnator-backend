@@ -6,6 +6,7 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Optional;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
@@ -39,8 +40,9 @@ public class PaymentLog {
     @Column(name = "usd_amount", nullable = false, precision = 34, scale = 6)
     private BigDecimal usdValue;
 
-    @Column(name = "investor_id", nullable = false)
-    private long investorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "investor_id", nullable = false)
+    private Investor investor;
 
     @Column(name = "tomics_amount", nullable = false, precision = 34, scale = 0)
     private BigInteger tomicsAmount;
@@ -50,7 +52,7 @@ public class PaymentLog {
 
     public PaymentLog(String txIdentifier, Date createDate, Date blockDate, CurrencyType currency,
                       BigInteger paymentAmount, BigDecimal fxRate, BigDecimal usdValue,
-                      long investorId, BigInteger tomicsAmount) {
+                      Investor investor, BigInteger tomicsAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -58,7 +60,7 @@ public class PaymentLog {
         this.paymentAmount = paymentAmount;
         this.fxRate = fxRate;
         this.usdValue = usdValue;
-        this.investorId = investorId;
+        this.investor = investor;
         this.tomicsAmount = tomicsAmount;
     }
 
@@ -102,11 +104,11 @@ public class PaymentLog {
         this.tomicsAmount = amount;
     }
 
-    public long getInvestorId() {
-        return investorId;
+    public Optional<Investor> getInvestor() {
+        return Optional.ofNullable(investor);
     }
 
-    public void setInvestorId(long investorId) {
-        this.investorId = investorId;
+    public void setInvestor(Investor investor) {
+        this.investor = investor;
     }
 }

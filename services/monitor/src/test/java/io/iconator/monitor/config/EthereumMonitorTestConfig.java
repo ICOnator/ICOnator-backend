@@ -2,6 +2,7 @@ package io.iconator.monitor.config;
 
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.InvestorRepository;
@@ -81,6 +82,12 @@ public class EthereumMonitorTestConfig {
     }
 
     @Bean
+    public InvestorService investorService(InvestorRepository investorRepository) {
+        return new InvestorService(investorRepository);
+    }
+
+
+        @Bean
     public MonitorAppConfig monitorAppConfig() {
         return new MonitorAppConfig();
     }
