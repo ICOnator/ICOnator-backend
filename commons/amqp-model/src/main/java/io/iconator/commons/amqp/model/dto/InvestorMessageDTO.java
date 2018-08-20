@@ -1,6 +1,7 @@
 package io.iconator.commons.amqp.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.iconator.commons.model.db.Investor;
 
 import java.util.Arrays;
@@ -10,22 +11,31 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InvestorMessageDTO {
 
+    @JsonProperty("creationDate")
     private Date creationDate;
 
+    @JsonProperty("email")
     private String email;
 
+    @JsonProperty("emailConfirmationToken")
     private String emailConfirmationToken;
 
+    @JsonProperty("walletAddress")
     private String walletAddress;
 
+    @JsonProperty("payInEtherAddress")
     private String payInEtherAddress;
 
+    @JsonProperty("payInBitcoinAddress")
     private String payInBitcoinAddress;
 
+    @JsonProperty("refundEtherAddress")
     private String refundEtherAddress;
 
+    @JsonProperty("refundBitcoinAddress")
     private String refundBitcoinAddress;
 
+    @JsonProperty("ipAddress")
     private String ipAddress;
 
     public InvestorMessageDTO() {

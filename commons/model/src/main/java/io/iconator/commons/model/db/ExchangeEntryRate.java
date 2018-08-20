@@ -2,7 +2,18 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.ExchangeType;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,6 +35,7 @@ public class ExchangeEntryRate {
     private Date creationDate;
 
     @Column(name = "exchange_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private ExchangeType exchangeType;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)

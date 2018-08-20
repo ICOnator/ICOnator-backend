@@ -2,7 +2,11 @@ package io.iconator.commons.model.db;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.util.UUID;
 
 @Entity
@@ -30,7 +34,8 @@ public class KycInfo {
     @Column(name = "kyc_uri")
     private String kycUri;
 
-    public KycInfo() {}
+    public KycInfo() {
+    }
 
     public KycInfo(long investorId, boolean isKycComplete, String kycUri) {
         this.investorId = investorId;

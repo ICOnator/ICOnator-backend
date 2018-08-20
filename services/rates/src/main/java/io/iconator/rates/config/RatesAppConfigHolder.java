@@ -56,6 +56,12 @@ public class RatesAppConfigHolder {
     @Value("${io.iconator.services.rates.outliers.std-dev.threshold.upper-bound}")
     private Double outlierStdDevThresholdUpperBound;
 
+    @Value("${io.iconator.services.rates.fetch.range-between-threshold.min}")
+    private Long fetchRangeBetweenThresholdMillisMin;
+
+    @Value("${io.iconator.services.rates.fetch.range-between-threshold.max}")
+    private Long fetchRangeBetweenThresholdMillisMax;
+
     public String getBitcoinNet() {
         return bitcoinNet;
     }
@@ -114,5 +120,13 @@ public class RatesAppConfigHolder {
 
     public Double getOutlierStdDevThresholdUpperBound() {
         return outlierStdDevThresholdUpperBound;
+    }
+
+    public Long getFetchRangeBetweenThresholdMillisMin() {
+        return fetchRangeBetweenThresholdMillisMin;
+    }
+
+    public Long getFetchRangeBetweenThresholdMillisMax() {
+        return fetchRangeBetweenThresholdMillisMax;
     }
 }

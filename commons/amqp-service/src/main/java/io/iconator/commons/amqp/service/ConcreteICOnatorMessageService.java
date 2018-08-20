@@ -1,10 +1,32 @@
 package io.iconator.commons.amqp.service;
 
 import io.iconator.commons.amqp.AMQPMessageService;
-import io.iconator.commons.amqp.model.*;
+import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
+import io.iconator.commons.amqp.model.BlockNREthereumMessage;
+import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
+import io.iconator.commons.amqp.model.FetchRatesRequestMessage;
+import io.iconator.commons.amqp.model.FetchRatesResponseMessage;
+import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.amqp.model.KycReminderEmailMessage;
+import io.iconator.commons.amqp.model.KycReminderEmailSentMessage;
+import io.iconator.commons.amqp.model.KycStartEmailMessage;
+import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
+import io.iconator.commons.amqp.model.SetWalletAddressMessage;
+import io.iconator.commons.amqp.model.SummaryEmailMessage;
+import io.iconator.commons.amqp.service.exceptions.InvalidMessageFormatException;
 import org.slf4j.Logger;
 
-import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.*;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_BITCOIN_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_ETHEREUM_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.FUNDS_RECEIVED_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_SENT_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_START_EMAIL_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_START_EMAIL_SENT_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.RATES_EXCHANGE_REQUEST_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
@@ -67,9 +89,23 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
         sendExchange(KYC_REMINDER_EMAIL_SENT_ROUTING_KEY, kycReminderEmailSentMessage);
     }
 
+    public FetchRatesResponseMessage sendAndReceive(FetchRatesRequestMessage fetchRatesRequestMessage) throws InvalidMessageFormatException {
+        return sendExchangeAndReceive(RATES_EXCHANGE_REQUEST_ROUTING_KEY, fetchRatesRequestMessage);
+    }
+
     private void sendExchange(String routingKey, Object message) {
-        this.amqpMessageService.send(routingKey, message);
         LOG.info("Message to <{}> exchange. Message content: {}", routingKey, message);
+        this.amqpMessageService.send(routingKey, message);
+    }
+
+    private FetchRatesResponseMessage sendExchangeAndReceive(String routingKey, Object message) throws InvalidMessageFormatException {
+        LOG.info("Message to <{}> exchange, and wait for the response. Message content: {}", routingKey, message);
+        // TODO: what if the received message cannot be cast? :-)
+        try {
+            return (FetchRatesResponseMessage) this.amqpMessageService.sendAndReceive(routingKey, message);
+        } catch (Exception e) {
+            throw new InvalidMessageFormatException("Cannot cast the received object to 'FetchRatesResponseMessage' class.", e);
+        }
     }
 
 }

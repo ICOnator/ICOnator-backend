@@ -1,7 +1,7 @@
 package io.iconator.rates.controller;
 
 import io.iconator.rates.controller.dto.RatesCurrentResponse;
-import io.iconator.rates.service.ExchangeRateService;
+import io.iconator.rates.service.RatesProviderService;
 import io.iconator.rates.service.exceptions.USDBTCFxException;
 import io.iconator.rates.service.exceptions.USDETHFxException;
 import org.slf4j.Logger;
@@ -24,13 +24,13 @@ public class RatesController {
     private static final Logger LOG = LoggerFactory.getLogger(RatesController.class);
 
     @Autowired
-    private ExchangeRateService exchangeRateService;
+    private RatesProviderService ratesProviderService;
 
     @RequestMapping(value = "/rates/current", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<RatesCurrentResponse> address(@Context HttpServletRequest requestContext)
             throws USDBTCFxException, USDETHFxException {
-        BigDecimal latestBTCPrice = exchangeRateService.getLatestUSDPerBTC();
-        BigDecimal latestETHPrice = exchangeRateService.getLatestUSDperETH();
+        BigDecimal latestBTCPrice = ratesProviderService.getLatestUSDPerBTC();
+        BigDecimal latestETHPrice = ratesProviderService.getLatestUSDperETH();
         return ResponseEntity.ok(new RatesCurrentResponse(latestBTCPrice, latestETHPrice));
     }
 

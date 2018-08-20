@@ -26,7 +26,7 @@ public class CryptoCompareClientService {
         this.cryptoCompareConfigHolder = cryptoCompareConfigHolder;
     }
 
-    public CryptoCompareResponseDTO getHistorical(CryptoCompareCurrency fromCurrency, List<CryptoCompareCurrency> toCurrency, long timeInSecond) {
+    public CryptoCompareResponseDTO getHistorical(CryptoCompareCurrency fromCurrency, List<CryptoCompareCurrency> toCurrency, long timeInSecond) throws Exception {
         CryptoCompareResponseDTO cryptoCompareResponseDTO = restTemplate.getForObject(
                 getPriceHistoricalURI(fromCurrency, toCurrency, timeInSecond),
                 CryptoCompareResponseDTO.class

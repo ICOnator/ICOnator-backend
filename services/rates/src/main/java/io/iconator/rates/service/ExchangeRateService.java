@@ -11,8 +11,6 @@ import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
 import io.iconator.rates.config.RatesAppConfigHolder;
 import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
 import io.iconator.rates.consumer.BlockNrEthereumConsumer;
-import io.iconator.rates.service.exceptions.USDBTCFxException;
-import io.iconator.rates.service.exceptions.USDETHFxException;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -49,7 +47,7 @@ public class ExchangeRateService {
     private AggregationService aggregationService;
 
     @Autowired
-    private RatesAppConfigHolder ratesAppConfig;
+    private RatesAppConfigHolder ratesAppConfigHolder;
 
     @Autowired
     @Qualifier("bitfinexMarketDataService")
@@ -118,9 +116,9 @@ public class ExchangeRateService {
             return;
         }
 
-        List<CurrencyType> enabledCryptoCurrencies = ratesAppConfig.getEnabledCryptoCurrencies();
-        List<ExchangeType> enabledExchanges = ratesAppConfig.getEnabledExchanges();
-        CurrencyType baseFiatCurrency = ratesAppConfig.getBaseFiatCurrency();
+        List<CurrencyType> enabledCryptoCurrencies = ratesAppConfigHolder.getEnabledCryptoCurrencies();
+        List<ExchangeType> enabledExchanges = ratesAppConfigHolder.getEnabledExchanges();
+        CurrencyType baseFiatCurrency = ratesAppConfigHolder.getBaseFiatCurrency();
 
         // create an "ExchangeAggregateRate" -- representing an entry with multiple exchanges and
         // an aggregated rate value for each crypto currency
@@ -168,24 +166,6 @@ public class ExchangeRateService {
 
     private Currency convertCurrencyTypes(CurrencyType currencyType) {
         return Currency.getInstanceNoCreate(currencyType.name());
-    }
-
-    public BigDecimal getLatestUSDperETH() throws USDETHFxException {
-        Optional<ExchangeAggregateRate> exchangeAggregateRate =
-                exchangeAggregateRateRepository.findFirstOptionalByOrderByCreationDateDesc();
-
-        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.ETH))
-                .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
-                .orElseThrow(() -> new USDETHFxException("No FX aggregation found for USD-ETH."));
-    }
-
-    public BigDecimal getLatestUSDPerBTC() throws USDBTCFxException {
-        Optional<ExchangeAggregateRate> exchangeAggregateRate =
-                exchangeAggregateRateRepository.findFirstOptionalByOrderByCreationDateDesc();
-
-        return exchangeAggregateRate.flatMap((aggregateRate) -> aggregateRate.getExchangeAggregateCurrencyRates(CurrencyType.BTC))
-                .map((aggCurrencyRate) -> aggCurrencyRate.getAggregateExchangeRate())
-                .orElseThrow(() -> new USDBTCFxException("No FX aggregation found for USD-BTC."));
     }
 
 }

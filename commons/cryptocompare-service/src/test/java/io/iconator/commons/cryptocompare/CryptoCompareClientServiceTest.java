@@ -58,7 +58,7 @@ public class CryptoCompareClientServiceTest {
     private ObjectMapper objectMapper;
 
     @Test
-    public void testGetHistorical() {
+    public void testGetHistorical() throws Exception {
         CryptoCompareConversionRateResponse rateResponseUSD = new CryptoCompareConversionRateResponse(CryptoCompareCurrency.USD, new BigDecimal(401.25));
         CryptoCompareConversionRateResponse rateResponseBTC = new CryptoCompareConversionRateResponse(CryptoCompareCurrency.BTC, new BigDecimal(0.0056));
         CryptoCompareConversionRates conversionRates = new CryptoCompareConversionRates(Arrays.asList(rateResponseUSD, rateResponseBTC));

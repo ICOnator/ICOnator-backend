@@ -1,6 +1,12 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Version;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
@@ -137,7 +143,7 @@ public class SaleTier {
     }
 
     public boolean isFull() {
-        return tomicsMax.compareTo(BigInteger.ZERO) > 0  && tomicsMax.compareTo(tomicsSold) == 0;
+        return tomicsMax.compareTo(BigInteger.ZERO) > 0 && tomicsMax.compareTo(tomicsSold) == 0;
     }
 
     public boolean isAmountOverflowingTier(BigInteger tomics) {
