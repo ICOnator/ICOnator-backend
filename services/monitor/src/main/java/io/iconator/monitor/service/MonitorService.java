@@ -254,7 +254,12 @@ public class MonitorService {
     }
 
     private void shiftDates(SaleTier tier, Date blockTime) {
-        long dateShift = tier.getEndDate().getTime() - blockTime.getTime();
+        long dateShift;
+        if (blockTime.getTime() < tier.getStartDate().getTime()) {
+            dateShift = tier.getEndDate().getTime() - tier.getStartDate().getTime();
+        } else {
+            dateShift = tier.getEndDate().getTime() - blockTime.getTime();
+        }
         tier.setEndDate(blockTime);
         tier = saleTierRepository.save(tier);
         saleTierService.getAllSubsequentTiers(tier).forEach(t -> {
