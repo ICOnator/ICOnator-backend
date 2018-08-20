@@ -2,6 +2,7 @@ package io.iconator.monitor.transaction;
 
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -15,31 +16,31 @@ public interface TransactionAdapter {
      * the index of the unspent transaction output can be added.
      * @return the id which uniquely identifies the transaction.
      */
-    String getTransactionId();
+    String getTransactionId() throws MissingTransactionInformationException;
 
     /**
      * @return the value of this transaction in the atomic unit of the currency
      * (e.g Wei for Ethereum transactions)
      */
-    BigInteger getTransactionValue();
+    BigInteger getTransactionValue() throws MissingTransactionInformationException;
 
     /**
      * @return the value of this transaction in the main unit of the currency.
      * e.g. bitcoint
      */
-    BigDecimal getTransactionValueInMainUnit();
+    BigDecimal getTransactionValueInMainUnit() throws MissingTransactionInformationException;
 
-    String getReceivingAddress();
+    String getReceivingAddress() throws MissingTransactionInformationException;
 
-    Long getAssociatedInvestorId() throws InvestorNotFoundException;
+    Long getAssociatedInvestorId() throws MissingTransactionInformationException;
 
-    Long getBlockHeight();
+    Long getBlockHeight() throws MissingTransactionInformationException;
 
     CurrencyType getCurrencyType();
 
-    Date getBlockTime();
+    Date getBlockTime() throws MissingTransactionInformationException;
 
-    String getWebLinkToTransaction();
+    String getWebLinkToTransaction() throws MissingTransactionInformationException;
 
     /**
      * The factor is the amount of atomic units that make up one main

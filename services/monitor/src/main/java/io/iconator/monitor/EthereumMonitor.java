@@ -90,7 +90,7 @@ public class EthereumMonitor extends BaseMonitor {
         web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(new DefaultBlockParameterNumber(startBlock))
                 .subscribe(web3jTx -> {
                     try {
-                        processTransaction(
+                        processBuildingTransaction(
                                 new EthereumTransactionAdapter(web3jTx, web3j, investorService));
                     } catch (Throwable t) {
                         LOG.error("Error while processing transaction.", t);

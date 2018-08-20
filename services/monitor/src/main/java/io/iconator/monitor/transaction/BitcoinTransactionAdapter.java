@@ -3,6 +3,7 @@ package io.iconator.monitor.transaction;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
@@ -11,11 +12,13 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.MissingResourceException;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
 
-    private static final String BLOCKCHAIN_INFO_LINK  = "https://etherscan.io/tx/";
+    private static final String BLOCKCHAIN_INFO_LINK = "https://etherscan.io/tx/";
 
     private TransactionOutput bitcoinjTxOutput;
     private NetworkParameters bitcoinjNetworkParameters;
@@ -48,57 +51,68 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public String getTransactionId() {
-        Transaction transaction = bitcoinjTxOutput.getParentTransaction();
-        if (transaction != null) {
+    public String getTransactionId() throws MissingTransactionInformationException {
+        try {
+            Transaction transaction = bitcoinjTxOutput.getParentTransaction();
             return transaction.getHashAsString() + "_" + String.valueOf(bitcoinjTxOutput.getIndex());
-        } else {
-            throw new IllegalStateException("TransactionAdapter Output's parent transaction was null.");
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch transaction id.", e);
         }
     }
 
     @Override
-    public BigInteger getTransactionValue() {
-        return BigInteger.valueOf(bitcoinjTxOutput.getValue().getValue());
-    }
-
-    @Override
-    public BigDecimal getTransactionValueInMainUnit() {
-        return null;
-    }
-
-    @Override
-    public String getReceivingAddress() {
-        return bitcoinjTxOutput
-                .getAddressFromP2PKHScript(this.bitcoinjNetworkParameters)
-                .toBase58();
-    }
-
-    @Override
-    public Long getAssociatedInvestorId() throws InvestorNotFoundException {
-        return getInvestorService().getInvestorByBitcoinAddress(getReceivingAddress()).getId();
-    }
-
-    @Override
-    public Long getBlockHeight() {
-        if (blockHeight == null) {
-            blockHeight = bitcoinjTxOutput.getParentTransaction()
-                    .getAppearsInHashes().keySet().stream()
-                    .map((blockHash) -> {
-                        try {
-                            return bitcoinjBlockStore.get(blockHash);
-                        } catch (BlockStoreException e) {
-                            // This can happen if the transaction was seen in a side-chain
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .map(StoredBlock::getHeight)
-                    .min(Integer::compareTo).get().longValue();
-            return blockHeight;
-        } else {
-            return blockHeight;
+    public BigInteger getTransactionValue() throws MissingTransactionInformationException {
+        try {
+            return BigInteger.valueOf(bitcoinjTxOutput.getValue().getValue());
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch transaction value.", e);
         }
+    }
+
+    @Override
+    public String getReceivingAddress() throws MissingTransactionInformationException {
+        try {
+            return bitcoinjTxOutput
+                    .getAddressFromP2PKHScript(this.bitcoinjNetworkParameters)
+                    .toBase58();
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch receiving address.", e);
+        }
+    }
+
+    @Override
+    public Long getAssociatedInvestorId() throws MissingTransactionInformationException {
+        try {
+            return getInvestorService().getInvestorByBitcoinAddress(getReceivingAddress()).getId();
+        } catch (MissingTransactionInformationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch associated investor.", e);
+        }
+    }
+
+    @Override
+    public Long getBlockHeight() throws MissingTransactionInformationException {
+        if (this.blockHeight == null) {
+            try {
+                this.blockHeight = bitcoinjTxOutput.getParentTransaction()
+                        .getAppearsInHashes().keySet().stream()
+                        .map((blockHash) -> {
+                            try {
+                                return bitcoinjBlockStore.get(blockHash);
+                            } catch (BlockStoreException e) {
+                                // This can happen if the transaction was seen in a side-chain
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .map(StoredBlock::getHeight)
+                        .min(Integer::compareTo).get().longValue();
+            } catch (Exception e) {
+                throw new MissingTransactionInformationException("Couldn't fetch block height.", e);
+            }
+        }
+        return this.blockHeight;
     }
 
     @Override
@@ -110,31 +124,37 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
      * Retrieve the timestamp from the first block that the transaction was seen in.
      */
     @Override
-    public Date getBlockTime() {
-        if (blockTime == null) {
-            blockTime = bitcoinjTxOutput.getParentTransaction()
-                    .getAppearsInHashes().keySet().stream()
-                    .map((blockHash) -> {
-                        try {
-                            return bitcoinjBlockStore.get(blockHash);
-                        } catch (BlockStoreException e) {
-                            // This can happen if the transaction was seen in a side-chain
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .map(StoredBlock::getHeader)
-                    .map(Block::getTime)
-                    .min(Date::compareTo).get();
-            return blockTime;
-        } else {
-            return blockTime;
+    public Date getBlockTime() throws MissingTransactionInformationException {
+        if (this.blockTime == null) {
+            try {
+                this.blockTime = bitcoinjTxOutput.getParentTransaction()
+                        .getAppearsInHashes().keySet().stream()
+                        .map((blockHash) -> {
+                            try {
+                                return bitcoinjBlockStore.get(blockHash);
+                            } catch (BlockStoreException e) {
+                                // This can happen if the transaction was seen in a side-chain
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .map(StoredBlock::getHeader)
+                        .map(Block::getTime)
+                        .min(Date::compareTo).get();
+            } catch (Exception e) {
+                throw new MissingTransactionInformationException("Couldn't fetch block time.", e);
+            }
         }
+        return this.blockTime;
     }
 
     @Override
-    public String getWebLinkToTransaction() {
-        return BLOCKCHAIN_INFO_LINK + bitcoinjTxOutput.getParentTransaction().getHashAsString();
+    public String getWebLinkToTransaction() throws MissingTransactionInformationException {
+        try {
+            return BLOCKCHAIN_INFO_LINK + bitcoinjTxOutput.getParentTransaction().getHashAsString();
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch transaction Id.", e);
+        }
     }
 
     public Transaction getBitcoinjTransaction() {

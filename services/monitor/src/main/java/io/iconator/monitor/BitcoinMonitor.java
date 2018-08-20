@@ -5,8 +5,6 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
-import io.iconator.commons.model.db.PaymentLog;
-import io.iconator.monitor.exception.IncompleteTransactoinInformationException;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.BitcoinTransactionAdapter;
@@ -120,7 +118,7 @@ public class BitcoinMonitor extends BaseMonitor {
                     .forEach(tx -> {
                         try {
                             if (BitcoinUtils.isBuilding(tx.getBitcoinjTransaction())) {
-                                processTransaction(tx);
+                                processBuildingTransaction(tx);
                             // TODO [claude] the transaction confidence check needs to be incorporated
                             // into the BaseMonitor code. Otherwise we will track all transactions
                             // which do not yet have high confidence.
@@ -154,7 +152,7 @@ public class BitcoinMonitor extends BaseMonitor {
         @Override
         public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
             if (confidence.getConfidenceType().equals(BUILDING)) {
-                processTransaction(tx);
+                processBuildingTransaction(tx);
                 tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
             } else if (confidence.getConfidenceType().equals(DEAD)
                     || confidence.getConfidenceType().equals(IN_CONFLICT)) {

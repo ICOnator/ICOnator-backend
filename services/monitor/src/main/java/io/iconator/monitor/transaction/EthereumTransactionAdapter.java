@@ -1,8 +1,8 @@
 package io.iconator.monitor.transaction;
 
 import io.iconator.commons.db.services.InvestorService;
-import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
@@ -11,14 +11,14 @@ import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.utils.Convert;
 
 import javax.validation.constraints.NotNull;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.NoSuchElementException;
 
 public class EthereumTransactionAdapter extends BaseTransactionAdapter {
 
-    private static final String ETHERSCAN_LINK  = "https://etherscan.io/tx/";
+    private static final String ETHERSCAN_LINK = "https://etherscan.io/tx/";
 
     private Transaction ethereumTx;
     private Web3j web3j;
@@ -38,33 +38,56 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public String getTransactionId() {
-        return ethereumTx.getHash();
+    public String getTransactionId() throws MissingTransactionInformationException {
+        try {
+            String id = ethereumTx.getHash();
+            if (id == null || id.isEmpty()) throw new NoSuchElementException();
+            return id;
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch transaction id.", e);
+        }
     }
 
     @Override
-    public BigInteger getTransactionValue() {
-        return ethereumTx.getValue();
+    public BigInteger getTransactionValue() throws MissingTransactionInformationException {
+        try {
+            BigInteger value = ethereumTx.getValue();
+            if (value == null) throw new NoSuchElementException();
+            return value;
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch transaction value.", e);
+        }
     }
 
     @Override
-    public BigDecimal getTransactionValueInMainUnit() {
-       return Convert.fromWei(new BigDecimal(getTransactionValue()), Convert.Unit.ETHER);
+    public String getReceivingAddress() throws MissingTransactionInformationException {
+        try {
+            String address = ethereumTx.getTo();
+            if (address == null || address.isEmpty()) throw new NoSuchElementException();
+            return address;
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch receiving address.", e);
+        }
     }
 
     @Override
-    public String getReceivingAddress() {
-        return ethereumTx.getTo();
+    public Long getAssociatedInvestorId() throws MissingTransactionInformationException {
+        try {
+            return getInvestorService().getInvestorByEthereumAddress(getReceivingAddress()).getId();
+        } catch (MissingTransactionInformationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch associated investor.", e);
+        }
     }
 
     @Override
-    public Long getAssociatedInvestorId() throws InvestorNotFoundException {
-        return getInvestorService().getInvestorByEthereumAddress(getReceivingAddress()).getId();
-    }
-
-    @Override
-    public Long getBlockHeight() {
-        return ethereumTx.getBlockNumber().longValue();
+    public Long getBlockHeight() throws MissingTransactionInformationException {
+        try {
+            return ethereumTx.getBlockNumber().longValue();
+        } catch (Exception e) {
+            throw new MissingTransactionInformationException("Couldn't fetch block height.", e);
+        }
     }
 
     @Override
@@ -73,23 +96,23 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public Date getBlockTime() {
-        if (blockTime == null) {
+    public Date getBlockTime() throws MissingTransactionInformationException {
+        if (this.blockTime == null) {
             try {
                 Request<?, EthBlock> ethBlockRequest = web3j.ethGetBlockByNumber(
                         new DefaultBlockParameterNumber(ethereumTx.getBlockNumber()),
                         false);
                 EthBlock blockRequest = ethBlockRequest.send();
-                blockTime = new Date(blockRequest.getBlock().getTimestamp().longValue() * 1000);
-                return blockTime;
-            } catch (IOException e) {
-                throw new IllegalStateException();
+                this.blockTime = new Date(blockRequest.getBlock().getTimestamp().longValue() * 1000);
+            } catch (Exception e) {
+                throw new MissingTransactionInformationException("Couldn't fetch block time.", e);
             }
-        } else return blockTime;
+        }
+        return this.blockTime;
     }
 
     @Override
-    public String getWebLinkToTransaction() {
+    public String getWebLinkToTransaction() throws MissingTransactionInformationException {
         return ETHERSCAN_LINK + getTransactionId();
     }
 }
