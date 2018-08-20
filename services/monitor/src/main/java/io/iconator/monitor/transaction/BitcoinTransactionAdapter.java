@@ -18,7 +18,7 @@ import java.util.Objects;
 
 public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
 
-    private static final String BLOCKCHAIN_INFO_LINK = "https://etherscan.io/tx/";
+    private static final String BLOCKCHAIN_INFO_LINK = "https://blockchain.info/tx/";
 
     private TransactionOutput bitcoinjTxOutput;
     private NetworkParameters bitcoinjNetworkParameters;
