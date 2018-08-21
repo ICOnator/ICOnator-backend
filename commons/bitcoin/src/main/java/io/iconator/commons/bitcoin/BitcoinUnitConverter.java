@@ -8,6 +8,7 @@ import java.math.BigInteger;
 
 public class BitcoinUnitConverter {
 
+    // TODO This is not used by any productive code.
     public static BigDecimal convert(BigDecimal value, BitcoinUnit unitFrom, BitcoinUnit unitTo)
             throws BitcoinUnitConversionNotImplementedException {
 
@@ -21,6 +22,7 @@ public class BitcoinUnitConverter {
                 String.format("Converting %s to %s is not implemented.", unitFrom, unitTo));
     }
 
+    // TODO This is not used by any productive code.
     public static BigDecimal convert(BigInteger value, BitcoinUnit unitFrom, BitcoinUnit unitTo)
             throws BitcoinUnitConversionNotImplementedException {
 

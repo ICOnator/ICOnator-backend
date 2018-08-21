@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 @DataJpaTest
 public class PaymentLogRepositoryTest {
 
+    private static final CurrencyType CURRENCY_TYPE = CurrencyType.BTC;
+
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
@@ -33,19 +35,20 @@ public class PaymentLogRepositoryTest {
     @Test
     public void testSave() {
         Investor i = createInvestor(1);
-        PaymentLog p = createPaymentLog(i.getId(), "1");
+        PaymentLog p = createPaymentLog(i, "1");
         paymentLogRepository.save(p);
     }
 
     @Test
-    public void testSaveAndFind() {
+    public void testSaveAndExistsAndFind() {
         Investor i = createInvestor(1);
-        PaymentLog p = createPaymentLog(i.getId(), "1");
+        PaymentLog p = createPaymentLog(i, "1");
         paymentLogRepository.save(p);
-        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifier("1");
+        assertTrue(paymentLogRepository.existsByTxIdentifierAndCurrency("1", CURRENCY_TYPE));
+        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifierAndCurrency("1", CURRENCY_TYPE);
         assertTrue(oPaymentLog.isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) ->
-                investorRepository.findById(paymentLog.getInvestorId()).get().getEmail().equals("emailAddress1")
+                paymentLog.getInvestor().get().getEmail().equals("emailAddress1")
         ).isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.equals(p)).isPresent());
     }
@@ -53,10 +56,10 @@ public class PaymentLogRepositoryTest {
     @Test(expected = DataIntegrityViolationException.class)
     public void testSaveTwoPaymentLogWithSameTransactionIdentifier() {
         Investor i1 = createInvestor(1);
-        PaymentLog p1 = createPaymentLog(i1.getId(), "1");
+        PaymentLog p1 = createPaymentLog(i1, "1");
         paymentLogRepository.saveAndFlush(p1);
         Investor i2 = createInvestor(2);
-        PaymentLog p2 = createPaymentLog(i2.getId(), "1");
+        PaymentLog p2 = createPaymentLog(i2, "1");
         paymentLogRepository.saveAndFlush(p2);
 
     }
@@ -68,17 +71,17 @@ public class PaymentLogRepositoryTest {
                         "refundEtherAddress", "refundBitcoinAddress", "ipAddress" ));
     }
 
-    private PaymentLog createPaymentLog(long investorId, String txIdentifier) {
+    private PaymentLog createPaymentLog(Investor investor, String txIdentifier) {
 
         return new PaymentLog(
                 txIdentifier,
                 new Date(),
+                CURRENCY_TYPE,
                 new Date(),
-                CurrencyType.BTC,
                 new BigInteger("1"),
                 new BigDecimal(2),
                 new BigDecimal(3),
-                investorId,
+                investor,
                 BigInteger.valueOf(100L));
     }
 

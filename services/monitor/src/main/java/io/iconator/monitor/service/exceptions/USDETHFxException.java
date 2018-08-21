@@ -1,6 +1,6 @@
 package io.iconator.monitor.service.exceptions;
 
-public class USDETHFxException extends Exception {
+public class USDETHFxException extends FxException {
 
     public USDETHFxException(String message) {
         super(message);

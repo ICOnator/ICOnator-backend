@@ -4,6 +4,8 @@ import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigInteger;
 import java.util.Date;
@@ -37,5 +39,10 @@ public class SaleTierService {
 
     public Optional<SaleTier> getTierAtDate(Date date) {
         return saleTierRepository.findTierAtDate(date);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public SaleTier saveTransactionless(SaleTier tier) {
+        return saleTierRepository.saveAndFlush(tier);
     }
 }

@@ -3,27 +3,13 @@ package io.iconator.commons.amqp.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BlockNREthereumMessage extends Message {
-
-    private Long blockNr;
-    private Long timestamp;
+public class BlockNREthereumMessage extends BlockNrMessage {
 
     public BlockNREthereumMessage() {
         super();
     }
 
     public BlockNREthereumMessage(Long blockNr, Long timestamp) {
-        super();
-        this.blockNr = blockNr;
-        this.timestamp = timestamp;
+        super(blockNr, timestamp);
     }
-
-    public Long getBlockNr() {
-        return blockNr;
-    }
-
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
 }

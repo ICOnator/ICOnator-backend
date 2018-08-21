@@ -3,13 +3,12 @@ package io.iconator.monitor.config;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
-import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.MonitorService;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
@@ -123,14 +122,13 @@ public class MonitorBean {
     @Bean
     public EthereumMonitor ethereumMonitor(FxService fxService,
                                            Web3j web3j,
-                                           InvestorRepository investorRepository,
                                            PaymentLogService paymentLogService,
-                                           TokenConversionService tokenConversionService,
-                                           EligibleForRefundService eligibleForRefundService,
-                                           ICOnatorMessageService messageService) {
+                                           MonitorService monitorService,
+                                           ICOnatorMessageService messageService,
+                                           InvestorService investorService) {
 
-        return new EthereumMonitor(fxService, investorRepository, paymentLogService,
-                tokenConversionService, eligibleForRefundService, messageService, web3j);
+        return new EthereumMonitor(fxService, paymentLogService,
+                monitorService, messageService, investorService, web3j);
     }
 
     @Bean
@@ -140,15 +138,14 @@ public class MonitorBean {
                                          Context bitcoinContext,
                                          NetworkParameters bitcoinNetworkParameters,
                                          PeerGroup peerGroup,
-                                         InvestorRepository investorRepository,
                                          PaymentLogService paymentLogService,
-                                         TokenConversionService tokenConversionService,
-                                         EligibleForRefundService eligibleForRefundService,
-                                         ICOnatorMessageService messageService) {
+                                         MonitorService monitorService,
+                                         ICOnatorMessageService messageService,
+                                         InvestorService investorService) {
+
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                investorRepository, paymentLogService, tokenConversionService,
-                eligibleForRefundService, messageService);
+                paymentLogService, monitorService, messageService, investorService);
     }
 
     @Bean

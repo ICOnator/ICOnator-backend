@@ -1,16 +1,21 @@
 package io.iconator.monitor.config;
 
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.monitor.BaseMonitor;
+import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.utils.MockICOnatorMessageService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.http.HttpService;
 
 @Configuration
 @EnableJpaRepositories("io.iconator.commons.sql.dao")
@@ -23,8 +28,8 @@ public class MonitorTestConfig {
     }
 
     @Bean
-    public TokenConversionService tokenConversionService() {
-        return new TokenConversionService();
+    public MonitorService tokenConversionService() {
+        return new MonitorService();
     }
 
     @Bean
@@ -37,15 +42,9 @@ public class MonitorTestConfig {
         return new EligibleForRefundService();
     }
 
-        @Bean
-    public BaseMonitor baseMonitor(TokenConversionService tokenConversionService,
-                                   InvestorRepository investorRepository,
-                                   PaymentLogService paymentLogService,
-                                   EligibleForRefundService eligibleForRefundService,
-                                   FxService fxService) {
-
-        return new BaseMonitor(tokenConversionService, investorRepository, paymentLogService,
-                eligibleForRefundService, fxService);
+    @Bean
+    public MockICOnatorMessageService mockICOnatorMessageService() {
+        return new MockICOnatorMessageService();
     }
 
     @Bean
@@ -57,5 +56,38 @@ public class MonitorTestConfig {
     public SaleTierService saleTierService() {
         return new SaleTierService();
     }
+
+    @Bean
+    public InvestorService investorService(InvestorRepository investorRepository) {
+        return new InvestorService(investorRepository);
+    }
+
+    @Bean
+    public Web3j web3j() {
+        return Web3j.build(new HttpService("http://127.0.0.1:8545/rpc"));
+    }
+
+    @Bean
+    public ICOnatorMessageService messageService(MockICOnatorMessageService mockICOnatorMessageService) {
+        return mockICOnatorMessageService;
+    }
+
+    @Bean
+    public EthereumMonitor ethereumMonitor(Web3j web3j,
+                                           FxService fxService,
+                                           MonitorService monitorService,
+                                           PaymentLogService paymentLogService,
+                                           ICOnatorMessageService messageService,
+                                           InvestorService investorService) {
+        return new EthereumMonitor(
+                fxService,
+                paymentLogService,
+                monitorService,
+                messageService,
+                investorService,
+                web3j
+        );
+    }
+
 }
 

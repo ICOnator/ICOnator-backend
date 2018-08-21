@@ -16,12 +16,9 @@ public interface ICOnatorMessageService {
 
     void send(KycReminderEmailMessage kycReminderEmailMessage);
 
-    void send(BlockNRBitcoinMessage blockNRBitcoinMessage);
-
-    void send(BlockNREthereumMessage blockNREthereumMessage);
-
     void send(KycStartEmailSentMessage kycStartEmailSentMessage);
 
     void send(KycReminderEmailSentMessage kycReminderEmailSentMessage);
 
+    void send(BlockNrMessage blockNrMessage);
 }

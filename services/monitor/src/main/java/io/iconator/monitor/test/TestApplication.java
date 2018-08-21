@@ -34,7 +34,7 @@ public class TestApplication {
                         //LOG.info("Transactions: " + tx.getHash());
 
                         if (tx.getHash().equals("0x72d108f9e1f08dd23df9d31cf8a0e954644c8944f89430247c7ecaa3b3cec3ad")) {
-                            LOG.info("Transaction to address: " + tx.getTo());
+                            LOG.info("TransactionAdapter to address: " + tx.getTo());
                             LOG.info("Input: " + tx.getInput());
                         }
 

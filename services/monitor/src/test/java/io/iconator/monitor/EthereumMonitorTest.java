@@ -1,15 +1,15 @@
 package io.iconator.monitor;
 
-
 import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
-import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.EthereumMonitorTestConfig;
+import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
 import io.iconator.testrpcj.TestBlockchain;
 import io.iconator.testrpcj.jsonrpc.TypeConverter;
@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -34,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
@@ -43,16 +41,16 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {EthereumMonitorTestConfig.class})
+@ContextConfiguration(classes = {MonitorTestConfig.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -67,8 +65,11 @@ public class EthereumMonitorTest {
     @Autowired
     private Web3j web3j;
 
-    @MockBean
-    private InvestorRepository investorRepository;
+    @Autowired
+    private InvestorService investorService;
+
+    @Autowired
+    private SaleTierService saleTierService;
 
     @MockBean
     private FxService fxService;
@@ -80,7 +81,7 @@ public class EthereumMonitorTest {
     private SaleTierRepository saleTierRepository;
 
     @Autowired
-    private TokenConversionService tokenConversionService;
+    private MonitorService monitorService;
 
     private static TestBlockchain testBlockchain;
 
@@ -90,10 +91,8 @@ public class EthereumMonitorTest {
     }
 
     @Before
-    @Transactional(propagation = Propagation.NOT_SUPPORTED) // Persist directly to DB without transactions.
     public void setUp() {
         createAndSaveTier();
-        createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
     }
 
     @After
@@ -103,42 +102,26 @@ public class EthereumMonitorTest {
 
     @Test
     public void testPayment() throws Exception {
-
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
         BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
-        BigInteger tomicsAmountToBeReceived = tokenConversionService.convertUsdToTomics(
+        BigInteger tomicsAmountToBeReceived = monitorService.convertUsdToTomics(
                 fundsAmountToSendInUSD, BigDecimal.ZERO).toBigInteger();
         CurrencyType currencyType = CurrencyType.ETH;
-        Long ethBlockNumber = new Long(2);
 
-        when(fxService.getUSDperETH(eq(ethBlockNumber)))
-                .thenReturn(usdPricePerETH);
+        given(fxService.getUSDExchangeRate(anyLong(), any(CurrencyType.class)))
+                .willReturn(usdPricePerETH);
 
-        Credentials credentials = Credentials.create(ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
-
-        String receivingAddress = TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress());
-        when(investorRepository.findOptionalByPayInEtherAddressIgnoreCase(eq(receivingAddress))).thenReturn(
-                Optional.of(new Investor(
-                        new Date(),
-                        "email",
-                        "emailConfirmationToken",
-                        "walletAddress",
-                        receivingAddress,
-                        "payInBitcoinAddress",
-                        "refundEtherAddress" ,
-                        "refundBitcoinAddress",
-                        "ipAddress")));
-
-        ethereumMonitor.addMonitoredEtherAddress(receivingAddress);
+        Investor investor = createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
+        ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
         ethereumMonitor.start((long) 0);
 
-
-
-        TransactionReceipt r = Transfer.sendFunds(
+        Credentials credentials = Credentials.create(
+                ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
+        Transfer.sendFunds(
                 web3j,
                 credentials,
-                TypeConverter.toJsonHex(TestBlockchain.ACCOUNT_1.getAddress()),
+                investor.getPayInEtherAddress(),
                 fundsAmountToSendInETH,
                 Convert.Unit.ETHER).send();
 
@@ -158,7 +141,7 @@ public class EthereumMonitorTest {
     }
 
     private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tomicsAmountSent) {
-        BigDecimal tokens = tokenConversionService.convertTomicsToTokens(tomicsAmountSent);
+        BigDecimal tokens = monitorService.convertTomicsToTokens(tomicsAmountSent);
         return p -> p.getTokenAmount().compareTo(tokens) == 0;
     }
 
@@ -176,7 +159,7 @@ public class EthereumMonitorTest {
     }
 
     private Investor createAndSaveInvestor(ECKey key) {
-        return investorRepository.saveAndFlush(buildInvestor(key));
+        return investorService.saveTransactionless(buildInvestor(key));
     }
 
     private Investor buildInvestor(ECKey key) {
@@ -185,23 +168,24 @@ public class EthereumMonitorTest {
                 "email@email.com",
                 "emailConfirmationToken",
                 "walletAddress",
-                Hex.toHexString(key.getPubKey()),
+                TypeConverter.toJsonHex(key.getAddress()),
                 "payInBitcoinAddress",
                 "refundEtherAddress",
                 "refundBitcoinAddress",
                 "127.0.0.1"
-
-
         );
     }
 
     private void createAndSaveTier() {
         Date from = Date.from(Instant.EPOCH);
         Date to = new Date();
-        BigInteger tomics = tokenConversionService.convertTokensToTomics(new BigDecimal(1000L))
+        BigInteger tomics = monitorService.convertTokensToTomics(new BigDecimal(1000L))
                 .toBigInteger();
-        saleTierRepository.saveAndFlush(
-                new SaleTier(4, "4", from, to, new BigDecimal("0.0"), BigInteger.ZERO, tomics, true, false));
+
+        saleTierService.saveTransactionless(
+                new SaleTier(4, "4", from, to, new BigDecimal("0.0"),
+                        BigInteger.ZERO, tomics, true, false));
     }
 
 }
+
