@@ -54,19 +54,22 @@ public class MockICOnatorMessageService implements ICOnatorMessageService {
         kycReminderEmailMessages.add(kycReminderEmailMessage);
     }
 
-    @Override
-    public void send(BlockNRBitcoinMessage blockNRBitcoinMessage) {
-        blockNRBitcoinMessages.add(blockNRBitcoinMessage);
-    }
-
-    @Override
-    public void send(BlockNREthereumMessage blockNREthereumMessage) {
-        blockNREthereumMessages.add(blockNREthereumMessage);
-    }
 
     @Override
     public void send(KycReminderEmailSentMessage kycReminderEmailSentMessage) {
         kycReminderEmailSentMessages.add(kycReminderEmailSentMessage);
+    }
+
+    @Override
+    public void send(BlockNrMessage blockNrMessage) {
+        if (blockNrMessage instanceof BlockNREthereumMessage) {
+            blockNREthereumMessages.add((BlockNREthereumMessage)blockNrMessage);
+            return;
+        }
+        if (blockNrMessage instanceof BlockNRBitcoinMessage) {
+            blockNRBitcoinMessages.add((BlockNRBitcoinMessage)blockNrMessage);
+            return;
+        }
     }
 
     public List<ConfirmationEmailMessage> getConfirmationEmailMessages() {

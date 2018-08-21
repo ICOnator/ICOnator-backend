@@ -1,11 +1,15 @@
 package io.iconator.monitor;
 
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
+import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
+import io.iconator.commons.sql.dao.InvestorRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.commons.test.utils.ThreadTestUtils;
@@ -16,6 +20,7 @@ import io.iconator.monitor.service.MonitorService.TokenAllocationResult;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -68,11 +73,19 @@ public class MonitorServiceTest {
     @Autowired
     private EligibleForRefundRepository eligibleForRefundRepository;
 
+    @Autowired
+    private InvestorService investorService;
+
+    @Autowired
+    private InvestorRepository investorRepository;
+
     @MockBean
     private MonitorAppConfig appConfig;
 
     @Autowired
     private EthereumMonitor ethereumMonitor;
+
+    private static final String INVESTOR_EMAIL = "email@mail.com";
 
     @Before
     public void setUp() {
@@ -91,6 +104,7 @@ public class MonitorServiceTest {
         saleTierRepository.deleteAll();
         paymentLogRepository.deleteAll();
         eligibleForRefundRepository.deleteAll();
+        investorRepository.deleteAll();
     }
 
 
@@ -519,10 +533,11 @@ public class MonitorServiceTest {
         BigDecimal singlePayment = BigDecimal.ONE;
         BigInteger singleSoldTomics = monitorService.convertUsdToTomics(singlePayment, t.getDiscount()).toBigInteger();
         t.tomicsSoldMustBe(singleSoldTomics.multiply(BigInteger.valueOf(nrOfPayments)));
+        Investor investor = createInvestor();
         ThreadTestUtils.runMultiThread(
                 () -> {
                     try {
-                        PaymentLog log = createPaymentLog(singlePayment, blockTime);
+                        PaymentLog log = createPaymentLog(singlePayment, blockTime, investor);
                         TokenAllocationResult r = ethereumMonitor.allocateTokensWithRetries(log);
                         if (r.hasOverflow()) fail();
                         assertEquals(0, r.getAllocatedTomics().compareTo(singleSoldTomics));
@@ -557,11 +572,11 @@ public class MonitorServiceTest {
         t1.newEndDateMustBe(blockTime);
         t2.tomicsSoldMustBe(singleSoldTomicsToTier2);
         t2.datesMustBeShiftedBy(t1.initialEndDate.getTime() - blockTime.getTime());
-
+        Investor investor = createInvestor();
         ThreadTestUtils.runMultiThread(
                 () -> {
                     try {
-                        PaymentLog log = createPaymentLog(singlePayment, blockTime);
+                        PaymentLog log = createPaymentLog(singlePayment, blockTime, investor);
                         TokenAllocationResult r = ethereumMonitor.allocateTokensWithRetries(log);
                         if (r.hasOverflow()) fail();
                         LOG.info("Distributed tomics: {}", r.getAllocatedTomics().toString());
@@ -605,20 +620,33 @@ public class MonitorServiceTest {
         BigInteger tomicsFromTier = t.getTomicsMax().divide(BigInteger.valueOf(divisor));
         BigDecimal payment = monitorService.convertTomicsToUsd(tomicsFromTier, t.getDiscount());
         t.tomicsSoldMustBe(t.tomicsSold.add(tomicsFromTier));
-        PaymentLog log = createPaymentLog(payment, blockTime);
+        PaymentLog log = createPaymentLog(payment, blockTime, createInvestor());
         TokenAllocationResult r = monitorService.allocateTokens(log);
         if (r.hasOverflow()) fail();
         assertEquals(0, r.getAllocatedTomics().compareTo(tomicsFromTier));
     }
 
+    private Investor createInvestor() {
+        try {
+            return investorService.getInvestorByEmail(INVESTOR_EMAIL);
+        } catch (InvestorNotFoundException e) {
+            return investorService.saveTransactionless(
+                    new Investor(new java.util.Date(), INVESTOR_EMAIL, "token",
+                            "walletAddress", "payInEtherPublicKey", "payInBitcoinPublicKey",
+                            "refundEtherAddress", "refundBitcoinAddress", "ipAddress"));
+        }
+    }
+
     private PaymentLog createPaymentLog(BigDecimal usdAmount, Date blockTime) {
+        return createPaymentLog(usdAmount, blockTime, createInvestor());
+    }
+
+    private PaymentLog createPaymentLog(BigDecimal usdAmount, Date blockTime, Investor investor) {
         String txId = "txId0";
         java.util.Date creationDate = new java.util.Date();
         CurrencyType currency = CurrencyType.ETH;
         // Value doesn't matter, only the amount in usd matters.
         BigInteger weiAmount = BigInteger.ONE;
-        // Value doesn't matter
-        long investorId = 1;
         BigInteger tomicsAmount = null;
 
         PaymentLog paymentLog = null;
@@ -628,10 +656,11 @@ public class MonitorServiceTest {
             try {
                 paymentLog = paymentLogService.saveTransactionless(
                         new PaymentLog(txId, creationDate, currency, blockTime,
-                                weiAmount, USD_FX_RATE, usdAmount, investorId,
+                                weiAmount, USD_FX_RATE, usdAmount, investor,
                                 tomicsAmount));
                 succeeded = true;
-            } catch (DataIntegrityViolationException ignore) { }
+            } catch (DataIntegrityViolationException ignore) {
+            }
             txId = "txId" + i++;
         }
         return paymentLog;

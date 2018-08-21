@@ -1,19 +1,16 @@
 package io.iconator.monitor.transaction;
 
 import io.iconator.commons.db.services.InvestorService;
-import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.bitcoinj.core.*;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
-import java.util.MissingResourceException;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
@@ -81,9 +78,9 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public Long getAssociatedInvestorId() throws MissingTransactionInformationException {
+    public Investor getAssociatedInvestor() throws MissingTransactionInformationException {
         try {
-            return getInvestorService().getInvestorByBitcoinAddress(getReceivingAddress()).getId();
+            return getInvestorService().getInvestorByBitcoinAddress(getReceivingAddress());
         } catch (MissingTransactionInformationException e) {
             throw e;
         } catch (Exception e) {

@@ -2,16 +2,15 @@ package io.iconator.monitor.transaction;
 
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.Transaction;
-import org.web3j.utils.Convert;
 
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.NoSuchElementException;
@@ -71,9 +70,9 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public Long getAssociatedInvestorId() throws MissingTransactionInformationException {
+    public Investor getAssociatedInvestor() throws MissingTransactionInformationException {
         try {
-            return getInvestorService().getInvestorByEthereumAddress(getReceivingAddress()).getId();
+            return getInvestorService().getInvestorByEthereumAddress(getReceivingAddress());
         } catch (MissingTransactionInformationException e) {
             throw e;
         } catch (Exception e) {

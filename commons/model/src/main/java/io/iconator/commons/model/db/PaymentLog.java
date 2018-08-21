@@ -1,12 +1,20 @@
 package io.iconator.commons.model.db;
 
-import com.sun.istack.internal.NotNull;
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Optional;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
@@ -40,8 +48,9 @@ public class PaymentLog {
     @Column(name = "usd_amount", precision = 34, scale = 6)
     private BigDecimal usdValue;
 
-    @Column(name = "investor_id")
-    private long investorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "investor_id")
+    private Investor investor;
 
     @Column(name = "tomics_amount", precision = 34, scale = 0)
     private BigInteger tomicsAmount;
@@ -51,17 +60,17 @@ public class PaymentLog {
 
     public PaymentLog() {}
 
-    public PaymentLog(@NotNull String txIdentifier, @NotNull Date createDate,
-                      @NotNull CurrencyType currency) {
+    public PaymentLog(String txIdentifier, Date createDate,
+                      CurrencyType currency) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.currency = currency;
     }
 
-    public PaymentLog(@NotNull String txIdentifier, @NotNull Date createDate,
-                      @NotNull CurrencyType currency, Date blockDate,
+    public PaymentLog(String txIdentifier, Date createDate,
+                      CurrencyType currency, Date blockDate,
                       BigInteger paymentAmount, BigDecimal usdFxRate, BigDecimal usdValue,
-                      long investorId, BigInteger tomicsAmount) {
+                      Investor investor, BigInteger tomicsAmount) {
         this.txIdentifier = txIdentifier;
         this.createDate = createDate;
         this.blockDate = blockDate;
@@ -69,7 +78,7 @@ public class PaymentLog {
         this.paymentAmount = paymentAmount;
         this.usdFxRate = usdFxRate;
         this.usdValue = usdValue;
-        this.investorId = investorId;
+        this.investor = investor;
         this.tomicsAmount = tomicsAmount;
     }
 
@@ -129,12 +138,12 @@ public class PaymentLog {
         this.usdValue = usdValue;
     }
 
-    public long getInvestorId() {
-        return investorId;
+    public Optional<Investor> getInvestor() {
+        return Optional.ofNullable(investor);
     }
 
-    public void setInvestorId(long investorId) {
-        this.investorId = investorId;
+    public void setInvestor(Investor investor) {
+        this.investor = investor;
     }
 
     public BigInteger getTomicsAmount() {

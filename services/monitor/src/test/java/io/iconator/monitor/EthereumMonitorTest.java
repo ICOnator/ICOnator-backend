@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
@@ -69,6 +68,9 @@ public class EthereumMonitorTest {
     @Autowired
     private InvestorService investorService;
 
+    @Autowired
+    private SaleTierService saleTierService;
+
     @MockBean
     private FxService fxService;
 
@@ -77,9 +79,6 @@ public class EthereumMonitorTest {
 
     @Autowired
     private SaleTierRepository saleTierRepository;
-
-    @Autowired
-    private SaleTierService saleTierService;
 
     @Autowired
     private MonitorService monitorService;
@@ -189,3 +188,4 @@ public class EthereumMonitorTest {
     }
 
 }
+

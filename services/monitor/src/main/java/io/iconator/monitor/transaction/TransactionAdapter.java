@@ -1,6 +1,7 @@
 package io.iconator.monitor.transaction;
 
 import io.iconator.commons.model.CurrencyType;
+import io.iconator.commons.model.db.Investor;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 
 import java.math.BigDecimal;
@@ -58,7 +59,7 @@ public interface TransactionAdapter {
      * @throws MissingTransactionInformationException if fetching the
      * investor failed.
      */
-    Long getAssociatedInvestorId() throws MissingTransactionInformationException;
+    Investor getAssociatedInvestor() throws MissingTransactionInformationException;
 
     /**
      * @return the block height (block number) of the block in which this

@@ -65,7 +65,7 @@ public class MonitorService {
         }
         EligibleForRefund refundEntry = new EligibleForRefund(
                 reason, amount, paymentLog.getCurrency(),
-                paymentLog.getInvestorId(), paymentLog.getTxIdentifier());
+                paymentLog.getInvestor().get(), paymentLog.getTxIdentifier());
 
         if (eligibleForRefundRepository.existsByTxIdentifierAndCurrency(
                 refundEntry.getTxIdentifier(), refundEntry.getCurrency())) {

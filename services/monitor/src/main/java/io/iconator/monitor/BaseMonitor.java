@@ -82,7 +82,7 @@ abstract public class BaseMonitor {
             createAndSendTokenAllocationMail(tx, tomics);
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
                     tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
-                    paymentLog.getUsdFxRate(), tx.getAssociatedInvestorId(), paymentLog.getCreateDate(),
+                    paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
                     paymentLog.getTomicsAmount());
 
         } catch (Throwable t) {
@@ -98,7 +98,7 @@ abstract public class BaseMonitor {
             BigDecimal valueInMainUnit = tx.getTransactionValueInMainUnit();
 
             reason = RefundReason.INVESTOR_MISSING;
-            paymentLog.setInvestorId(tx.getAssociatedInvestorId());
+            paymentLog.setInvestor(tx.getAssociatedInvestor());
 
             reason = RefundReason.BLOCK_TIME_MISSING;
             paymentLog.setBlockDate(tx.getBlockTime());
@@ -173,10 +173,8 @@ abstract public class BaseMonitor {
 
     private void createAndSendTokenAllocationMail(TransactionAdapter tx, BigInteger tomics) {
         try {
-            Investor investor = investorService.getInvestorByInvestorId(tx.getAssociatedInvestorId());
-
             messageService.send(new FundsReceivedEmailMessage(
-                    MessageDTOHelper.build(investor),
+                    MessageDTOHelper.build(tx.getAssociatedInvestor()),
                     tx.getTransactionValueInMainUnit(),
                     tx.getCurrencyType(),
                     tx.getWebLinkToTransaction(),
