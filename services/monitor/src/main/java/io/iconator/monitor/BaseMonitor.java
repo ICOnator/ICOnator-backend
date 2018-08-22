@@ -3,14 +3,15 @@ package io.iconator.monitor;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
-import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
-import io.iconator.commons.amqp.model.utils.MessageDTOHelper;
+import io.iconator.commons.amqp.model.BlockNrMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
+import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
@@ -20,14 +21,17 @@ import io.iconator.monitor.transaction.exception.MissingTransactionInformationEx
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
@@ -57,28 +61,93 @@ abstract public class BaseMonitor {
         this.investorService = investorService;
     }
 
+//    protected void start() {
+//        startMonitoringBlocks(this::processBlockNrMessage);
+//        startMonitoringPendingTransactions(this::processPendingTransactions);
+//        startMonitoringBuildingTransactions(this::processBuildingTransaction);
+//    }
+
     /**
      * @param receivingAddress the address to which a payment has been made.
      * @return true if this address is monitored. False otherwise.
      */
     abstract protected boolean isAddressMonitored(String receivingAddress);
 
+    protected abstract void startMonitoringBlocks(Consumer<BlockNrMessage> blockNrMessageConsumer);
+
+    protected abstract void startMonitoringPendingTransactions(Consumer<TransactionAdapter> pendingTransactionConsumer);
+
+    protected abstract void startMonitoringBuildingTransactions(Consumer<TransactionAdapter> buildingTransactionConsumer);
+
+    protected abstract void startMonitoringTransactionUntilConfirmed(TransactionAdapter tx);
+
+    protected void processBlockNrMessage(BlockNrMessage blockNrMessage) {
+        messageService.send(blockNrMessage);
+    }
+
+    protected void processPendingTransactions(TransactionAdapter tx) {
+        try {
+            if (!isAddressMonitored(tx.getReceivingAddress())) return;
+            PaymentLog paymentLog;
+            try {
+                paymentLog = monitorService.getPendingPaymentLogForReprocessing(tx.getTransactionId());
+            } catch (PaymentLogNotFoundException e) {
+                paymentLog = createNewPaymentLog(tx);
+            }
+            if (paymentLog == null) return;
+            paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
+            paymentLog.setInvestor(tx.getAssociatedInvestor());
+            monitorService.sendTransactionSeenMailAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit());
+        } catch (MissingTransactionInformationException e) {
+            LOG.error("Error processing transaction", e);
+        }
+    }
+
+    private PaymentLog createNewPaymentLog(TransactionAdapter tx)
+            throws MissingTransactionInformationException {
+
+        try {
+            return paymentLogService.saveAndCommit(new PaymentLog(
+                    tx.getTransactionId(), new Date(), tx.getCurrencyType(),
+                    TransactionStatus.PENDING));
+        } catch (DataIntegrityViolationException e) {
+            // The payment log was probably created by another instance just now.
+            // This is not an error because the other instance will process the transaction.
+            return null;
+        }
+    }
+
     protected void processBuildingTransaction(TransactionAdapter tx) {
         try {
             if (!isAddressMonitored(tx.getReceivingAddress())) return;
-            String txId = tx.getTransactionId();
-            CurrencyType currency = tx.getCurrencyType();
-            PaymentLog paymentLog = monitorService.getOrCreatePaymentLog(txId, currency);
+            PaymentLog paymentLog;
+            try {
+                paymentLog = monitorService.getPendingPaymentLogForProcessing(
+                        tx.getTransactionId());
+                if (paymentLog == null) {
+                    paymentLog = monitorService.getBuildingPaymentLogForReprocessing(
+                            tx.getTransactionId());
+                }
+            } catch (PaymentLogNotFoundException e) {
+                paymentLog = createNewPaymentLog(tx);
+            }
+            if (paymentLog == null) return; // no processing required.
+            if (paymentLog.getAllocatedTomics() == null) {
+                // TODO the token allocation has to be repeated. I.e. do the whole processing.
+            } else {
+                // TODO only the allocation email has to be send.
+            }
+            paymentLog = updateBuildingPaymentLog(tx, paymentLog);
             if (paymentLog == null) return;
-            paymentLog = updatePaymentLog(tx, paymentLog);
-            if (paymentLog == null) return;
-            LOG.debug("Calling token allocation with {} USD for {} transaction {}.", paymentLog.getUsdValue().toPlainString(), currency, txId);
+            LOG.debug("Calling token allocation with {} USD for {} transaction {}.", paymentLog.getUsdValue().toPlainString(), paymentLog.getCurrency(), paymentLog.getTransactionId());
             TokenAllocationResult result;
             result = allocateTokensWithRetries(paymentLog);
             LOG.debug("Allocated {} tomics for {} transaction {}.", result.getAllocatedTomics(), tx.getCurrencyType().name(), tx.getTransactionId());
             BigInteger tomics = result.getAllocatedTomics();
             LOG.debug("For {} USD {} atomic tokens where allocated. {} transaction {}.", paymentLog.getUsdValue().toPlainString(), tomics, tx.getCurrencyType().name(), tx.getTransactionId());
-            createAndSendTokenAllocationMail(tx, tomics);
+            monitorService.sendAllocationMailAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit(), tx.getWebLinkToTransaction());
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
                     tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
@@ -89,7 +158,7 @@ abstract public class BaseMonitor {
         }
     }
 
-    private PaymentLog updatePaymentLog(TransactionAdapter tx, PaymentLog paymentLog) {
+    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) {
         RefundReason reason = null;
         try {
             reason = RefundReason.TRANSACTION_VALUE_MISSING;
@@ -129,14 +198,6 @@ abstract public class BaseMonitor {
         }
     }
 
-    /*
-     * TODO [claude] finish documentation
-     * This is method is not holding any of the conversoin or distribution functionality but sits in
-     * this class because the method that it calls needs to be transactional and the transaction
-     * behavior of spring does only work if one object calls the transactional methods of another
-     * object. If this method where in the same class as the actual conversion and distribution
-     * method calling that method would not lead to a transactional execution of the code.
-     */
     public TokenAllocationResult allocateTokensWithRetries(PaymentLog paymentLog)
             throws Throwable {
 
@@ -170,17 +231,4 @@ abstract public class BaseMonitor {
         }
     }
 
-    private void createAndSendTokenAllocationMail(TransactionAdapter tx, BigInteger tomics) {
-        try {
-            messageService.send(new FundsReceivedEmailMessage(
-                    MessageDTOHelper.build(tx.getAssociatedInvestor()),
-                    tx.getTransactionValueInMainUnit(),
-                    tx.getCurrencyType(),
-                    tx.getWebLinkToTransaction(),
-                    monitorService.convertTomicsToTokens(tomics)));
-        } catch (Exception ignore) {
-            // Missing transaction information or a missing associated investor
-            // would have been recognized earlier on in the transaction processing.
-        }
-    }
 }

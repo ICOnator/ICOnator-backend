@@ -1,5 +1,7 @@
 package io.iconator.monitor.service;
 
+import io.iconator.commons.amqp.model.utils.MessageDTOHelper;
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
@@ -7,6 +9,7 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
@@ -16,7 +19,9 @@ import io.iconator.monitor.service.exceptions.NoTierAtDateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +55,9 @@ public class MonitorService {
 
     @Autowired
     private MonitorAppConfig appConfig;
+
+    @Autowired
+    private ICOnatorMessageService messageService;
 
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
     public EligibleForRefund createRefundEntryForPaymentLogAndCommit(
@@ -85,33 +93,98 @@ public class MonitorService {
         return createRefundEntryForAmount(paymentLog, RefundReason.TOKEN_OVERFLOW, amount);
     }
 
-    /**
-     * Retrieves and returns the PaymentLog with the given transaction id and
-     * currency if it exists and needs to be reprocessed. In that case it resets
-     * the creation date to the currrent date. If it does not exist a new one is
-     * created.
-     *
-     * @param txId     the id of the transaction for which the Payment log should
-     *                 be fetched/created.
-     * @param currency the currency of the transaction for which the Payment log
-     *                 should be fetched/created.
-     * @return the retrieved or created PaymentLog. Or null if the transaction
-     * does not need to be processed.
-     */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PaymentLog getOrCreatePaymentLog(String txId, CurrencyType currency) {
-        PaymentLog paymentLog;
+    public PaymentLog getPendingPaymentLogForProcessing(String transactionId)
+            throws PaymentLogNotFoundException {
+
         try {
-            paymentLog = paymentLogService.getPaymentLogReadOnly(txId, currency);
-            if (paymentLog.wasFullyProcessed()) return null;
-            if (paymentLog.wasCreatedRecently(MINUTE_IN_MS)) return null;
-            LOG.info("Found payment which was not fully processed. Resetting creation date and restarting processing over again.");
-            paymentLog = paymentLogService.getPaymentLogForUpdate(txId, currency);
-            paymentLog.setCreateDate(new Date());
-        } catch (PaymentLogNotFoundException e) {
-            paymentLog = new PaymentLog(txId, new Date(), currency);
+            PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
+            if(paymentLog.getTransactionStatus() != TransactionStatus.PENDING) {
+                return null;
+            } else {
+                paymentLog.setCreateDate(new Date());
+                paymentLog.setTransactionStatus(TransactionStatus.BUILDING);
+                return paymentLogService.save(paymentLog);
+            }
+        } catch (OptimisticLockingFailureException e) {
+            // If payment log was just now updated by another monitor instance
+            // the payment log does not need to be reprocessed.
+            return null;
         }
-        return paymentLogService.save(paymentLog);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PaymentLog getBuildingPaymentLogForReprocessing(String transactionId)
+            throws PaymentLogNotFoundException {
+
+        try {
+            PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
+            boolean pending = paymentLog.getTransactionStatus() == TransactionStatus.PENDING;
+            boolean allocationMailSent = paymentLog.isAllocationMailSent();
+            boolean refundEntryExists = paymentLog.getEligibleForRefund() == null;
+            boolean noTokensAllocated = paymentLog.getAllocatedTomics() == null;
+            boolean youngerThanOneMinute =
+                    paymentLog.getCreateDate().getTime() > new Date().getTime() - MINUTE_IN_MS;
+            if (pending || allocationMailSent || (refundEntryExists && noTokensAllocated)
+                    || youngerThanOneMinute) {
+                return null;
+            } else {
+                paymentLog.setCreateDate(new Date());
+                paymentLog.setTransactionStatus(TransactionStatus.BUILDING);
+                return paymentLogService.save(paymentLog);
+            }
+        } catch (OptimisticLockingFailureException e) {
+            // If payment log was just now updated by another monitor instance
+            // the payment log does not need to be reprocessed.
+            return null;
+        }
+    }
+
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PaymentLog getPendingPaymentLogForReprocessing(String transactionId)
+            throws PaymentLogNotFoundException {
+
+        try {
+            PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
+            boolean confirmationMailSent = paymentLog.isConfirmationMailSent();
+            boolean notPending = paymentLog.getTransactionStatus() != TransactionStatus.PENDING;
+            boolean youngerThanOneMinute =
+                    paymentLog.getCreateDate().getTime() > new Date().getTime() - MINUTE_IN_MS;
+            if (confirmationMailSent || notPending || youngerThanOneMinute) {
+                return null;
+            } else {
+                paymentLog.setCreateDate(new Date());
+                return paymentLogService.save(paymentLog);
+            }
+        } catch (OptimisticLockingFailureException e) {
+            // If payment log was just now updated by another monitor instance
+            // the payment log does not need to be reprocessed.
+            return null;
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void sendTransactionSeenMailAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit) {
+        messageService.send(new TansactionSeenEmailMessage(
+                MessageDTOHelper.build(paymentLog.getInvestor()),
+                amountInMainUnit,
+                paymentLog.getCurrency()));
+        paymentLog.setConfirmationMailSent(true);
+        paymentLogService.save(paymentLog);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void sendAllocationMailAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String webLink) {
+        messageService.send(new TokensAllocatedEmailMessage(
+                MessageDTOHelper.build(paymentLog.getInvestor()),
+                amountInMainUnit,
+                paymentLog.getCurrency(),
+                webLink,
+                convertTomicsToTokens(paymentLog.getAllocatedTomics())));
+        paymentLog.setAllocationMailSent();
+        true);
+        paymentLogService.save(paymentLog);
     }
 
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
@@ -141,7 +214,6 @@ public class MonitorService {
     }
 
     private void updatePaymentLog(PaymentLog paymentLog, TokenAllocationResult result) {
-
         paymentLog.setAllocatedTomics(result.getAllocatedTomics());
         paymentLogRepository.saveAndFlush(paymentLog);
     }

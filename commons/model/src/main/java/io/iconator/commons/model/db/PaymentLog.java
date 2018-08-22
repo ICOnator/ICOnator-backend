@@ -12,15 +12,24 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Version;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
-import java.util.Optional;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
 @Entity(name = "payment_log")
 public class PaymentLog {
+
+    public enum TransactionStatus {
+        PENDING,
+        BUILDING,
+        CONFIRMED
+    }
+
+    @Version
+    private Long version = 0L;
 
     @Id
     @GeneratedValue(strategy = SEQUENCE)
@@ -54,7 +63,7 @@ public class PaymentLog {
     private Investor investor;
 
     @Column(name = "allocated_tomics", precision = 34, scale = 0)
-    private BigInteger allocatedTomics = BigInteger.ZERO;
+    private BigInteger allocatedTomics = null;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "eligible_for_refund_id")
@@ -66,13 +75,18 @@ public class PaymentLog {
     @Column(name = "is_allocation_mail_sent")
     private Boolean isAllocationMailSent =  false;
 
+    @Column(name = "transaction_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TransactionStatus transactionStatus;
+
     public PaymentLog() {}
 
     public PaymentLog(String transactionId, Date createDate,
-                      CurrencyType currency) {
+                      CurrencyType currency, TransactionStatus transactionStatus) {
         this.transactionId = transactionId;
         this.createDate = createDate;
         this.currency = currency;
+        this.transactionStatus = transactionStatus;
     }
 
     public PaymentLog(String transactionId, Date createDate,
@@ -146,8 +160,8 @@ public class PaymentLog {
         this.usdValue = usdValue;
     }
 
-    public Optional<Investor> getInvestor() {
-        return Optional.ofNullable(investor);
+    public Investor getInvestor() {
+        return investor;
     }
 
     public void setInvestor(Investor investor) {
@@ -170,7 +184,7 @@ public class PaymentLog {
         this.eligibleForRefund = eligibleForRefund;
     }
 
-    public Boolean getConfirmationMailSent() {
+    public boolean isConfirmationMailSent() {
         return isConfirmationMailSent;
     }
 
@@ -178,7 +192,7 @@ public class PaymentLog {
         isConfirmationMailSent = confirmationMailSent;
     }
 
-    public Boolean getAllocationMailSent() {
+    public boolean isAllocationMailSent() {
         return isAllocationMailSent;
     }
 
@@ -186,19 +200,12 @@ public class PaymentLog {
         isAllocationMailSent = allocationMailSent;
     }
 
-    /**
-     * A payment is completely processed if tokens have been allocated or a
-     * refund entry has been created because of some inconsistencies with the
-     * transaction. If none the two is seen on this PaymentLog then the
-     * processing of the payment was probably interrupted by an unexpected stop
-     * of the monitor application.
-     * @return true if this PaymentLog has the tooken amount or a refund entry
-     * reference set (or both). False otherwise.
-     */
-    public boolean wasFullyProcessed() {
-        boolean hasTomicsSet = getAllocatedTomics() != null
-                && getAllocatedTomics().compareTo(BigInteger.ZERO) > 0;
-        return hasTomicsSet || getEligibleForRefund() != null;
+    public TransactionStatus getTransactionStatus() {
+        return transactionStatus;
+    }
+
+    public void setTransactionStatus(TransactionStatus transactionStatus) {
+        this.transactionStatus = transactionStatus;
     }
 
     public boolean wasCreatedRecently(long timeSpanInMs) {
