@@ -54,27 +54,27 @@ public class MonitorService {
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
     public EligibleForRefund createRefundEntryForPaymentLogAndCommit(
             PaymentLog paymentLog, RefundReason reason) {
-        return createRefundEntryForAmount(paymentLog, reason, paymentLog.getPaymentAmount());
+        return createRefundEntryForAmount(paymentLog, reason, paymentLog.getCryptocurrencyAmount());
     }
 
     private EligibleForRefund createRefundEntryForAmount(
             PaymentLog paymentLog, RefundReason reason, BigInteger amount) {
 
-        if (paymentLog.getTxIdentifier() == null) {
+        if (paymentLog.getTransactionId() == null) {
             throw new IllegalArgumentException("Transaction Id of PaymentLog must not be null.");
         }
         EligibleForRefund refundEntry = new EligibleForRefund(
                 reason, amount, paymentLog.getCurrency(),
-                paymentLog.getInvestor().get(), paymentLog.getTxIdentifier());
+                paymentLog.getInvestor().get(), paymentLog.getTransactionId());
 
         if (eligibleForRefundRepository.existsByTxIdentifierAndCurrency(
                 refundEntry.getTxIdentifier(), refundEntry.getCurrency())) {
             throw new IllegalArgumentException("Refund entry must not already exist in database.");
         }
         refundEntry = eligibleForRefundRepository.saveAndFlush(refundEntry);
-        paymentLog.setEligibleForRefundId(refundEntry.getId());
+        paymentLog.setEligibleForRefund(refundEntry);
         paymentLogRepository.saveAndFlush(paymentLog);
-        LOG.info("Saving new refund entry for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier());
+        LOG.info("Saving new refund entry for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId());
         return refundEntry;
     }
 
@@ -118,7 +118,7 @@ public class MonitorService {
     public TokenAllocationResult allocateTokens(PaymentLog paymentLog)
             throws NoTierAtDateException {
 
-        Date blockTime = paymentLog.getBlockDate();
+        Date blockTime = paymentLog.getBlockTime();
         BigDecimal usd = paymentLog.getUsdValue();
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
@@ -131,7 +131,7 @@ public class MonitorService {
             }
             updatePaymentLog(paymentLog, result);
             if (result.hasOverflow()) {
-                LOG.info("{} transaction {} generated a overflow of {} USD", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier(), result.getOverflow());
+                LOG.info("{} transaction {} generated a overflow of {} USD", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), result.getOverflow());
                 createRefundEntryForOverflow(paymentLog, result.getOverflow());
             }
             return result;
@@ -142,7 +142,7 @@ public class MonitorService {
 
     private void updatePaymentLog(PaymentLog paymentLog, TokenAllocationResult result) {
 
-        paymentLog.setTomicsAmount(result.getAllocatedTomics());
+        paymentLog.setAllocatedTomics(result.getAllocatedTomics());
         paymentLogRepository.saveAndFlush(paymentLog);
     }
 

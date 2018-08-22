@@ -11,6 +11,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
@@ -26,68 +27,75 @@ public class PaymentLog {
     @Column(name = "id", nullable = false)
     private long id;
 
-    @Column(name = "tx_identifier", unique = true, nullable = false)
-    private String txIdentifier;
+    @Column(name = "transaction_id", unique = true, nullable = false)
+    private String transactionId;
 
     @Column(name = "create_date", nullable = false)
     private Date createDate;
 
-    @Column(name = "block_date")
-    private Date blockDate;
+    @Column(name = "block_time")
+    private Date blockTime;
 
     @Column(name = "currency", nullable = false)
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
-    @Column(name = "payment_amount", precision = 34, scale = 0)
-    private BigInteger paymentAmount;
+    @Column(name = "cryptocurrency_amount", precision = 34, scale = 0)
+    private BigInteger cryptocurrencyAmount = BigInteger.ZERO;
 
-    @Column(name = "fx_rate")
-    private BigDecimal usdFxRate;
+    @Column(name = "usd_fx_rate")
+    private BigDecimal usdFxRate = BigDecimal.ZERO;
 
     @Column(name = "usd_amount", precision = 34, scale = 6)
-    private BigDecimal usdValue;
+    private BigDecimal usdValue = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "investor_id")
     private Investor investor;
 
-    @Column(name = "tomics_amount", precision = 34, scale = 0)
-    private BigInteger tomicsAmount;
+    @Column(name = "allocated_tomics", precision = 34, scale = 0)
+    private BigInteger allocatedTomics = BigInteger.ZERO;
 
-    @Column(name = "eligible_for_refund_id")
-    private Long eligibleForRefundId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "eligible_for_refund_id")
+    private EligibleForRefund eligibleForRefund;
+
+    @Column(name = "is_confirmation_mail_sent")
+    private Boolean isConfirmationMailSent = false;
+
+    @Column(name = "is_allocation_mail_sent")
+    private Boolean isAllocationMailSent =  false;
 
     public PaymentLog() {}
 
-    public PaymentLog(String txIdentifier, Date createDate,
+    public PaymentLog(String transactionId, Date createDate,
                       CurrencyType currency) {
-        this.txIdentifier = txIdentifier;
+        this.transactionId = transactionId;
         this.createDate = createDate;
         this.currency = currency;
     }
 
-    public PaymentLog(String txIdentifier, Date createDate,
-                      CurrencyType currency, Date blockDate,
-                      BigInteger paymentAmount, BigDecimal usdFxRate, BigDecimal usdValue,
-                      Investor investor, BigInteger tomicsAmount) {
-        this.txIdentifier = txIdentifier;
+    public PaymentLog(String transactionId, Date createDate,
+                      CurrencyType currency, Date blockTime,
+                      BigInteger cryptocurrencyAmount, BigDecimal usdFxRate, BigDecimal usdValue,
+                      Investor investor, BigInteger allocatedTomics) {
+        this.transactionId = transactionId;
         this.createDate = createDate;
-        this.blockDate = blockDate;
+        this.blockTime = blockTime;
         this.currency = currency;
-        this.paymentAmount = paymentAmount;
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
         this.usdFxRate = usdFxRate;
         this.usdValue = usdValue;
         this.investor = investor;
-        this.tomicsAmount = tomicsAmount;
+        this.allocatedTomics = allocatedTomics;
     }
 
-    public String getTxIdentifier() {
-        return txIdentifier;
+    public String getTransactionId() {
+        return transactionId;
     }
 
-    public void setTxIdentifier(String txIdentifier) {
-        this.txIdentifier = txIdentifier;
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 
     public Date getCreateDate() {
@@ -98,12 +106,12 @@ public class PaymentLog {
         this.createDate = createDate;
     }
 
-    public Date getBlockDate() {
-        return blockDate;
+    public Date getBlockTime() {
+        return blockTime;
     }
 
-    public void setBlockDate(Date blockDate) {
-        this.blockDate = blockDate;
+    public void setBlockTime(Date blockTime) {
+        this.blockTime = blockTime;
     }
 
     public CurrencyType getCurrency() {
@@ -114,12 +122,12 @@ public class PaymentLog {
         this.currency = currency;
     }
 
-    public BigInteger getPaymentAmount() {
-        return paymentAmount;
+    public BigInteger getCryptocurrencyAmount() {
+        return cryptocurrencyAmount;
     }
 
-    public void setPaymentAmount(BigInteger paymentAmount) {
-        this.paymentAmount = paymentAmount;
+    public void setCryptocurrencyAmount(BigInteger cryptocurrencyAmount) {
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
     }
 
     public BigDecimal getUsdFxRate() {
@@ -146,20 +154,36 @@ public class PaymentLog {
         this.investor = investor;
     }
 
-    public BigInteger getTomicsAmount() {
-        return tomicsAmount;
+    public BigInteger getAllocatedTomics() {
+        return allocatedTomics;
     }
 
-    public void setTomicsAmount(BigInteger tomicsAmount) {
-        this.tomicsAmount = tomicsAmount;
+    public void setAllocatedTomics(BigInteger allocatedTomics) {
+        this.allocatedTomics = allocatedTomics;
     }
 
-    public Long getEligibleForRefundId() {
-        return eligibleForRefundId;
+    public EligibleForRefund getEligibleForRefund() {
+        return eligibleForRefund;
     }
 
-    public void setEligibleForRefundId(Long eligibleForRefundId) {
-        this.eligibleForRefundId = eligibleForRefundId;
+    public void setEligibleForRefund(EligibleForRefund eligibleForRefund) {
+        this.eligibleForRefund = eligibleForRefund;
+    }
+
+    public Boolean getConfirmationMailSent() {
+        return isConfirmationMailSent;
+    }
+
+    public void setConfirmationMailSent(Boolean confirmationMailSent) {
+        isConfirmationMailSent = confirmationMailSent;
+    }
+
+    public Boolean getAllocationMailSent() {
+        return isAllocationMailSent;
+    }
+
+    public void setAllocationMailSent(Boolean allocationMailSent) {
+        isAllocationMailSent = allocationMailSent;
     }
 
     /**
@@ -172,11 +196,9 @@ public class PaymentLog {
      * reference set (or both). False otherwise.
      */
     public boolean wasFullyProcessed() {
-        boolean hasTomicsSet = getTomicsAmount() != null
-                && getTomicsAmount().compareTo(BigInteger.ZERO) > 0;
-        boolean hasRefundEntry = getEligibleForRefundId() != null
-                && getEligibleForRefundId() > 0;
-        return hasTomicsSet || hasRefundEntry;
+        boolean hasTomicsSet = getAllocatedTomics() != null
+                && getAllocatedTomics().compareTo(BigInteger.ZERO) > 0;
+        return hasTomicsSet || getEligibleForRefund() != null;
     }
 
     public boolean wasCreatedRecently(long timeSpanInMs) {

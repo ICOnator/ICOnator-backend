@@ -10,7 +10,6 @@ import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
-import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
@@ -83,7 +82,7 @@ abstract public class BaseMonitor {
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
                     tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
-                    paymentLog.getTomicsAmount());
+                    paymentLog.getAllocatedTomics());
 
         } catch (Throwable t) {
             LOG.error("Error processing transaction.", t);
@@ -94,14 +93,14 @@ abstract public class BaseMonitor {
         RefundReason reason = null;
         try {
             reason = RefundReason.TRANSACTION_VALUE_MISSING;
-            paymentLog.setPaymentAmount(tx.getTransactionValue());
+            paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
             BigDecimal valueInMainUnit = tx.getTransactionValueInMainUnit();
 
             reason = RefundReason.INVESTOR_MISSING;
             paymentLog.setInvestor(tx.getAssociatedInvestor());
 
             reason = RefundReason.BLOCK_TIME_MISSING;
-            paymentLog.setBlockDate(tx.getBlockTime());
+            paymentLog.setBlockTime(tx.getBlockTime());
 
             reason = RefundReason.BLOCK_HEIGHT_MISSING;
             long blockHeight = tx.getBlockHeight();
@@ -144,7 +143,7 @@ abstract public class BaseMonitor {
         if (paymentLog.getUsdValue() == null) {
             throw new IllegalArgumentException("PaymentLog's amount in USD must not be null.");
         }
-        if (paymentLog.getBlockDate() == null) {
+        if (paymentLog.getBlockTime() == null) {
             throw new IllegalArgumentException("PaymentLog's block time must not be null.");
         }
 
@@ -164,7 +163,7 @@ abstract public class BaseMonitor {
             if (result == null) throw new NoSuchElementException();
             return result;
         } catch (Throwable e) {
-            LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTxIdentifier(), e.getCause());
+            LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
             RefundReason reason = RefundReason.CONVERSION_TO_TOKENS_FAILED;
             monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
             throw e;
