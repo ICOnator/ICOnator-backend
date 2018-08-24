@@ -8,5 +8,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EligibleForRefundRepository extends JpaRepository<EligibleForRefund, Long>{
 
-    boolean existsByTxIdentifierAndCurrency(String txIdentifier, CurrencyType currency);
 }

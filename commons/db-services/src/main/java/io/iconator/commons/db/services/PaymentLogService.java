@@ -17,22 +17,9 @@ public class PaymentLogService {
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
-    @Transactional(readOnly = true)
-    public boolean exists(String txIdentifier, CurrencyType currency) {
-        return paymentLogRepository.existsByTxIdentifierAndCurrency(txIdentifier, currency);
-    }
-
-    public PaymentLog getPaymentLogForUpdate(String txIdentifier, CurrencyType currency)
-            throws PaymentLogNotFoundException {
+    public PaymentLog getPaymentLog(String transactionId) throws PaymentLogNotFoundException {
         return paymentLogRepository
-                .findOptionalByTxIdentifierAndCurrency(txIdentifier, currency)
-                .orElseThrow(PaymentLogNotFoundException::new);
-    }
-
-    public PaymentLog getPaymentLogReadOnly(String txIdentifier, CurrencyType currency)
-            throws PaymentLogNotFoundException {
-        return paymentLogRepository
-                .readOptionalByTxIdentifierAndCurrency(txIdentifier, currency)
+                .findOptionalByTransactionId(transactionId)
                 .orElseThrow(PaymentLogNotFoundException::new);
     }
 

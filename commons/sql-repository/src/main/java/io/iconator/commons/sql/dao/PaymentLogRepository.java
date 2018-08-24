@@ -13,11 +13,5 @@ import java.util.Optional;
 @Repository
 public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
-    boolean existsByTxIdentifierAndCurrency(String txIdentifier, CurrencyType currency);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<PaymentLog> findOptionalByTxIdentifierAndCurrency(String txIdentifier, CurrencyType currencyType);
-
-    @Lock(LockModeType.READ)
-    Optional<PaymentLog> readOptionalByTxIdentifierAndCurrency(String txIdentifier, CurrencyType currencyType);
+    Optional<PaymentLog> findOptionalByTransactionId(String transactionId);
 }
