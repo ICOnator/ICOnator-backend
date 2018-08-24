@@ -10,7 +10,6 @@ import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
-import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
@@ -27,7 +26,9 @@ import org.springframework.stereotype.Component;
 import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
@@ -103,11 +104,8 @@ abstract public class BaseMonitor {
             reason = RefundReason.BLOCK_TIME_MISSING;
             paymentLog.setBlockDate(tx.getBlockTime());
 
-            reason = RefundReason.BLOCK_HEIGHT_MISSING;
-            long blockHeight = tx.getBlockHeight();
-
             reason = RefundReason.FX_RATE_MISSING;
-            BigDecimal fxRate = getUSDExchangeRate(blockHeight, tx.getCurrencyType());
+            BigDecimal fxRate = getUSDExchangeRate(tx.getBlockTime().toInstant(), tx.getCurrencyType());
             paymentLog.setUsdFxRate(fxRate);
             paymentLog.setUsdValue(valueInMainUnit.multiply(fxRate));
 
@@ -118,16 +116,16 @@ abstract public class BaseMonitor {
         return paymentLogService.saveAndCommit(paymentLog);
     }
 
-    private BigDecimal getUSDExchangeRate(long blockHeight, CurrencyType currencyType)
+    private BigDecimal getUSDExchangeRate(Instant blockTimestamp, CurrencyType currencyType)
             throws MissingTransactionInformationException {
 
         try {
-            BigDecimal USDExchangeRate = fxService.getUSDExchangeRate(blockHeight, currencyType);
-            if (USDExchangeRate == null) throw new NoSuchElementException();
-            return USDExchangeRate;
+            Optional<BigDecimal> USDExchangeRate = fxService.getUSDExchangeRate(blockTimestamp, currencyType);
+            return USDExchangeRate.orElseThrow(() -> new NoSuchElementException());
         } catch (Exception e) {
             throw new MissingTransactionInformationException("Couldn't fetch USD to " + currencyType.name() + " exchange rate.", e);
         }
+
     }
 
     /*
