@@ -8,6 +8,7 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
+import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
@@ -15,7 +16,6 @@ import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.monitor.config.MonitorAppConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
-import io.iconator.monitor.service.MonitorService.TokenAllocationResult;
 import io.iconator.monitor.transaction.TransactionAdapter;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.slf4j.Logger;
@@ -132,20 +132,16 @@ abstract public class BaseMonitor {
             } catch (PaymentLogNotFoundException e) {
                 paymentLog = createNewPaymentLog(tx);
             }
-            if (paymentLog == null) return; // no processing required.
-            if (paymentLog.getAllocatedTomics() == null) {
-                // TODO the token allocation has to be repeated. I.e. do the whole processing.
-            } else {
-                // TODO only the allocation email has to be send.
-            }
+            // Update attributes of payment log if it has been newly created but also if it was
+            // fetched for reprocessing.
             paymentLog = updateBuildingPaymentLog(tx, paymentLog);
-            if (paymentLog == null) return;
-            LOG.debug("Calling token allocation with {} USD for {} transaction {}.", paymentLog.getUsdValue().toPlainString(), paymentLog.getCurrency(), paymentLog.getTransactionId());
-            TokenAllocationResult result;
-            result = allocateTokensWithRetries(paymentLog);
-            LOG.debug("Allocated {} tomics for {} transaction {}.", result.getAllocatedTomics(), tx.getCurrencyType().name(), tx.getTransactionId());
-            BigInteger tomics = result.getAllocatedTomics();
-            LOG.debug("For {} USD {} atomic tokens where allocated. {} transaction {}.", paymentLog.getUsdValue().toPlainString(), tomics, tx.getCurrencyType().name(), tx.getTransactionId());
+            if (paymentLog == null) return; // no processing required.
+            BigInteger allocatedTomics = paymentLog.getAllocatedTomics();
+            if (allocatedTomics == null) {
+                // Tokens have not yet been allocated because the payment log is new or the last
+                // time it was processed the processing stopped unexpectedly before the allocation.
+                paymentLog = allocateTokensWithRetries(paymentLog);
+            }
             monitorService.sendAllocationMailAndSavePaymentLog(
                     paymentLog, tx.getTransactionValueInMainUnit(), tx.getWebLinkToTransaction());
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
@@ -159,6 +155,7 @@ abstract public class BaseMonitor {
     }
 
     private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) {
+        if (paymentLog == null) return null;
         RefundReason reason = null;
         try {
             reason = RefundReason.TRANSACTION_VALUE_MISSING;
@@ -180,7 +177,12 @@ abstract public class BaseMonitor {
             paymentLog.setUsdValue(valueInMainUnit.multiply(fxRate));
 
         } catch (MissingTransactionInformationException e) {
-            monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
+            try {
+                monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
+            } catch (RefundEntryAlradyExistsException re) {
+                LOG.error("Couldn't save refund entry for transction {} because one alrady existed " +
+                        "for that transaction.", paymentLog.getTransactionId());
+            }
             return null;
         }
         return paymentLogService.saveAndCommit(paymentLog);
@@ -198,7 +200,7 @@ abstract public class BaseMonitor {
         }
     }
 
-    public TokenAllocationResult allocateTokensWithRetries(PaymentLog paymentLog)
+    public PaymentLog allocateTokensWithRetries(PaymentLog paymentLog)
             throws Throwable {
 
         if (paymentLog.getUsdValue() == null) {
@@ -208,9 +210,13 @@ abstract public class BaseMonitor {
             throw new IllegalArgumentException("PaymentLog's block time must not be null.");
         }
 
+        LOG.debug("Calling token allocation with {} USD for {} transaction {}.",
+                paymentLog.getUsdValue().toPlainString(), paymentLog.getCurrency(),
+                paymentLog.getTransactionId());
+
         // Retry as long as there are database locking exceptions.
-        Retryer<TokenAllocationResult> retryer =
-                RetryerBuilder.<MonitorService.TokenAllocationResult>newBuilder()
+        Retryer<PaymentLog> retryer =
+                RetryerBuilder.<PaymentLog>newBuilder()
                         .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                         .retryIfExceptionOfType(OptimisticLockException.class)
                         .withWaitStrategy(randomWait(
@@ -219,16 +225,19 @@ abstract public class BaseMonitor {
                         .build();
 
         try {
-            TokenAllocationResult result = retryer.call(
+            PaymentLog updatedPaymentLog = retryer.call(
                     () -> monitorService.allocateTokens(paymentLog));
-            if (result == null) throw new NoSuchElementException();
-            return result;
+
+            LOG.debug("Allocated {} tomics for {} transaction {}.",
+                    updatedPaymentLog.getAllocatedTomics(), updatedPaymentLog.getCurrency(),
+                    updatedPaymentLog.getTransactionId());
+
+            return paymentLog;
         } catch (Throwable e) {
             LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
-            RefundReason reason = RefundReason.CONVERSION_TO_TOKENS_FAILED;
+            RefundReason reason = RefundReason.TOKEN_ALLOCATION_FAILED;
             monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
             throw e;
         }
     }
-
 }
