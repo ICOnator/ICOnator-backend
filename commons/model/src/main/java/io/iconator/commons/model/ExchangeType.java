@@ -6,7 +6,8 @@ public enum ExchangeType {
     BITSTAMP("Bitstamp"),
     BITFINEX("Bitfinex"),
     GDAX("GDAX"),
-    COINMARKETCAP("CoinMarketCap");
+    COINMARKETCAP("CoinMarketCap"),
+    CRYPTOCOMPARE("CryptoCompare");
 
     private final String exchangeName;
 

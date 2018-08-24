@@ -1,5 +1,6 @@
 package io.iconator.rates.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.cryptocompare.CryptoCompareClientService;
 import io.iconator.commons.cryptocompare.config.CryptoCompareConfig;
 import io.iconator.commons.cryptocompare.config.CryptoCompareConfigHolder;
@@ -13,9 +14,10 @@ import io.iconator.commons.model.db.ExchangeAggregateCurrencyRate;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
 import io.iconator.rates.config.AggregationServiceConfig;
-import io.iconator.rates.config.RatesAppConfig;
 import io.iconator.rates.config.RatesAppConfigHolder;
 import io.iconator.rates.config.TestConfig;
+import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
+import io.iconator.rates.consumer.BlockNrEthereumConsumer;
 import io.iconator.rates.service.exceptions.RateNotFoundException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +50,13 @@ import static org.mockito.Mockito.when;
         CryptoCompareConfigHolder.class,
         CryptoCompareClientService.class,
         RatesAppConfigHolder.class,
-        RatesProviderService.class
+        RatesProviderService.class,
+        BlockNrEthereumConsumer.class,
+        BlockNrBitcoinConsumer.class,
+        ObjectMapper.class,
+        BlockNrProviderService.class,
+        BlockchainInfoService.class,
+        EtherscanService.class
 })
 @DataJpaTest
 @TestPropertySource({"classpath:rates.application.properties", "classpath:application-test.properties"})
@@ -119,7 +127,7 @@ public class RatesProviderServiceTest {
     }
 
     @Test
-    public void testGetRate_ClosetRate_Available() throws RateNotFoundException {
+    public void testGetRate_ClosestRate_Available() throws RateNotFoundException {
         Instant now = Instant.now();
 
         ExchangeAggregateRate r1 = new ExchangeAggregateRate(Date.from(now.minus(30, ChronoUnit.MINUTES)), null, null);
@@ -145,7 +153,7 @@ public class RatesProviderServiceTest {
     }
 
     @Test
-    public void testGetRate_ClosetRate_Not_Available() throws Exception {
+    public void testGetRate_ClosestRate_Not_Available() throws Exception {
         Instant now = Instant.now();
 
         ExchangeAggregateRate r1 = new ExchangeAggregateRate(Date.from(now.minus(30, ChronoUnit.MINUTES)), null, null);
@@ -172,7 +180,7 @@ public class RatesProviderServiceTest {
     }
 
     @Test
-    public void testGetRate_ClosetRate_Not_Available_Empty_ExchangeAggregateRate() throws Exception {
+    public void testGetRate_ClosestRate_Not_Available_Empty_ExchangeAggregateRate() throws Exception {
         Instant now = Instant.now();
 
         when(exchangeAggregateRateRepository.findAllByCreationDateBetweenOrderByCreationDateDesc(any(), any()))
@@ -195,7 +203,7 @@ public class RatesProviderServiceTest {
     }
 
     @Test(expected = RateNotFoundException.class)
-    public void testGetRate_ClosetRate_Nor_HistoricalDate_Are_Available() throws Exception {
+    public void testGetRate_ClosestRate_Nor_HistoricalDate_Are_Available() throws Exception {
         Instant now = Instant.now();
 
         ExchangeAggregateRate r1 = new ExchangeAggregateRate(Date.from(now.minus(30, ChronoUnit.MINUTES)), null, null);

@@ -9,8 +9,6 @@ import io.iconator.commons.model.db.ExchangeCurrencyRate;
 import io.iconator.commons.model.db.ExchangeEntryRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
 import io.iconator.rates.config.RatesAppConfigHolder;
-import io.iconator.rates.consumer.BlockNrBitcoinConsumer;
-import io.iconator.rates.consumer.BlockNrEthereumConsumer;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -35,10 +33,7 @@ public class ExchangeRateService {
     private final static Logger LOG = LoggerFactory.getLogger(ExchangeRateService.class);
 
     @Autowired
-    private BlockNrEthereumConsumer blockNrEthereumConsumer;
-
-    @Autowired
-    private BlockNrBitcoinConsumer blockNrBitcoinConsumer;
+    private BlockNrProviderService blockNrProviderService;
 
     @Autowired
     private ExchangeAggregateRateRepository exchangeAggregateRateRepository;
@@ -104,13 +99,13 @@ public class ExchangeRateService {
     public void fetchRates() {
         LOG.info("Fetching rates...");
 
-        Long blockNrETH = blockNrEthereumConsumer.getCurrentBlockNr();
+        Long blockNrETH = blockNrProviderService.getCurrentBlockNrEthereum();
         if (blockNrETH == null) {
             LOG.error("Could not fetch current ETH block number.");
             return;
         }
 
-        Long blockNrBTC = blockNrBitcoinConsumer.getCurrentBlockNr();
+        Long blockNrBTC = blockNrProviderService.getCurrentBlockNrBitcoin();
         if (blockNrBTC == null) {
             LOG.error("Could not fetch current BTC block number.");
             return;

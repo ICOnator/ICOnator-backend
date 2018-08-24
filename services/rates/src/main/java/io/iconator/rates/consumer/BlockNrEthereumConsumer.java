@@ -2,7 +2,6 @@ package io.iconator.rates.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
-import io.iconator.rates.service.EtherscanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -14,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
@@ -26,13 +24,8 @@ public class BlockNrEthereumConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockNrEthereumConsumer.class);
 
-    public static final int HALF_HOUR = 1000 * 60 * 30;
-
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private EtherscanService etherscanService;
 
     private Long blockNr;
     private Long timestamp;
@@ -74,28 +67,11 @@ public class BlockNrEthereumConsumer {
         return this;
     }
 
-    public Long getCurrentBlockNr() {
-        if(blockNr == null || timestamp == null) {
-            //fallback is API call to etherscan
-            try {
-                LOG.warn("No Ethereum block since startup");
-                return etherscanService.getLatestEthereumHeight();
-            } catch (IOException e) {
-                LOG.error("Ethereum block height fallback failed - starting, discarding", e);
-                return null;
-            }
-        }
-        if(timestamp.longValue() + HALF_HOUR < new Date().getTime()) {
-            //fallback is API call to etherscan
-            try {
-                LOG.warn("Ethereum block over 30 min old, using fallback");
-                return etherscanService.getLatestEthereumHeight();
-            } catch (IOException e) {
-                LOG.error("Ethereum block height fallback failed, discarding", e);
-                return null;
-            }
-        }
+    public Long getBlockNr() {
         return blockNr;
     }
 
+    public Long getTimestamp() {
+        return timestamp;
+    }
 }

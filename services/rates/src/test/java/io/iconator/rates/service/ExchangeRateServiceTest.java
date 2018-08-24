@@ -31,7 +31,8 @@ import static org.junit.Assert.assertTrue;
         BlockNrServiceConfig.class,
         RatesAppConfig.class,
         BlockchainInfoService.class,
-        EtherscanService.class
+        EtherscanService.class,
+        BlockNrProviderService.class
 })
 @DataJpaTest
 @TestPropertySource({"classpath:rates.application.properties", "classpath:application-test.properties"})

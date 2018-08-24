@@ -37,7 +37,7 @@ public class AggregationService {
     private BigDecimal getMean(List<Double> data) {
         Mean mean = new Mean();
         data.stream().forEach((value) -> mean.increment(value));
-        return new BigDecimal(mean.getResult());
+        return BigDecimal.valueOf(mean.getResult());
     }
 
 }

@@ -62,6 +62,15 @@ public class RatesAppConfigHolder {
     @Value("${io.iconator.services.rates.fetch.range-between-threshold.max}")
     private Long fetchRangeBetweenThresholdMillisMax;
 
+    @Value("${io.iconator.services.rates.block-number.fallback.api.enabled}")
+    private Boolean blockNumberFallbackToApiEnabled;
+
+    @Value("${io.iconator.services.rates.block-number.fallback.api.bitcoin.older-than}")
+    private Long blockNumberBitcoinFallbackToApiIfOlderThan;
+
+    @Value("${io.iconator.services.rates.block-number.fallback.api.ethereum.older-than}")
+    private Long blockNumberEthereumFallbackToApiIfOlderThan;
+
     public String getBitcoinNet() {
         return bitcoinNet;
     }
@@ -128,5 +137,17 @@ public class RatesAppConfigHolder {
 
     public Long getFetchRangeBetweenThresholdMillisMax() {
         return fetchRangeBetweenThresholdMillisMax;
+    }
+
+    public Boolean getBlockNumberFallbackToApiEnabled() {
+        return blockNumberFallbackToApiEnabled;
+    }
+
+    public Long getBlockNumberBitcoinFallbackToApiIfOlderThan() {
+        return blockNumberBitcoinFallbackToApiIfOlderThan;
+    }
+
+    public Long getBlockNumberEthereumFallbackToApiIfOlderThan() {
+        return blockNumberEthereumFallbackToApiIfOlderThan;
     }
 }
