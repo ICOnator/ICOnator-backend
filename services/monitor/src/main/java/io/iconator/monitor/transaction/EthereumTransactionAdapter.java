@@ -111,7 +111,7 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public String getWebLinkToTransaction() throws MissingTransactionInformationException {
+    public String getTransactionUrl() throws MissingTransactionInformationException {
         return ETHERSCAN_LINK + getTransactionId();
     }
 }

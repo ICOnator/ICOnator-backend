@@ -1,5 +1,7 @@
 package io.iconator.monitor.service;
 
+import io.iconator.commons.amqp.model.TokensAllocatedEmailMessage;
+import io.iconator.commons.amqp.model.TransactionReceivedEmailMessage;
 import io.iconator.commons.amqp.model.utils.MessageDTOHelper;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.EligibleForRefundService;
@@ -135,24 +137,25 @@ public class MonitorService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void sendTransactionSeenMailAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit) {
-        messageService.send(new TansactionSeenEmailMessage(
+    public void sendTransactionReceivedMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
+        messageService.send(new TransactionReceivedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
                 amountInMainUnit,
-                paymentLog.getCurrency()));
+                paymentLog.getCurrency(),
+                transactionUrl));
         paymentLog.setConfirmationMailSent(true);
         paymentLogService.save(paymentLog);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void sendAllocationMailAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String webLink) {
+    public void sendAllocationMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
         messageService.send(new TokensAllocatedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
                 amountInMainUnit,
                 paymentLog.getCurrency(),
-                webLink,
+                transactionUrl,
                 convertTomicsToTokens(paymentLog.getAllocatedTomics())));
-        paymentLog.setAllocationMailSent();
+        paymentLog.setAllocationMailSent(true);
         paymentLogService.save(paymentLog);
     }
 

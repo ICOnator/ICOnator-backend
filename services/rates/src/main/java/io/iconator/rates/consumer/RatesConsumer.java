@@ -18,7 +18,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Instant;
@@ -54,21 +53,22 @@ public class RatesConsumer {
     public FetchRatesResponseMessage receiveMessage(byte[] message) {
         LOG.debug("Received from consumer: " + new String(message));
 
-        FetchRatesRequestMessage requestMessage = null;
+        FetchRatesRequestMessage messageObject = null;
         try {
-            requestMessage = objectMapper.reader().forType(FetchRatesRequestMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
-            throw new AmqpRejectAndDontRequeueException("Message can't be mapped to the FetchRatesRequestMessage class.");
+            messageObject = objectMapper.reader().forType(FetchRatesRequestMessage.class).readValue(message);
+        } catch (Exception e) {
+            LOG.error("Message not valid.", e);
+            throw new AmqpRejectAndDontRequeueException(
+                    String.format("Message can't be mapped to the %s class.", FetchRatesRequestMessage.class.getTypeName()), e);
         }
 
-        CurrencyType from = ofNullable(requestMessage)
+        CurrencyType from = ofNullable(messageObject)
                 .map((m) -> m.getFrom())
                 .orElseThrow(() -> new AmqpRejectAndDontRequeueException("'from' attribute on FetchRatesRequestMessage message is null."));
 
-        List<CurrencyType> to = ofNullable(requestMessage).map((m) -> m.getTo()).orElse(Arrays.asList());
+        List<CurrencyType> to = ofNullable(messageObject).map((m) -> m.getTo()).orElse(Arrays.asList());
 
-        Instant timestamp = ofNullable(requestMessage)
+        Instant timestamp = ofNullable(messageObject)
                 .map((m) -> m.getDesiredRateTimestamp())
                 .map((date) -> date.toInstant())
                 .orElseThrow(() -> new AmqpRejectAndDontRequeueException("'desiredRateTimestamp' attribute on " +

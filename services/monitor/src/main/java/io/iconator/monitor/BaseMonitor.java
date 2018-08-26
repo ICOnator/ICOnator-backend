@@ -99,8 +99,9 @@ abstract public class BaseMonitor {
             if (paymentLog == null) return;
             paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
             paymentLog.setInvestor(tx.getAssociatedInvestor());
-            monitorService.sendTransactionSeenMailAndSavePaymentLog(
-                    paymentLog, tx.getTransactionValueInMainUnit());
+            monitorService.sendTransactionReceivedMessageAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit(),
+                    tx.getTransactionUrl());
         } catch (MissingTransactionInformationException e) {
             LOG.error("Error processing transaction", e);
         }
@@ -144,8 +145,8 @@ abstract public class BaseMonitor {
                 // time it was processed the processing stopped unexpectedly before the allocation.
                 paymentLog = allocateTokensWithRetries(paymentLog);
             }
-            monitorService.sendAllocationMailAndSavePaymentLog(
-                    paymentLog, tx.getTransactionValueInMainUnit(), tx.getWebLinkToTransaction());
+            monitorService.sendAllocationMessageAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit(), tx.getTransactionUrl());
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
                     tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),

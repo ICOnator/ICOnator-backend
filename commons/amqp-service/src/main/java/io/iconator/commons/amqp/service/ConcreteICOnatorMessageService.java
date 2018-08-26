@@ -7,20 +7,20 @@ import io.iconator.commons.amqp.model.BlockNrMessage;
 import io.iconator.commons.amqp.model.ConfirmationEmailMessage;
 import io.iconator.commons.amqp.model.FetchRatesRequestMessage;
 import io.iconator.commons.amqp.model.FetchRatesResponseMessage;
-import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
 import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycReminderEmailSentMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
 import io.iconator.commons.amqp.model.SetWalletAddressMessage;
 import io.iconator.commons.amqp.model.SummaryEmailMessage;
+import io.iconator.commons.amqp.model.TokensAllocatedEmailMessage;
+import io.iconator.commons.amqp.model.TransactionReceivedEmailMessage;
 import io.iconator.commons.amqp.service.exceptions.InvalidMessageFormatException;
 import org.slf4j.Logger;
 
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_BITCOIN_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_ETHEREUM_ROUTING_KEY;
-import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.FUNDS_RECEIVED_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_SENT_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_START_EMAIL_ROUTING_KEY;
@@ -28,6 +28,8 @@ import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_S
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.RATES_EXCHANGE_REQUEST_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.REGISTER_SUMMARY_EMAIL_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.TRANSACTION_RECEIVED_ROUTING_KEY;
+import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.TRANSACTION_TOKENS_ALLOCATED_ROUTING_KEY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
@@ -48,11 +50,6 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     @Override
     public void send(SummaryEmailMessage summaryEmailMessage) {
         sendExchange(REGISTER_SUMMARY_EMAIL_ROUTING_KEY, summaryEmailMessage);
-    }
-
-    @Override
-    public void send(FundsReceivedEmailMessage fundsReceivedEmailMessage) {
-        sendExchange(FUNDS_RECEIVED_ROUTING_KEY, fundsReceivedEmailMessage);
     }
 
     @Override
@@ -92,6 +89,17 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
         if (routingKey != null) sendExchange(routingKey, blockNrMessage);
     }
 
+    @Override
+    public void send(TransactionReceivedEmailMessage transactionReceivedEmailMessage) {
+        sendExchange(TRANSACTION_RECEIVED_ROUTING_KEY, transactionReceivedEmailMessage);
+    }
+
+    @Override
+    public void send(TokensAllocatedEmailMessage tokensAllocatedEmailMessage) {
+        sendExchange(TRANSACTION_TOKENS_ALLOCATED_ROUTING_KEY, tokensAllocatedEmailMessage);
+    }
+
+    @Override
     public FetchRatesResponseMessage sendAndReceive(FetchRatesRequestMessage fetchRatesRequestMessage) throws InvalidMessageFormatException {
         return sendExchangeAndReceive(RATES_EXCHANGE_REQUEST_ROUTING_KEY, fetchRatesRequestMessage);
     }

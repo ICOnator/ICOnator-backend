@@ -73,13 +73,14 @@ public class PaymentLog {
     private Boolean isConfirmationMailSent = false;
 
     @Column(name = "is_allocation_mail_sent")
-    private Boolean isAllocationMailSent =  false;
+    private Boolean isAllocationMailSent = false;
 
     @Column(name = "transaction_status", nullable = false)
     @Enumerated(EnumType.STRING)
     private TransactionStatus transactionStatus;
 
-    public PaymentLog() {}
+    public PaymentLog() {
+    }
 
     public PaymentLog(String transactionId, Date createDate,
                       CurrencyType currency, TransactionStatus transactionStatus) {

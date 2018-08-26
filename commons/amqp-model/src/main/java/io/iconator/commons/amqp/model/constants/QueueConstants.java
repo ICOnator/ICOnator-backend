@@ -7,7 +7,8 @@ public class QueueConstants {
 
     public static final String ADDRESS_SET_WALLET_QUEUE = "address_set_wallet_queue";
 
-    public static final String FUNDS_RECEIVED_EMAIL_QUEUE = "funds_received_email_queue";
+    public static final String TRANSACTION_TOKENS_ALLOCATED_EMAIL_QUEUE = "transaction_tokens_allocated_email_queue";
+    public static final String TRANSACTION_RECEIVED_EMAIL_QUEUE = "transaction_received_email_queue";
 
     public static final String KYC_START_EMAIL_QUEUE = "kyc_start_email_queue";
     public static final String KYC_REMINDER_EMAIL_QUEUE = "kyc_reminder_email_queue";

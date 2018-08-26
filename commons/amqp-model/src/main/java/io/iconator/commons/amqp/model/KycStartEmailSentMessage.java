@@ -1,11 +1,12 @@
 package io.iconator.commons.amqp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KycStartEmailSentMessage extends Message {
 
+    @JsonProperty("emailAddress")
     private String emailAddress;
 
     public KycStartEmailSentMessage() {

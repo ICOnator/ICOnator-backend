@@ -4,7 +4,11 @@ import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
-import org.bitcoinj.core.*;
+import org.bitcoinj.core.Block;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.StoredBlock;
+import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 
@@ -146,7 +150,7 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
     }
 
     @Override
-    public String getWebLinkToTransaction() throws MissingTransactionInformationException {
+    public String getTransactionUrl() throws MissingTransactionInformationException {
         try {
             return BLOCKCHAIN_INFO_LINK + bitcoinjTxOutput.getParentTransaction().getHashAsString();
         } catch (Exception e) {

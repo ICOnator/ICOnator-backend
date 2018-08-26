@@ -35,8 +35,11 @@ public class MailServiceConfigHolder {
     @Value("${io.iconator.commons.mail.service.summaryEmailSubject}")
     private String summaryEmailSubject;
 
-    @Value("${io.iconator.commons.mail.service.fundsReceivedEmailSubject}")
-    private String fundsReceivedEmailSubject;
+    @Value("${io.iconator.commons.mail.service.transactionReceivedEmailSubject}")
+    private String transactionReceivedEmailSubject;
+
+    @Value("${io.iconator.commons.mail.service.tokensAllocatedEmailSubject}")
+    private String tokensAllocatedEmailSubject;
 
     @Value("${io.iconator.commons.mail.service.kycStartEmailSubject}")
     private String kycStartEmailSubject;
@@ -125,8 +128,12 @@ public class MailServiceConfigHolder {
         return summaryEmailSubject;
     }
 
-    public String getFundsReceivedEmailSubject() {
-        return fundsReceivedEmailSubject;
+    public String getTransactionReceivedEmailSubject() {
+        return transactionReceivedEmailSubject;
+    }
+
+    public String getTokensAllocatedEmailSubject() {
+        return tokensAllocatedEmailSubject;
     }
 
     public String getKycStartEmailSubject() {

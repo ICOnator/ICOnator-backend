@@ -83,13 +83,13 @@ public interface TransactionAdapter {
     Date getBlockTime() throws MissingTransactionInformationException;
 
     /**
-     * The web link is usually composed by the URL of a blockchain info web page
+     * The transaction URL is usually composed by the URL of a blockchain info web page
      * appended with the transaction identifier of this transaction.
      *
-     * @return the URL pointing to this transaction on an info web page.
+     * @return the URL in string representation pointing to this transaction on an info web page.
      * @throws MissingTransactionInformationException if fetching the URL failed.
      */
-    String getWebLinkToTransaction() throws MissingTransactionInformationException;
+    String getTransactionUrl() throws MissingTransactionInformationException;
 
     /**
      * The factor is the amount of atomic units that make up one main

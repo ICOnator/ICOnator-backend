@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -12,7 +13,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
@@ -43,15 +43,17 @@ public class BlockNrEthereumConsumer {
     public void receiveMessage(byte[] message) {
         LOG.debug("Received from consumer: " + new String(message));
 
-        BlockNREthereumMessage blockNREthereumMessage = null;
+        BlockNREthereumMessage messageObject = null;
         try {
-            blockNREthereumMessage = objectMapper.reader().forType(BlockNREthereumMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
+            messageObject = objectMapper.reader().forType(BlockNREthereumMessage.class).readValue(message);
+        } catch (Exception e) {
+            LOG.error("Message not valid.", e);
+            throw new AmqpRejectAndDontRequeueException(
+                    String.format("Message can't be mapped to the %s class.", BlockNREthereumMessage.class.getTypeName()), e);
         }
 
         try {
-            Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(blockNREthereumMessage);
+            Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(messageObject);
             optionalBlockNREthereumMessage.ifPresent((ethereumMessage) -> {
                 blockNr = ethereumMessage.getBlockNr();
                 timestamp = ethereumMessage.getTimestamp();

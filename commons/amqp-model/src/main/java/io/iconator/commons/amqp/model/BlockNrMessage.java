@@ -1,8 +1,13 @@
 package io.iconator.commons.amqp.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class BlockNrMessage extends Message {
 
+    @JsonProperty("blockNr")
     private Long blockNr;
+
+    @JsonProperty("timestamp")
     private Long timestamp;
 
     public BlockNrMessage() {
