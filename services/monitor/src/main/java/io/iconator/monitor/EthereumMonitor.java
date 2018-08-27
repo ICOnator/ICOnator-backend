@@ -12,15 +12,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
-import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
-import rx.Subscription;
+import org.web3j.protocol.core.methods.response.Transaction;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -32,6 +32,7 @@ public class EthereumMonitor extends BaseMonitor {
     private final Web3j web3j;
     private boolean started = false;
     private Set<String> monitoredAddresses = new HashSet<>(); // public key -> address
+    private Set<EthereumTransactionAdapter> unconfirmedTransactions = new HashSet<>();
 
     private ICOnatorMessageService messageService;
 
@@ -80,7 +81,9 @@ public class EthereumMonitor extends BaseMonitor {
         started = true;
 
         monitorBlockNumbers(highestBlock.getNumber());
-        monitorTransactions();
+        monitorPendingTransactions();
+        monitorBuildingTransactions();
+        monitorProcessedTransactions();
     }
 
     private void monitorBlockNumbers(BigInteger highestBlockNumber) {
@@ -97,7 +100,7 @@ public class EthereumMonitor extends BaseMonitor {
                 });
     }
 
-    private void monitorTransactions() {
+    private void monitorPendingTransactions() {
         web3j.pendingTransactionObservable().subscribe(web3jTx -> {
             try {
                 if (!monitoredAddresses.contains(web3jTx.getTo())) return;
@@ -108,18 +111,45 @@ public class EthereumMonitor extends BaseMonitor {
             }
         }, t -> LOG.error("Error during scanning of pending transactions.", t));
 
+    }
+
+    private void monitorBuildingTransactions() {
         Long startBlock = configHolder.getEthereumNodeStartBlock();
         web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(new DefaultBlockParameterNumber(startBlock))
                 .subscribe(web3jTx -> {
                     try {
                         if (!monitoredAddresses.contains(web3jTx.getTo())) return;
-                        processBuildingTransaction(
-                                new EthereumTransactionAdapter(web3jTx, web3j, investorService));
+                        EthereumTransactionAdapter tx = new EthereumTransactionAdapter(
+                                web3jTx, web3j, investorService);
+                        processBuildingTransaction(tx);
+                        BigInteger currentBlockNr = web3j.ethBlockNumber().send().getBlockNumber();
+                        if (!isConfirmed(tx, currentBlockNr)) {
+                            unconfirmedTransactions.add(tx);
+                        }
                     } catch (Throwable t) {
                         LOG.error("Error while processing transaction.", t);
                     }
                 }, t -> LOG.error("Error during scanning of transactions.", t));
+    }
 
+    private void monitorProcessedTransactions() {
+        web3j.blockObservable(false).subscribe(block -> {
+            BigInteger currentBlockNr = block.getBlock().getNumber();
+            Iterator<EthereumTransactionAdapter> iterator = unconfirmedTransactions.iterator();
+            while (iterator.hasNext()) {
+                EthereumTransactionAdapter tx = iterator.next();
+                if (isConfirmed(tx, currentBlockNr)) {
+                    confirmTransaction(tx);
+                    iterator.remove();
+                }
+            }
+        });
+    }
+
+    private boolean isConfirmed(EthereumTransactionAdapter tx, BigInteger currentBlockNr) {
+        BigInteger goalDepth = BigInteger.valueOf(configHolder.getEthereumConfirmationBlockdepth());
+        BigInteger depth = currentBlockNr.subtract(tx.getWeb3jTransaction().getBlockNumber());
+        return depth.compareTo(goalDepth) >= 0;
     }
 
     @Override
