@@ -97,8 +97,6 @@ public class MonitorServiceTest {
                 .thenReturn(new BigDecimal("0.1"));
         when(appConfig.getAtomicUnitFactor())
                 .thenReturn(BigInteger.TEN.pow(18));
-        when(appConfig.getTokenConversionMaxTimeWait())
-                .thenReturn(1000L);
     }
 
     @After

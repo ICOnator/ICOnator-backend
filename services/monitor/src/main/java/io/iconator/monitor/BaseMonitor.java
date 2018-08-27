@@ -1,8 +1,6 @@
 package io.iconator.monitor;
 
 import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
@@ -20,17 +18,14 @@ import io.iconator.monitor.transaction.exception.MissingTransactionInformationEx
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
@@ -45,19 +40,22 @@ abstract public class BaseMonitor {
     protected final InvestorService investorService;
     protected final ICOnatorMessageService messageService;
     protected final MonitorAppConfigHolder configHolder;
+    protected final Retryer<PaymentLog> retryer;
 
     public BaseMonitor(MonitorService monitorService,
                        PaymentLogService paymentLogService,
                        FxService fxService,
                        ICOnatorMessageService messageService,
                        InvestorService investorService,
-                       MonitorAppConfigHolder configHolder) {
+                       MonitorAppConfigHolder configHolder,
+                       Retryer retryer) {
         this.monitorService = monitorService;
         this.paymentLogService = paymentLogService;
         this.fxService = fxService;
         this.messageService = messageService;
         this.investorService = investorService;
         this.configHolder = configHolder;
+        this.retryer = retryer;
     }
 
     protected abstract void start() throws Exception;
@@ -205,17 +203,9 @@ abstract public class BaseMonitor {
                 paymentLog.getUsdAmount().toPlainString(), paymentLog.getCurrency(),
                 paymentLog.getTransactionId());
 
-        // Retry as long as there are database locking exceptions.
-        Retryer<PaymentLog> retryer =
-                RetryerBuilder.<PaymentLog>newBuilder()
-                        .retryIfExceptionOfType(OptimisticLockingFailureException.class)
-                        .retryIfExceptionOfType(OptimisticLockException.class)
-                        .withWaitStrategy(randomWait(
-                                configHolder.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
-                        .withStopStrategy(StopStrategies.neverStop())
-                        .build();
 
         try {
+            // Retry as long as there are database locking exceptions.
             PaymentLog updatedPaymentLog = retryer.call(
                     () -> monitorService.allocateTokens(paymentLog));
 

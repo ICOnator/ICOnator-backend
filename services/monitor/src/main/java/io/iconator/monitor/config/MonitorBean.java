@@ -1,10 +1,14 @@
 package io.iconator.monitor.config;
 
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinNet;
 import io.iconator.commons.bitcoin.config.BitcoinConfig;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
+import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.monitor.BitcoinMonitor;
 import io.iconator.monitor.EthereumMonitor;
 import io.iconator.monitor.service.FxService;
@@ -16,19 +20,26 @@ import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties.Retry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.client.RestTemplate;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
+import javax.lang.model.type.ReferenceType;
+import javax.persistence.OptimisticLockException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.util.concurrent.TimeUnit;
+
+import static com.github.rholder.retry.WaitStrategies.randomWait;
 
 @Configuration
 @Import(value = {MonitorAppConfigHolder.class, BitcoinConfig.class})
@@ -126,10 +137,11 @@ public class MonitorBean {
                                            MonitorService monitorService,
                                            ICOnatorMessageService messageService,
                                            InvestorService investorService,
-                                           MonitorAppConfigHolder configHolder) {
+                                           MonitorAppConfigHolder configHolder,
+                                           Retryer retryer) {
 
         return new EthereumMonitor(fxService, paymentLogService, monitorService,
-                messageService, investorService, web3j, configHolder);
+                messageService, investorService, web3j, configHolder, retryer);
     }
 
     @Bean
@@ -143,16 +155,28 @@ public class MonitorBean {
                                          MonitorService monitorService,
                                          ICOnatorMessageService messageService,
                                          InvestorService investorService,
-                                         MonitorAppConfigHolder configHolder) {
+                                         MonitorAppConfigHolder configHolder,
+                                         Retryer retryer) {
 
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
                 bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters,
                 peerGroup, paymentLogService, monitorService, messageService,
-                investorService, configHolder);
+                investorService, configHolder, retryer);
     }
 
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
+    }
+
+    @Bean
+    public Retryer<PaymentLog> retryer(MonitorAppConfigHolder configHolder) {
+        return RetryerBuilder.<PaymentLog>newBuilder()
+                .retryIfExceptionOfType(OptimisticLockingFailureException.class)
+                .retryIfExceptionOfType(OptimisticLockException.class)
+                .withWaitStrategy(randomWait(
+                        configHolder.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
+                .withStopStrategy(StopStrategies.neverStop())
+                .build();
     }
 }

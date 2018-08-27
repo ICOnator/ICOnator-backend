@@ -118,7 +118,6 @@ public class EthereumMonitorTest {
 
         Investor investor = createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
         ethereumMonitor.addPaymentAddressesForMonitoring(investor.getPayInEtherAddress(), null);
-//        given(configHolder.getEthereumConfirmationBlockdepth()).willReturn(0);
         ethereumMonitor.start();
 
         Credentials credentials = Credentials.create(

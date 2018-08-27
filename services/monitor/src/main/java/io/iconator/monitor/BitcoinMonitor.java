@@ -1,8 +1,8 @@
 package io.iconator.monitor;
 
+import com.github.rholder.retry.Retryer;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
-import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.monitor.config.MonitorAppConfigHolder;
@@ -11,15 +11,12 @@ import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.BitcoinTransactionAdapter;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
-import org.bitcoinj.core.TransactionConfidence.Listener;
-import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.Date;
 
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
@@ -45,10 +42,11 @@ public class BitcoinMonitor extends BaseMonitor {
                           MonitorService monitorService,
                           ICOnatorMessageService messageService,
                           InvestorService investorService,
-                          MonitorAppConfigHolder configHolder) {
+                          MonitorAppConfigHolder configHolder,
+                          Retryer retryer) {
 
         super(monitorService, paymentLogService, fxService, messageService,
-                investorService, configHolder);
+                investorService, configHolder, retryer);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
@@ -101,7 +99,11 @@ public class BitcoinMonitor extends BaseMonitor {
     }
 
     /**
-     * Adds a listener to the wallet which processes payments to monitored addresses.
+     * Adds a listener to the bitcoinj wallet which processes incoming
+     * transactions directed to the wallet's addresses.
+     * It is assumed that old transactions which are already in blocks are also
+     * handed to the listener when starting up the monitor application.
+     * @see <a href="https://groups.google.com/d/msg/bitcoinj/bYcUTimAz9w/jwS_7gOsCwAJ">google groups bitcoinj answer</a>
      */
     private void addCoinsReceivedListener() {
         // The provided listener is only called once per transacton, e.g. when

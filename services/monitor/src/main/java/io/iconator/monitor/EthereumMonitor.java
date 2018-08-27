@@ -1,5 +1,6 @@
 package io.iconator.monitor;
 
+import com.github.rholder.retry.Retryer;
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
@@ -13,9 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
-import org.web3j.protocol.core.methods.response.Transaction;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
@@ -42,10 +41,11 @@ public class EthereumMonitor extends BaseMonitor {
                            ICOnatorMessageService messageService,
                            InvestorService investorService,
                            Web3j web3j,
-                           MonitorAppConfigHolder configHolder) {
+                           MonitorAppConfigHolder configHolder,
+                           Retryer retryer) {
 
         super(monitorService, paymentLogService, fxService, messageService,
-                investorService, configHolder);
+                investorService, configHolder, retryer);
 
         this.web3j = web3j;
         this.messageService = messageService;
