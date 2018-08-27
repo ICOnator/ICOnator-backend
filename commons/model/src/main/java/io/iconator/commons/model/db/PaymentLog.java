@@ -56,9 +56,9 @@ public class PaymentLog {
     private BigDecimal usdFxRate = BigDecimal.ZERO;
 
     @Column(name = "usd_amount", precision = 34, scale = 6)
-    private BigDecimal usdValue = BigDecimal.ZERO;
+    private BigDecimal usdAmount = BigDecimal.ZERO;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "investor_id")
     private Investor investor;
 
@@ -92,17 +92,19 @@ public class PaymentLog {
 
     public PaymentLog(String transactionId, Date createDate,
                       CurrencyType currency, Date blockTime,
-                      BigInteger cryptocurrencyAmount, BigDecimal usdFxRate, BigDecimal usdValue,
-                      Investor investor, BigInteger allocatedTomics) {
+                      BigInteger cryptocurrencyAmount, BigDecimal usdFxRate,
+                      BigDecimal usdAmount, Investor investor, BigInteger allocatedTomics,
+                      TransactionStatus transactionStatus) {
         this.transactionId = transactionId;
         this.createDate = createDate;
         this.blockTime = blockTime;
         this.currency = currency;
         this.cryptocurrencyAmount = cryptocurrencyAmount;
         this.usdFxRate = usdFxRate;
-        this.usdValue = usdValue;
+        this.usdAmount = usdAmount;
         this.investor = investor;
         this.allocatedTomics = allocatedTomics;
+        this.transactionStatus = transactionStatus;
     }
 
     public String getTransactionId() {
@@ -153,12 +155,12 @@ public class PaymentLog {
         this.usdFxRate = usdFxRate;
     }
 
-    public BigDecimal getUsdValue() {
-        return usdValue;
+    public BigDecimal getUsdAmount() {
+        return usdAmount;
     }
 
-    public void setUsdValue(BigDecimal usdValue) {
-        this.usdValue = usdValue;
+    public void setUsdAmount(BigDecimal usdAmount) {
+        this.usdAmount = usdAmount;
     }
 
     public Investor getInvestor() {

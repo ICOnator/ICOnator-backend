@@ -16,7 +16,7 @@ import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public class MonitorService {
     public SaleTierService saleTierService;
 
     @Autowired
-    private MonitorAppConfig appConfig;
+    private MonitorAppConfigHolder appConfig;
 
     @Autowired
     private ICOnatorMessageService messageService;
@@ -63,7 +63,7 @@ public class MonitorService {
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
     public PaymentLog createRefundEntryForPaymentLogAndCommit(
             PaymentLog paymentLog, RefundReason reason) throws RefundEntryAlradyExistsException {
-        return createRefundEntryForAmount(paymentLog, reason, paymentLog.getCryptocurrencyAmount());
+        return createRefundEntryForAmount(paymentLog, reason, paymentLog.getCryptocurrencyAmount(), paymentLog.getUsdAmount());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -103,7 +103,8 @@ public class MonitorService {
                 return null;
             } else {
                 paymentLog.setCreateDate(new Date());
-                paymentLog.setTransactionStatus(TransactionStatus.BUILDING);
+                // Not updating the transaction status. It is either BUIDLING or
+                // CONFIRMED which is both fine at this point.
                 return paymentLogService.save(paymentLog);
             }
         } catch (OptimisticLockingFailureException e) {
@@ -164,7 +165,7 @@ public class MonitorService {
             throws NoTierAtDateException {
 
         Date blockTime = paymentLog.getBlockTime();
-        BigDecimal usd = paymentLog.getUsdValue();
+        BigDecimal usd = paymentLog.getUsdAmount();
         Optional<SaleTier> oTier = saleTierService.getTierAtDate(blockTime);
         if (oTier.isPresent()) {
             handleDynamicMax(oTier.get());
@@ -191,24 +192,25 @@ public class MonitorService {
     }
 
     private PaymentLog createRefundEntryForAmount(
-            PaymentLog paymentLog, RefundReason reason, BigInteger amount)
+            PaymentLog paymentLog, RefundReason reason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount)
             throws RefundEntryAlradyExistsException {
 
         EligibleForRefund refund = eligibleForRefundService.save(
-                new EligibleForRefund(
-                        reason, amount, paymentLog.getCurrency(),
-                        paymentLog.getInvestor(), paymentLog.getTransactionId()));
+                new EligibleForRefund(reason, cryptocurrencyAmount, usdAmount,
+                        paymentLog.getCurrency(), paymentLog.getInvestor(),
+                        paymentLog.getTransactionId()));
         paymentLog.setEligibleForRefund(refund);
         return paymentLogRepository.saveAndFlush(paymentLog);
     }
 
-    private PaymentLog createRefundEntryForOverflow(PaymentLog paymentLog, BigDecimal overflow)
+    private PaymentLog createRefundEntryForOverflow(PaymentLog paymentLog, BigDecimal overflowInUsd)
             throws RefundEntryAlradyExistsException {
 
-        BigInteger amount = overflow.multiply(paymentLog.getUsdFxRate())
+        BigInteger cryptocurrencyAmount = overflowInUsd.multiply(paymentLog.getUsdFxRate())
                 .multiply(paymentLog.getCurrency().getAtomicUnitFactor())
                 .toBigInteger();
-        return createRefundEntryForAmount(paymentLog, RefundReason.TOKEN_OVERFLOW, amount);
+        return createRefundEntryForAmount(paymentLog, RefundReason.TOKEN_OVERFLOW,
+                cryptocurrencyAmount, overflowInUsd);
     }
 
     private PaymentLog updatePaymentLog(PaymentLog paymentLog, TokenAllocationResult result) {
@@ -367,45 +369,40 @@ public class MonitorService {
      * The overflow is the amount of USD which could not be converted and
      * allocated due to limited tier capacity.
      */
-    public static class TokenAllocationResult {
+    private static class TokenAllocationResult {
 
         private BigInteger tomics;
         private BigDecimal overflow;
 
-        public TokenAllocationResult(BigInteger tomics, BigDecimal overflow) {
+        TokenAllocationResult(BigInteger tomics, BigDecimal overflow) {
             this.tomics = tomics;
             this.overflow = overflow;
         }
 
-        public TokenAllocationResult() {
-            this.tomics = BigInteger.ZERO;
-            this.overflow = BigDecimal.ZERO;
-        }
-
-        public boolean hasOverflow() {
+        boolean hasOverflow() {
             return overflow.compareTo(BigDecimal.ZERO) > 0;
         }
 
         /**
-         * @return the overflow from an token allocation in USD.
+         * @return the overflow from a token allocation in USD.
          */
-        public BigDecimal getOverflow() {
+        BigDecimal getOverflow() {
             return overflow;
         }
 
         /**
          * @return the amount of allocated tokens in atomic units.
          */
-        public BigInteger getAllocatedTomics() {
+        BigInteger getAllocatedTomics() {
             return tomics;
         }
 
-        public TokenAllocationResult addToAllocatedTomics(BigInteger tomics) {
+        TokenAllocationResult addToAllocatedTomics(BigInteger tomics) {
             this.tomics = this.tomics.add(tomics);
             return this;
         }
 
-        public TokenAllocationResult addToOverflow(BigDecimal overflow) {
+        TokenAllocationResult addToOverflow(BigDecimal overflow) {
             this.overflow = this.overflow.add(overflow);
             return this;
         }

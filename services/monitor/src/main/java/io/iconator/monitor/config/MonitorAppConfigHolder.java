@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Configuration
-public class MonitorAppConfig {
+public class MonitorAppConfigHolder {
 
     @Value("${io.iconator.services.monitor.eth.node.enabled}")
     private Boolean ethereumNodeEnabled;
@@ -18,8 +18,14 @@ public class MonitorAppConfig {
     @Value("${io.iconator.services.monitor.eth.node.url}")
     private String ethereumNodeUrl;
 
+    @Value("${io.iconator.services.monitor.eth.confirmation-blockdepth}")
+    private Integer ethereumConfirmationBlockdepth;
+
     @Value("${io.iconator.services.monitor.btc.node.enabled}")
     private Boolean bitcoinNodeEnabled;
+
+    @Value("${io.iconator.services.monitor.btc.confirmation-blockdepth}")
+    private Integer bitcoinConfirmationBlockdepth;
 
     @Value("${io.iconator.services.monitor.retry.wait-between-attempts.max}")
     private Long tokenConversionMaxTimeWait;
@@ -31,7 +37,7 @@ public class MonitorAppConfig {
     private BigDecimal totalTokenAmount;
 
     @Value("${io.iconator.services.monitor.token.atomic-unit-factor}")
-    private int atomicUnitFactor;
+    private Integer atomicUnitFactor;
 
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
@@ -63,5 +69,13 @@ public class MonitorAppConfig {
 
     public BigInteger getAtomicUnitFactor() {
         return BigInteger.TEN.pow(atomicUnitFactor);
+    }
+
+    public Integer getEthereumConfirmationBlockdepth() {
+        return ethereumConfirmationBlockdepth;
+    }
+
+    public Integer getBitcoinConfirmationBlockdepth() {
+        return bitcoinConfirmationBlockdepth;
     }
 }

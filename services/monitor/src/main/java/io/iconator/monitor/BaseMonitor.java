@@ -3,7 +3,6 @@ package io.iconator.monitor;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
-import io.iconator.commons.amqp.model.BlockNrMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
@@ -13,14 +12,13 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
-import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.TransactionAdapter;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
@@ -33,7 +31,6 @@ import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
@@ -47,45 +44,38 @@ abstract public class BaseMonitor {
     protected final FxService fxService;
     protected final InvestorService investorService;
     protected final ICOnatorMessageService messageService;
-
-    @Autowired
-    private MonitorAppConfig appConfig;
+    protected final MonitorAppConfigHolder configHolder;
 
     public BaseMonitor(MonitorService monitorService,
                        PaymentLogService paymentLogService,
                        FxService fxService,
                        ICOnatorMessageService messageService,
-                       InvestorService investorService) {
+                       InvestorService investorService,
+                       MonitorAppConfigHolder configHolder) {
         this.monitorService = monitorService;
         this.paymentLogService = paymentLogService;
         this.fxService = fxService;
         this.messageService = messageService;
         this.investorService = investorService;
+        this.configHolder = configHolder;
     }
 
-//    protected void start() {
-//        startMonitoringBlocks(this::processBlockNrMessage);
-//        startMonitoringPendingTransactions(this::processPendingTransactions);
-//        startMonitoringBuildingTransactions(this::processBuildingTransaction);
-//    }
+    protected abstract void start() throws Exception;
+
+    /**
+     *
+     * @param address payment address which will be monitored
+     * @param addressCreationTimestamp Creation time of the address in miliseconds since the epoch.
+     *                                 Some blockchain implementations can use this to determine
+     *                                 from which block to start scanning the chain.
+     */
+    abstract protected void addPaymentAddressesForMonitoring(String address, Long addressCreationTimestamp);
 
     /**
      * @param receivingAddress the address to which a payment has been made.
      * @return true if this address is monitored. False otherwise.
      */
     abstract protected boolean isAddressMonitored(String receivingAddress);
-
-    protected abstract void startMonitoringBlocks(Consumer<BlockNrMessage> blockNrMessageConsumer);
-
-    protected abstract void startMonitoringPendingTransactions(Consumer<TransactionAdapter> pendingTransactionConsumer);
-
-    protected abstract void startMonitoringBuildingTransactions(Consumer<TransactionAdapter> buildingTransactionConsumer);
-
-    protected abstract void startMonitoringTransactionUntilConfirmed(TransactionAdapter tx);
-
-    protected void processBlockNrMessage(BlockNrMessage blockNrMessage) {
-        messageService.send(blockNrMessage);
-    }
 
     protected void processPendingTransactions(TransactionAdapter tx) {
         try {
@@ -94,7 +84,7 @@ abstract public class BaseMonitor {
             try {
                 paymentLog = monitorService.getPendingPaymentLogForReprocessing(tx.getTransactionId());
             } catch (PaymentLogNotFoundException e) {
-                paymentLog = createNewPaymentLog(tx);
+                paymentLog = createNewPaymentLog(tx, TransactionStatus.PENDING);
             }
             if (paymentLog == null) return;
             paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
@@ -107,13 +97,14 @@ abstract public class BaseMonitor {
         }
     }
 
-    private PaymentLog createNewPaymentLog(TransactionAdapter tx)
+    private PaymentLog createNewPaymentLog(TransactionAdapter tx,
+                                           TransactionStatus transactionStatus)
             throws MissingTransactionInformationException {
 
         try {
             return paymentLogService.saveAndCommit(new PaymentLog(
                     tx.getTransactionId(), new Date(), tx.getCurrencyType(),
-                    TransactionStatus.PENDING));
+                    transactionStatus));
         } catch (DataIntegrityViolationException e) {
             // The payment log was probably created by another instance just now.
             // This is not an error because the other instance will process the transaction.
@@ -133,7 +124,7 @@ abstract public class BaseMonitor {
                             tx.getTransactionId());
                 }
             } catch (PaymentLogNotFoundException e) {
-                paymentLog = createNewPaymentLog(tx);
+                paymentLog = createNewPaymentLog(tx, TransactionStatus.BUILDING);
             }
             // Update attributes of payment log if it has been newly created but also if it was
             // fetched for reprocessing.
@@ -148,7 +139,7 @@ abstract public class BaseMonitor {
             monitorService.sendAllocationMessageAndSavePaymentLog(
                     paymentLog, tx.getTransactionValueInMainUnit(), tx.getTransactionUrl());
             LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
-                    tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdValue(),
+                    tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdAmount(),
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
                     paymentLog.getAllocatedTomics());
 
@@ -174,7 +165,7 @@ abstract public class BaseMonitor {
             reason = RefundReason.FX_RATE_MISSING;
             BigDecimal fxRate = getUSDExchangeRate(tx.getBlockTime().toInstant(), tx.getCurrencyType());
             paymentLog.setUsdFxRate(fxRate);
-            paymentLog.setUsdValue(valueInMainUnit.multiply(fxRate));
+            paymentLog.setUsdAmount(valueInMainUnit.multiply(fxRate));
 
         } catch (MissingTransactionInformationException e) {
             try {
@@ -200,10 +191,10 @@ abstract public class BaseMonitor {
 
     }
 
-    public PaymentLog allocateTokensWithRetries(PaymentLog paymentLog)
+    PaymentLog allocateTokensWithRetries(PaymentLog paymentLog)
             throws Throwable {
 
-        if (paymentLog.getUsdValue() == null) {
+        if (paymentLog.getUsdAmount() == null) {
             throw new IllegalArgumentException("PaymentLog's amount in USD must not be null.");
         }
         if (paymentLog.getBlockTime() == null) {
@@ -211,7 +202,7 @@ abstract public class BaseMonitor {
         }
 
         LOG.debug("Calling token allocation with {} USD for {} transaction {}.",
-                paymentLog.getUsdValue().toPlainString(), paymentLog.getCurrency(),
+                paymentLog.getUsdAmount().toPlainString(), paymentLog.getCurrency(),
                 paymentLog.getTransactionId());
 
         // Retry as long as there are database locking exceptions.
@@ -220,7 +211,7 @@ abstract public class BaseMonitor {
                         .retryIfExceptionOfType(OptimisticLockingFailureException.class)
                         .retryIfExceptionOfType(OptimisticLockException.class)
                         .withWaitStrategy(randomWait(
-                                appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
+                                configHolder.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
                         .withStopStrategy(StopStrategies.neverStop())
                         .build();
 
@@ -232,7 +223,7 @@ abstract public class BaseMonitor {
                     updatedPaymentLog.getAllocatedTomics(), updatedPaymentLog.getCurrency(),
                     updatedPaymentLog.getTransactionId());
 
-            return paymentLog;
+            return updatedPaymentLog;
         } catch (Throwable e) {
             LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
             RefundReason reason = RefundReason.TOKEN_ALLOCATION_FAILED;
@@ -240,4 +231,22 @@ abstract public class BaseMonitor {
             throw e;
         }
     }
+
+    protected void confirmTransaction(TransactionAdapter tx) {
+        try {
+            PaymentLog paymentLog = paymentLogService.getPaymentLog(tx.getTransactionId());
+            paymentLog.setTransactionStatus(TransactionStatus.CONFIRMED);
+            paymentLogService.saveAndCommit(paymentLog);
+        } catch (MissingTransactionInformationException e) {
+            LOG.error("Coulnd't set payment log status to confirmed because the transaction id " +
+                    "could not be retrieved from the {} transaction.", tx.getCurrencyType(), e);
+        } catch (PaymentLogNotFoundException e) {
+            try {
+                LOG.error("No payment log existed for {} transaction {} when trying to set the " +
+                        "transaction status to CONFIRMED", tx.getCurrencyType(), tx.getTransactionId(), e);
+            } catch (MissingTransactionInformationException ignore) {
+            }
+        }
+    }
+
 }

@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
-import static io.iconator.commons.amqp.model.constants.QueueConstants.ADDRESS_SET_WALLET_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
 
@@ -60,9 +59,9 @@ public class SetWalletAddressMessageConsumer {
             Optional<SetWalletAddressMessage> optionalSetWalletAddressMessage = ofNullable(setWalletAddressMessage);
             optionalSetWalletAddressMessage.ifPresent((m) -> {
                 ofNullable(m.getInvestor()).ifPresent((investor) -> {
-                    long timestamp = investor.getCreationDate().getTime() / 1000L;
-                    bitcoinMonitor.addMonitoredAddress(investor.getPayInBitcoinAddress(), timestamp);
-                    ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
+                    long timestamp = investor.getCreationDate().getTime();
+                    bitcoinMonitor.addPaymentAddressesForMonitoring(investor.getPayInBitcoinAddress(), timestamp);
+                    ethereumMonitor.addPaymentAddressesForMonitoring(investor.getPayInEtherAddress(), timestamp);
                 });
             });
         } catch (Exception e) {

@@ -1,12 +1,13 @@
 package io.iconator.monitor;
 
-import io.iconator.commons.amqp.model.TransactionReceivedEmailMessage;
+import io.iconator.commons.amqp.model.TokensAllocatedEmailMessage;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
@@ -83,6 +84,9 @@ public class EthereumMonitorTest {
     @Autowired
     private MonitorService monitorService;
 
+    @Autowired
+    private MonitorAppConfigHolder configHolder;
+
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
@@ -113,8 +117,9 @@ public class EthereumMonitorTest {
                 .willReturn(Optional.of(usdPricePerETH));
 
         Investor investor = createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
-        ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
-        ethereumMonitor.start((long) 0);
+        ethereumMonitor.addPaymentAddressesForMonitoring(investor.getPayInEtherAddress(), null);
+//        given(configHolder.getEthereumConfirmationBlockdepth()).willReturn(0);
+        ethereumMonitor.start();
 
         Credentials credentials = Credentials.create(
                 ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
@@ -131,31 +136,31 @@ public class EthereumMonitorTest {
         // then remove the thread sleep.
         Thread.sleep(20000);
 
-        List<TransactionReceivedEmailMessage> transactionReceivedMessages = mockICOnatorMessageService.getTransactionReceivedEmailMessages();
+        List<TokensAllocatedEmailMessage> tokenAllocatedEmailMessage = mockICOnatorMessageService.getTokensAllocatedEmailMessages();
 
-        assertEquals(1, transactionReceivedMessages.size());
+        assertEquals(1, tokenAllocatedEmailMessage.size());
 
         // TODO: 26.08.18 Guil
         // We need to test the amount of confirmations reached, and if the token conversion was properly done!
-//        assertTrue(matchReceivedMessage(transactionReceivedMessages, isTokenAmountReceivedEqualToTokenAmountSent(tomicsAmountToBeReceived)));
-        assertTrue(matchReceivedMessage(transactionReceivedMessages, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
-        assertTrue(matchReceivedMessage(transactionReceivedMessages, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isTokenAmountReceivedEqualToTokenAmountSent(tomicsAmountToBeReceived)));
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
     }
 
-//    private Predicate<TransactionReceivedEmailMessage> isTokenAmountReceivedEqualToTokenAmountSent(BigInteger tomicsAmountSent) {
-//        BigDecimal tokens = monitorService.convertTomicsToTokens(tomicsAmountSent);
-//        return p -> p.getTokenAmount().compareTo(tokens) == 0;
-//    }
+    private Predicate<TokensAllocatedEmailMessage> isTokenAmountReceivedEqualToTokenAmountSent(BigInteger tomicsAmountSent) {
+        BigDecimal tokens = monitorService.convertTomicsToTokens(tomicsAmountSent);
+        return p -> p.getTokenAmount().compareTo(tokens) == 0;
+    }
 
-    public Predicate<TransactionReceivedEmailMessage> isCurrencyTypeReceivedEqualToCurrencyTypeSent(CurrencyType currencySent) {
+    public Predicate<TokensAllocatedEmailMessage> isCurrencyTypeReceivedEqualToCurrencyTypeSent(CurrencyType currencySent) {
         return p -> p.getCurrencyType() == currencySent;
     }
 
-    public Predicate<TransactionReceivedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
+    public Predicate<TokensAllocatedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
         return p -> p.getAmountFundsReceived().compareTo(fundsSent) == 0;
     }
 
-    private boolean matchReceivedMessage(List<TransactionReceivedEmailMessage> messages, Predicate<TransactionReceivedEmailMessage> predicate) {
+    private boolean matchReceivedMessage(List<TokensAllocatedEmailMessage> messages, Predicate<TokensAllocatedEmailMessage> predicate) {
         return messages.stream().allMatch(predicate);
     }
 

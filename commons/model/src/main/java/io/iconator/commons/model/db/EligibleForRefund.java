@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -39,8 +40,11 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private RefundReason refundReason;
 
-    @Column(name = "amount", precision = 34, scale = 0)
-    private BigInteger amount;
+    @Column(name = "cryptocurrencyAmount", precision = 34, scale = 0)
+    private BigInteger cryptocurrencyAmount;
+
+    @Column(name = "usd_amount", precision = 34, scale = 6)
+    private BigDecimal usdAmount;
 
     @Column(name = "currency")
     @Enumerated(EnumType.STRING)
@@ -56,10 +60,11 @@ public class EligibleForRefund {
     public EligibleForRefund() {
     }
 
-    public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
+    public EligibleForRefund(RefundReason refundReason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount, CurrencyType currency,
                              Investor investor, String txIdentifier) {
         this.refundReason = refundReason;
-        this.amount = amount;
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
+        this.usdAmount = usdAmount;
         this.currency = currency;
         this.investor = investor;
         this.txIdentifier = txIdentifier;
@@ -81,12 +86,12 @@ public class EligibleForRefund {
         this.refundReason = refundReason;
     }
 
-    public BigInteger getAmount() {
-        return amount;
+    public BigInteger getCryptocurrencyAmount() {
+        return cryptocurrencyAmount;
     }
 
-    public void setAmount(BigInteger amount) {
-        this.amount = amount;
+    public void setCryptocurrencyAmount(BigInteger cryptocurrencyAmount) {
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
     }
 
     public CurrencyType getCurrency() {
@@ -113,59 +118,11 @@ public class EligibleForRefund {
         this.txIdentifier = txIdentifier;
     }
 
-//    public static class Builder {
-//
-//        private RefundReason refundReason;
-//        private BigInteger amount;
-//        private CurrencyType currency;
-//        private long investorId;
-//        private String txIdentifier;
-//
-//        public Builder() {}
-//
-//        public EligibleForRefund build() {
-//            return new EligibleForRefund(this);
-//        }
-//
-//        public Builder refundReason(RefundReason reason) {
-//            if (reason == null) throw new NullPointerException("refund reason cannot be null.");
-//            this.refundReason = reason;
-//            return this;
-//        }
-//
-//        public Builder amount(BigInteger amount) {
-//            if (amount == null) throw new NullPointerException("amount cannot be null.");
-//            this.amount = amount;
-//            return this;
-//        }
-//
-//        public Builder currency(CurrencyType currency) {
-//            if (currency == null) throw new NullPointerException("currency type cannot be null.");
-//            this.currency = currency;
-//            return this;
-//        }
-//
-//        public Builder investorId(long investorId) {
-//            if (investorId == 0) throw new IllegalArgumentException("Investor Id must not be 0.");
-//            this.investorId = investorId;
-//            return this;
-//        }
-//
-//        public Builder txIdentifier(String txIdentifier) {
-//            if (txIdentifier == null)
-//                throw new NullPointerException("transaction id cannot be null.");
-//            if (txIdentifier.isEmpty())
-//                throw new IllegalArgumentException("transaction id must not " + "be empty.");
-//            this.txIdentifier = txIdentifier;
-//            return this;
-//        }
-//    }
+    public BigDecimal getUsdAmount() {
+        return usdAmount;
+    }
 
-//private EligibleForRefund(Builder builder) {
-//    this.refundReason = builder.refundReason;
-//    this.amount = builder.amount;
-//    this.currency = builder.currency;
-//    this.investorId = builder.investorId;
-//    this.txIdentifier = builder.txIdentifier;
-//}
+    public void setUsdAmount(BigDecimal usdAmount) {
+        this.usdAmount = usdAmount;
+    }
 }

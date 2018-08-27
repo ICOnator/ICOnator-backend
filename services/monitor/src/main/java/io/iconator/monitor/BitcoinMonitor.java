@@ -5,10 +5,13 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.bitcoin.BitcoinUtils;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.BitcoinTransactionAdapter;
 import org.bitcoinj.core.*;
+import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
+import org.bitcoinj.core.TransactionConfidence.Listener;
 import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
@@ -41,9 +44,11 @@ public class BitcoinMonitor extends BaseMonitor {
                           PaymentLogService paymentLogService,
                           MonitorService monitorService,
                           ICOnatorMessageService messageService,
-                          InvestorService investorService) {
+                          InvestorService investorService,
+                          MonitorAppConfigHolder configHolder) {
 
-        super(monitorService, paymentLogService, fxService, messageService, investorService);
+        super(monitorService, paymentLogService, fxService, messageService,
+                investorService, configHolder);
 
         this.bitcoinBlockchain = bitcoinBlockchain;
         this.bitcoinBlockStore = bitcoinBlockStore;
@@ -62,34 +67,26 @@ public class BitcoinMonitor extends BaseMonitor {
         bitcoinPeerGroup.addWallet(wallet);
     }
 
-    /**
-     * Add a public key we want to monitor
-     *
-     * @param addressString Bitcoin address
-     * @param timestamp     Timestamp in seconds when this key was created
-     */
-    public synchronized void addMonitoredAddress(String addressString, long timestamp) {
+    @Override
+    public synchronized void addPaymentAddressesForMonitoring(String addressString, Long addressCreationTimestamp) {
         final Address address = Address.fromBase58(bitcoinNetworkParameters, addressString);
         LOG.info("Add monitored Bitcoin Address: {}", addressString);
-        wallet.addWatchedAddress(address, timestamp);
+        wallet.addWatchedAddress(address, addressCreationTimestamp / 1000);
     }
 
-    public void start() throws InterruptedException {
+    @Override
+    protected void start() {
         bitcoinPeerGroup.start();
 
-        // Download block chain (blocking)
         final DownloadProgressTracker downloadListener = new DownloadProgressTracker() {
             @Override
             protected void doneDownload() {
-                LOG.info("Download done, now sending block numbers ");
-                final int startBlockHeighth = bitcoinBlockchain.getBestChainHeight();
-                messageService.send(new BlockNRBitcoinMessage(Long.valueOf(startBlockHeighth), new Date().getTime()));
-                bitcoinPeerGroup.addBlocksDownloadedEventListener(new BlocksDownloadedEventListener() {
-                    @Override
-                    public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
-                        if (bitcoinBlockchain.getBestChainHeight() > startBlockHeighth) {
-                            messageService.send(new BlockNRBitcoinMessage(Long.valueOf(bitcoinBlockchain.getBestChainHeight()), new Date().getTime()));
-                        }
+                LOG.info("Download done, now sending block numbers.");
+                final int startBlockHeight = bitcoinBlockchain.getBestChainHeight();
+                messageService.send(new BlockNRBitcoinMessage((long) startBlockHeight, new Date().getTime()));
+                bitcoinPeerGroup.addBlocksDownloadedEventListener((peer, block, filteredBlock, blocksLeft) -> {
+                    if (bitcoinBlockchain.getBestChainHeight() > startBlockHeight) {
+                        messageService.send(new BlockNRBitcoinMessage((long) bitcoinBlockchain.getBestChainHeight(), new Date().getTime()));
                     }
                 });
             }
@@ -101,14 +98,15 @@ public class BitcoinMonitor extends BaseMonitor {
         };
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
         LOG.info("Downloading SPV blockchain...");
-        //TB: needed to disable this, otherwise it does not start within the 60s of HEROKU
-        //downloadListener.await();
     }
 
     /**
      * Adds a listener to the wallet which processes payments to monitored addresses.
      */
     private void addCoinsReceivedListener() {
+        // The provided listener is only called once per transacton, e.g. when
+        // the transaction is first seen on the network. It will not be called
+        // again for the same transaction when it is added to a block.
         wallet.addCoinsReceivedEventListener((wallet_, bitcoinjTx, prevBalance, newBalance) -> {
             Context.propagate(this.bitcoinContext);
             bitcoinjTx.getOutputs().stream()
@@ -117,17 +115,7 @@ public class BitcoinMonitor extends BaseMonitor {
                             utxo, bitcoinNetworkParameters, bitcoinBlockStore, investorService))
                     .forEach(tx -> {
                         try {
-                            if (BitcoinUtils.isBuilding(tx.getBitcoinjTransaction())) {
-                                processBuildingTransaction(tx);
-                            // TODO [claude] the transaction confidence check needs to be incorporated
-                            // into the BaseMonitor code. Otherwise we will track all transactions
-                            // which do not yet have high confidence.
-                            } else if (BitcoinUtils.isPending(tx.getBitcoinjTransaction())
-                                    || BitcoinUtils.isUnknown(tx.getBitcoinjTransaction())) {
-                                LOG.info("Confirmation for transaction {} is pending or unknown", tx.getTransactionId());
-                                tx.getBitcoinjTransaction().getConfidence()
-                                        .addEventListener(new TransactionConfidenceListener(tx));
-                            }
+                            processDependingOnStatus(tx);
                         } catch (Throwable t) {
                             LOG.error("Error while processing transaction.", t);
                         }
@@ -135,29 +123,62 @@ public class BitcoinMonitor extends BaseMonitor {
         });
     }
 
+    private void processDependingOnStatus(BitcoinTransactionAdapter tx) {
+        Transaction bitcoinjTx = tx.getBitcoinjTransaction();
+        if (isPending(bitcoinjTx)) {
+            processPendingTransactions(tx);
+            trackTransactoinForStatusChanges(tx);
+        } else if (isBuilding(bitcoinjTx)) {
+            processBuildingTransaction(tx);
+            trackTransactoinForStatusChanges(tx);
+        } else if (isUnknown(bitcoinjTx)) {
+            trackTransactoinForStatusChanges(tx);
+        }
+    }
+
+    private boolean isPending(Transaction tx) {
+        return tx.getConfidence().getConfidenceType().equals(ConfidenceType.PENDING);
+    }
+
+    private boolean isBuilding(Transaction bitcoinjTx) {
+        return bitcoinjTx.getConfidence().getConfidenceType().equals(ConfidenceType.BUILDING);
+    }
+
+    private boolean isUnknown(Transaction tx) {
+        return tx.getConfidence().getConfidenceType().equals(ConfidenceType.UNKNOWN);
+    }
+
+    private void trackTransactoinForStatusChanges(BitcoinTransactionAdapter tx) {
+        tx.getBitcoinjTransaction().getConfidence().addEventListener(
+                new TransactionConfidence.Listener() {
+
+                    @Override
+                    public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
+                        if (reason.equals(ChangeReason.TYPE)) {
+                            if (confidence.getConfidenceType().equals(ConfidenceType.PENDING)) {
+                                processPendingTransactions(tx);
+                                // Continue tracking the transaction.
+                            } else if (confidence.getConfidenceType().equals(ConfidenceType.BUILDING)) {
+                                processBuildingTransaction(tx);
+                                // Continue tracking the transaction for confirmation.
+                            } else if (confidence.getConfidenceType().equals(DEAD)) {
+                                // Stop tracking the transaction.
+                                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
+                            }
+                        } else if (reason.equals(ChangeReason.DEPTH)) {
+                            if (confidence.getDepthInBlocks() >= configHolder.getBitcoinConfirmationBlockdepth()) {
+                                confirmTransaction(tx);
+                                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
+                            }
+                        }
+                    }
+                });
+    }
+
+
     @Override
     protected boolean isAddressMonitored(String receivingAddress) {
         return wallet.getWatchedAddresses().stream().anyMatch(
                 a -> a.toBase58().contentEquals(receivingAddress));
-    }
-
-    private class TransactionConfidenceListener implements TransactionConfidence.Listener {
-
-        private BitcoinTransactionAdapter tx;
-
-        TransactionConfidenceListener(BitcoinTransactionAdapter transactionAdapter) {
-            this.tx = transactionAdapter;
-        }
-
-        @Override
-        public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
-            if (confidence.getConfidenceType().equals(BUILDING)) {
-                processBuildingTransaction(tx);
-                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
-            } else if (confidence.getConfidenceType().equals(DEAD)
-                    || confidence.getConfidenceType().equals(IN_CONFLICT)) {
-                tx.getBitcoinjTransaction().getConfidence().removeEventListener(this);
-            }
-        }
     }
 }

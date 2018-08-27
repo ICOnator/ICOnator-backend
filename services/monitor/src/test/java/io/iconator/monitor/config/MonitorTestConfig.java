@@ -28,7 +28,7 @@ public class MonitorTestConfig {
     }
 
     @Bean
-    public MonitorService tokenConversionService() {
+    public MonitorService monitorService() {
         return new MonitorService();
     }
 
@@ -48,8 +48,8 @@ public class MonitorTestConfig {
     }
 
     @Bean
-    public MonitorAppConfig monitorAppConfig() {
-        return new MonitorAppConfig();
+    public MonitorAppConfigHolder monitorAppConfigHolder() {
+        return new MonitorAppConfigHolder();
     }
 
     @Bean
@@ -78,14 +78,16 @@ public class MonitorTestConfig {
                                            MonitorService monitorService,
                                            PaymentLogService paymentLogService,
                                            ICOnatorMessageService messageService,
-                                           InvestorService investorService) {
+                                           InvestorService investorService,
+                                           MonitorAppConfigHolder configHolder) {
         return new EthereumMonitor(
                 fxService,
                 paymentLogService,
                 monitorService,
                 messageService,
                 investorService,
-                web3j
+                web3j,
+                configHolder
         );
     }
 

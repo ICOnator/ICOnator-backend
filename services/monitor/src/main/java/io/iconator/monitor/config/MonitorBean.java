@@ -31,11 +31,11 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 
 @Configuration
-@Import(value = {MonitorAppConfig.class, BitcoinConfig.class})
+@Import(value = {MonitorAppConfigHolder.class, BitcoinConfig.class})
 public class MonitorBean {
 
     @Autowired
-    private MonitorAppConfig appConfig;
+    private MonitorAppConfigHolder appConfig;
 
     @Autowired
     private BitcoinConfig bitcoinConfig;
@@ -125,10 +125,11 @@ public class MonitorBean {
                                            PaymentLogService paymentLogService,
                                            MonitorService monitorService,
                                            ICOnatorMessageService messageService,
-                                           InvestorService investorService) {
+                                           InvestorService investorService,
+                                           MonitorAppConfigHolder configHolder) {
 
-        return new EthereumMonitor(fxService, paymentLogService,
-                monitorService, messageService, investorService, web3j);
+        return new EthereumMonitor(fxService, paymentLogService, monitorService,
+                messageService, investorService, web3j, configHolder);
     }
 
     @Bean
@@ -141,11 +142,13 @@ public class MonitorBean {
                                          PaymentLogService paymentLogService,
                                          MonitorService monitorService,
                                          ICOnatorMessageService messageService,
-                                         InvestorService investorService) {
+                                         InvestorService investorService,
+                                         MonitorAppConfigHolder configHolder) {
 
         return new BitcoinMonitor(fxService, bitcoinBlockchain,
-                bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters, peerGroup,
-                paymentLogService, monitorService, messageService, investorService);
+                bitcoinBlockStore, bitcoinContext, bitcoinNetworkParameters,
+                peerGroup, paymentLogService, monitorService, messageService,
+                investorService, configHolder);
     }
 
     @Bean

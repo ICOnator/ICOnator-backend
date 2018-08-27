@@ -3,6 +3,7 @@ package io.iconator.commons.sql.dao;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.commons.sql.dao.config.TestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,13 +43,12 @@ public class PaymentLogRepositoryTest {
     @Test
     public void testSaveAndExistsAndFind() {
         Investor i = createInvestor(1);
-        PaymentLog p = createPaymentLog(i, "1");
-        paymentLogRepository.save(p);
-        assertTrue(paymentLogRepository.existsByTxIdentifierAndCurrency("1", CURRENCY_TYPE));
-        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTxIdentifierAndCurrency("1", CURRENCY_TYPE);
+        PaymentLog p = paymentLogRepository.save(createPaymentLog(i, "1"));
+//        assertTrue(paymentLogRepository.existsByTxIdentifierAndCurrency("1", CURRENCY_TYPE));
+        Optional<PaymentLog> oPaymentLog = paymentLogRepository.findOptionalByTransactionId("1");
         assertTrue(oPaymentLog.isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) ->
-                paymentLog.getInvestor().get().getEmail().equals("emailAddress1")
+                paymentLog.getInvestor().getEmail().equals("emailAddress1")
         ).isPresent());
         assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.equals(p)).isPresent());
     }
@@ -82,7 +82,8 @@ public class PaymentLogRepositoryTest {
                 new BigDecimal(2),
                 new BigDecimal(3),
                 investor,
-                BigInteger.valueOf(100L));
+                BigInteger.valueOf(100L),
+                TransactionStatus.PENDING);
     }
 
 }
