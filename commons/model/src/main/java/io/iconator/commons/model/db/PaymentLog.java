@@ -69,11 +69,11 @@ public class PaymentLog {
     @JoinColumn(name = "eligible_for_refund_id")
     private EligibleForRefund eligibleForRefund;
 
-    @Column(name = "is_confirmation_mail_sent")
-    private Boolean isConfirmationMailSent = false;
+    @Column(name = "is_transaction_received_message_sent")
+    private Boolean isTransactionReceivedMessageSent = false;
 
-    @Column(name = "is_allocation_mail_sent")
-    private Boolean isAllocationMailSent = false;
+    @Column(name = "is_allocation_message_sent")
+    private Boolean isAllocationMessageSent = false;
 
     @Column(name = "transaction_status", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -187,20 +187,20 @@ public class PaymentLog {
         this.eligibleForRefund = eligibleForRefund;
     }
 
-    public boolean isConfirmationMailSent() {
-        return isConfirmationMailSent;
+    public boolean isTransactionReceivedMessageSent() {
+        return isTransactionReceivedMessageSent;
     }
 
-    public void setConfirmationMailSent(Boolean confirmationMailSent) {
-        isConfirmationMailSent = confirmationMailSent;
+    public void setTransactionReceivedMessageSent(Boolean transactionReceivedMessageSent) {
+        isTransactionReceivedMessageSent = transactionReceivedMessageSent;
     }
 
-    public boolean isAllocationMailSent() {
-        return isAllocationMailSent;
+    public boolean isAllocationMessageSent() {
+        return isAllocationMessageSent;
     }
 
-    public void setAllocationMailSent(Boolean allocationMailSent) {
-        isAllocationMailSent = allocationMailSent;
+    public void setAllocationMessageSent(Boolean allocationMessageSent) {
+        isAllocationMessageSent = allocationMessageSent;
     }
 
     public TransactionStatus getTransactionStatus() {

@@ -93,7 +93,7 @@ public class MonitorService {
         try {
             PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
             boolean pending = paymentLog.getTransactionStatus() == TransactionStatus.PENDING;
-            boolean allocationMailSent = paymentLog.isAllocationMailSent();
+            boolean allocationMailSent = paymentLog.isAllocationMessageSent();
             boolean refundEntryExists = paymentLog.getEligibleForRefund() == null;
             boolean noTokensAllocated = paymentLog.getAllocatedTomics() == null;
             boolean youngerThanOneMinute =
@@ -120,7 +120,7 @@ public class MonitorService {
 
         try {
             PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
-            boolean confirmationMailSent = paymentLog.isConfirmationMailSent();
+            boolean confirmationMailSent = paymentLog.isTransactionReceivedMessageSent();
             boolean notPending = paymentLog.getTransactionStatus() != TransactionStatus.PENDING;
             boolean youngerThanOneMinute =
                     paymentLog.getCreateDate().getTime() > new Date().getTime() - MINUTE_IN_MS;
@@ -144,7 +144,7 @@ public class MonitorService {
                 amountInMainUnit,
                 paymentLog.getCurrency(),
                 transactionUrl));
-        paymentLog.setConfirmationMailSent(true);
+        paymentLog.setTransactionReceivedMessageSent(true);
         paymentLogService.save(paymentLog);
     }
 
@@ -156,7 +156,7 @@ public class MonitorService {
                 paymentLog.getCurrency(),
                 transactionUrl,
                 convertTomicsToTokens(paymentLog.getAllocatedTomics())));
-        paymentLog.setAllocationMailSent(true);
+        paymentLog.setAllocationMessageSent(true);
         paymentLogService.save(paymentLog);
     }
 
