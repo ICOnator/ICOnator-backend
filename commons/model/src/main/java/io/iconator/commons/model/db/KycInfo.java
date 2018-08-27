@@ -16,24 +16,27 @@ public class KycInfo {
     private UUID kycUuid;
 
     @Column(name = "investor_id", unique = true, nullable = false)
-    private long investorId;
+    private Long investorId;
 
     @Column(name = "is_start_kyc_email_sent")
-    private boolean isStartKycEmailSent;
+    private Boolean isStartKycEmailSent;
 
     @Column(name = "no_of_reminders_sent")
-    private int noOfRemindersSent;
+    private Integer noOfRemindersSent;
 
     @Column(name = "is_kyc_complete")
-    private boolean isKycComplete;
+    private Boolean isKycComplete;
 
     @Column(name = "kyc_uri")
     private String kycUri;
 
     public KycInfo() {}
 
-    public KycInfo(long investorId, boolean isKycComplete, String kycUri) {
+    public KycInfo(Long investorId, Boolean isStartKycEmailSent, Integer noOfRemindersSent,
+                   Boolean isKycComplete, String kycUri) {
         this.investorId = investorId;
+        this.isStartKycEmailSent = isStartKycEmailSent;
+        this.noOfRemindersSent = noOfRemindersSent;
         this.isKycComplete = isKycComplete;
         this.kycUri = kycUri;
     }
@@ -42,7 +45,7 @@ public class KycInfo {
         return kycUuid;
     }
 
-    public long getInvestorId() {
+    public Long getInvestorId() {
         return investorId;
     }
 
@@ -51,29 +54,29 @@ public class KycInfo {
         return this;
     }
 
-    public boolean isStartKycEmailSent() {
+    public Boolean isStartKycEmailSent() {
         return isStartKycEmailSent;
     }
 
-    public KycInfo setStartKycEmailSent(boolean isStartKycEmailSent) {
+    public KycInfo setStartKycEmailSent(Boolean isStartKycEmailSent) {
         this.isStartKycEmailSent = isStartKycEmailSent;
         return this;
     }
 
-    public int getNoOfRemindersSent() {
+    public Integer getNoOfRemindersSent() {
         return noOfRemindersSent;
     }
 
-    public KycInfo setNoOfRemindersSent(int noOfRemindersSent) {
+    public KycInfo setNoOfRemindersSent(Integer noOfRemindersSent) {
         this.noOfRemindersSent = noOfRemindersSent;
         return this;
     }
 
-    public boolean isKycComplete() {
+    public Boolean isKycComplete() {
         return isKycComplete;
     }
 
-    public KycInfo setKycComplete(boolean isKycComplete) {
+    public KycInfo setKycComplete(Boolean isKycComplete) {
         this.isKycComplete = isKycComplete;
         return this;
     }

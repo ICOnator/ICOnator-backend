@@ -39,9 +39,9 @@ public class KycInfoService {
         } else {
             KycInfo kycInfo;
             if(kycUri != null) {
-                kycInfo = new KycInfo(investorId, false, kycUri.toASCIIString());
+                kycInfo = new KycInfo(investorId, false, 0, false, kycUri.toASCIIString());
             } else {
-                kycInfo = new KycInfo(investorId, false, null);
+                kycInfo = new KycInfo(investorId, false, 0, false, null);
             }
 
             try {

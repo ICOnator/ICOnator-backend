@@ -220,9 +220,9 @@ public class KycInfoServiceTest {
                                int noOfRemindersSent,
                                boolean isKycComplete,
                                URI kycUri) {
-        assertEquals(investorId, kycInfo.getInvestorId());
+        assertEquals(investorId, (long) kycInfo.getInvestorId());
         assertEquals(isKycStartEmailSent, kycInfo.isStartKycEmailSent());
-        assertEquals(noOfRemindersSent, kycInfo.getNoOfRemindersSent());
+        assertEquals(noOfRemindersSent, (int) kycInfo.getNoOfRemindersSent());
         assertEquals(isKycComplete, kycInfo.isKycComplete());
         assertEquals(kycUri.toASCIIString(), kycInfo.getKycUri());
     }

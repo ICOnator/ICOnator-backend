@@ -23,10 +23,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 @Service
@@ -73,9 +71,7 @@ public class IdNowIdentificationService implements IdentificationService {
 
         return identificationList;
     }
-
-    // TODO:
-    // add retry mechanism -- also, being configurable
+    
     private String login() throws ExecutionException, RetryException {
         return (String) retryer.call(() -> {
             URI uri = new URI(kycConfigHolder.getIdNowHost() + "/api/v1/" + kycConfigHolder.getIdNowCompanyId() + "/login");

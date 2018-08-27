@@ -183,7 +183,7 @@ public class KycControllerTest {
     @Test
     public void testStartAlreadyStartedKyc() throws Exception {
         // KYC not completed, Start Email not yet sent
-        KycInfo testKycInfo1 = createKycInfo(false);
+        KycInfo testKycInfo1 = createKycInfo(false, 0,false);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo1);
 
@@ -199,7 +199,7 @@ public class KycControllerTest {
 
         // KYC not completed, Start Email sent
         Investor investor = new Investor(new Date(), "test@test.com", "1234");
-        KycInfo testKycInfo2 = createKycInfo(false).setStartKycEmailSent(true);
+        KycInfo testKycInfo2 = createKycInfo(true, 0,false);
         KycReminderEmailMessage message = new KycReminderEmailMessage(build(investor), KYC_LINK);
 
         when(mockInvestorService.getInvestorByInvestorId(INVESTOR_ID)).thenReturn(investor);
@@ -218,7 +218,7 @@ public class KycControllerTest {
 
 
         // already completed KYC
-        KycInfo testKycInfo3 = createKycInfo(true);
+        KycInfo testKycInfo3 = createKycInfo(true, 0,true);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo3);
 
@@ -234,7 +234,7 @@ public class KycControllerTest {
 
     @Test
     public void testSetExistingInvestorCompleteWhenKycIncomplete() throws Exception {
-        KycInfo testKycInfo = createKycInfo(false);
+        KycInfo testKycInfo = createKycInfo(true, 0,false);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo);
 
@@ -249,7 +249,7 @@ public class KycControllerTest {
 
     @Test
     public void testSetExistingInvestorCompleteWhenKycAlreadyComplete() throws Exception {
-        KycInfo testKycInfo = createKycInfo(true);
+        KycInfo testKycInfo = createKycInfo(true, 0,true);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(testKycInfo);
 
@@ -264,7 +264,7 @@ public class KycControllerTest {
 
     @Test
     public void testSetNonexistentInvestorComplete() throws Exception {
-        KycInfo testKycInfo = createKycInfo(false);
+        KycInfo testKycInfo = createKycInfo(true, 0, false);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenThrow(new InvestorNotFoundException());
 
@@ -280,7 +280,7 @@ public class KycControllerTest {
 
     @Test
     public void testGetKycStatus() throws Exception {
-        KycInfo kycInfo = createKycInfo(true);
+        KycInfo kycInfo = createKycInfo(true, 0,true);
 
         when(mockKycInfoService.getKycInfoByInvestorId(INVESTOR_ID)).thenReturn(kycInfo);
 
@@ -326,7 +326,7 @@ public class KycControllerTest {
 
     }
 
-    private KycInfo createKycInfo(boolean isKycComplete) {
-        return new KycInfo(INVESTOR_ID, isKycComplete, KYC_LINK);
+    private KycInfo createKycInfo(boolean isStartKycEmailSent, int noOfRemindersSent, boolean isKycComplete) {
+        return new KycInfo(INVESTOR_ID, isStartKycEmailSent, noOfRemindersSent, isKycComplete, KYC_LINK);
     }
 }
