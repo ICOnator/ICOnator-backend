@@ -40,18 +40,7 @@ public class ConfirmationEmailMessageConsumer {
                     ),
                     key = REGISTER_CONFIRMATION_EMAIL_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        ConfirmationEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(ConfirmationEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", ConfirmationEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(ConfirmationEmailMessage messageObject) {
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)

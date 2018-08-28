@@ -38,18 +38,7 @@ public class KycReminderEmailMessageConsumer {
                     ),
                     key = KYC_REMINDER_EMAIL_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        KycReminderEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(KycReminderEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", KycReminderEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(KycReminderEmailMessage messageObject) {
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)

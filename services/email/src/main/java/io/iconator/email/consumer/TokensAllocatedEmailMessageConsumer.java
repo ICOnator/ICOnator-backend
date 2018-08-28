@@ -43,18 +43,7 @@ public class TokensAllocatedEmailMessageConsumer {
                     ),
                     key = TRANSACTION_TOKENS_ALLOCATED_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        TokensAllocatedEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(TokensAllocatedEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", TokensAllocatedEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(TokensAllocatedEmailMessage messageObject) {
         try {
             Investor investor = messageObject.getInvestor().toInvestor();
             BigDecimal amountFundsReceived = messageObject.getAmountFundsReceived();

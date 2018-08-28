@@ -39,18 +39,7 @@ public class SummaryEmailMessageConsumer {
                     ),
                     key = REGISTER_SUMMARY_EMAIL_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        SummaryEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(SummaryEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", SummaryEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(SummaryEmailMessage messageObject) {
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)

@@ -42,18 +42,7 @@ public class TransactionReceivedEmailMessageConsumer {
                     ),
                     key = TRANSACTION_RECEIVED_EMAIL_QUEUE)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        TransactionReceivedEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(TransactionReceivedEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", TransactionReceivedEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(TransactionReceivedEmailMessage messageObject) {
         try {
             Investor investor = messageObject.getInvestor().toInvestor();
             BigDecimal amountFundsReceived = messageObject.getAmountFundsReceived();

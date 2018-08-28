@@ -38,18 +38,7 @@ public class KycStartEmailMessageConsumer {
                     ),
                     key = KYC_START_EMAIL_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        KycStartEmailMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(KycStartEmailMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", KycStartEmailMessage.class.getTypeName()), e);
-        }
-
+    public void receiveMessage(KycStartEmailMessage messageObject) {
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)
