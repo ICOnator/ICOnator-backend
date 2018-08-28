@@ -210,9 +210,4 @@ public class PaymentLog {
     public void setTransactionStatus(TransactionStatus transactionStatus) {
         this.transactionStatus = transactionStatus;
     }
-
-    public boolean wasCreatedRecently(long timeSpanInMs) {
-        long now = new Date().getTime();
-        return now - getCreateDate().getTime() < timeSpanInMs;
-    }
 }

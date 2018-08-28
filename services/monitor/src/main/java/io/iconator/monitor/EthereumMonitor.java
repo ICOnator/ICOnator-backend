@@ -123,7 +123,9 @@ public class EthereumMonitor extends BaseMonitor {
                                 web3jTx, web3j, investorService);
                         processBuildingTransaction(tx);
                         BigInteger currentBlockNr = web3j.ethBlockNumber().send().getBlockNumber();
-                        if (!isConfirmed(tx, currentBlockNr)) {
+                        if (isConfirmed(tx, currentBlockNr)) {
+                            confirmTransaction(tx);
+                        } else {
                             unconfirmedTransactions.add(tx);
                         }
                     } catch (Throwable t) {

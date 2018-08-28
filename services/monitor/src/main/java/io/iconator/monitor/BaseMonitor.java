@@ -71,7 +71,7 @@ abstract public class BaseMonitor {
 
     /**
      * @param receivingAddress the address to which a payment has been made.
-     * @return true if this address is monitored. False otherwise.
+     * @return TRUE if this address is monitored. False otherwise.
      */
     abstract protected boolean isAddressMonitored(String receivingAddress);
 
@@ -224,6 +224,7 @@ abstract public class BaseMonitor {
 
     protected void confirmTransaction(TransactionAdapter tx) {
         try {
+            LOG.info("Setting status of transaction {} to confirmed.", tx.getTransactionId());
             PaymentLog paymentLog = paymentLogService.getPaymentLog(tx.getTransactionId());
             paymentLog.setTransactionStatus(TransactionStatus.CONFIRMED);
             paymentLogService.saveAndCommit(paymentLog);
