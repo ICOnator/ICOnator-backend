@@ -50,18 +50,7 @@ public class RatesConsumer {
                     ),
                     key = RATES_EXCHANGE_REQUEST_ROUTING_KEY)
     )
-    public FetchRatesResponseMessage receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        FetchRatesRequestMessage messageObject = null;
-        try {
-            messageObject = objectMapper.reader().forType(FetchRatesRequestMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", FetchRatesRequestMessage.class.getTypeName()), e);
-        }
-
+    public FetchRatesResponseMessage receiveMessage(FetchRatesRequestMessage messageObject) {
         CurrencyType from = ofNullable(messageObject)
                 .map((m) -> m.getFrom())
                 .orElseThrow(() -> new AmqpRejectAndDontRequeueException("'from' attribute on FetchRatesRequestMessage message is null."));
