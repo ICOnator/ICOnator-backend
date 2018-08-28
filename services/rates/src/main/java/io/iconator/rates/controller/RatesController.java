@@ -1,9 +1,9 @@
 package io.iconator.rates.controller;
 
+import io.iconator.commons.model.CurrencyType;
 import io.iconator.rates.controller.dto.RatesCurrentResponse;
-import io.iconator.rates.service.ExchangeRateService;
-import io.iconator.rates.service.exceptions.USDBTCFxException;
-import io.iconator.rates.service.exceptions.USDETHFxException;
+import io.iconator.rates.service.RatesProviderService;
+import io.iconator.rates.service.exceptions.RateNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +24,13 @@ public class RatesController {
     private static final Logger LOG = LoggerFactory.getLogger(RatesController.class);
 
     @Autowired
-    private ExchangeRateService exchangeRateService;
+    private RatesProviderService ratesProviderService;
 
     @RequestMapping(value = "/rates/current", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<RatesCurrentResponse> address(@Context HttpServletRequest requestContext)
-            throws USDBTCFxException, USDETHFxException {
-        BigDecimal latestBTCPrice = exchangeRateService.getLatestUSDPerBTC();
-        BigDecimal latestETHPrice = exchangeRateService.getLatestUSDperETH();
+            throws RateNotFoundException {
+        BigDecimal latestBTCPrice = ratesProviderService.getLatestFromDB(CurrencyType.BTC);
+        BigDecimal latestETHPrice = ratesProviderService.getLatestFromDB(CurrencyType.ETH);
         return ResponseEntity.ok(new RatesCurrentResponse(latestBTCPrice, latestETHPrice));
     }
 

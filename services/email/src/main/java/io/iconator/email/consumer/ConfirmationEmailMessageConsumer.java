@@ -6,6 +6,7 @@ import io.iconator.commons.mailservice.MailService;
 import io.iconator.commons.model.db.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -13,8 +14,6 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_CONFIRMATION_EMAIL_QUEUE;
@@ -44,19 +43,21 @@ public class ConfirmationEmailMessageConsumer {
     public void receiveMessage(byte[] message) {
         LOG.debug("Received from consumer: " + new String(message));
 
-        ConfirmationEmailMessage confirmationEmailMessage = null;
+        ConfirmationEmailMessage messageObject = null;
         try {
-            confirmationEmailMessage = objectMapper.reader().forType(ConfirmationEmailMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
+            messageObject = objectMapper.reader().forType(ConfirmationEmailMessage.class).readValue(message);
+        } catch (Exception e) {
+            LOG.error("Message not valid.", e);
+            throw new AmqpRejectAndDontRequeueException(
+                    String.format("Message can't be mapped to the %s class.", ConfirmationEmailMessage.class.getTypeName()), e);
         }
 
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)
             mailService.sendConfirmationEmail(
-                    new Investor().setEmail(confirmationEmailMessage.getInvestor().getEmail()),
-                    confirmationEmailMessage.getEmailLinkUri()
+                    new Investor().setEmail(messageObject.getInvestor().getEmail()),
+                    messageObject.getEmailLinkUri()
             );
         } catch (Exception e) {
             // TODO: 05.03.18 Guil:

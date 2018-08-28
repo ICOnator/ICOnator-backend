@@ -5,17 +5,20 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -26,7 +29,7 @@ public class EtherscanService {
     public static String URL = "https://{ethnet}.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={ethkey}";
 
     @Autowired
-    private RatesAppConfig ratesAppConfig;
+    private RatesAppConfigHolder ratesAppConfig;
 
     private static String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -40,16 +43,16 @@ public class EtherscanService {
     public Long getLatestEthereumHeight() throws IOException {
 
         final String url;
-        if(ratesAppConfig.getEthereumNet().equals("main")) {
+        if (ratesAppConfig.getEthereumNet().equals("main")) {
             url = URL
-                    .replace("{ethnet}","api")
+                    .replace("{ethnet}", "api")
                     .replace("{ethkey}", ratesAppConfig.getEthereumKey());
         } else if (ratesAppConfig.getEthereumNet().isEmpty()) {
             url = URL
-                    .replace("{ethnet}","api-rinkeby");
-        }else {
+                    .replace("{ethnet}", "api-rinkeby");
+        } else {
             url = URL
-                    .replace("{ethnet}", "api-"+ratesAppConfig.getEthereumNet())
+                    .replace("{ethnet}", "api-" + ratesAppConfig.getEthereumNet())
                     .replace("{ethkey}", ratesAppConfig.getEthereumKey());
         }
 

@@ -1,111 +1,99 @@
 package io.iconator.rates.config;
 
-import io.iconator.commons.model.CurrencyType;
-import io.iconator.commons.model.ExchangeType;
-import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
+import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
+import org.knowm.xchange.bitstamp.BitstampExchange;
+import org.knowm.xchange.coinmarketcap.CoinMarketCapExchange;
+import org.knowm.xchange.gdax.GDAXExchange;
+import org.knowm.xchange.kraken.KrakenExchange;
+import org.knowm.xchange.service.marketdata.MarketDataService;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
+import static com.github.rholder.retry.WaitStrategies.randomWait;
 
 @Configuration
 public class RatesAppConfig {
 
-    @Value("${io.iconator.services.rates.bitcoin-net:}")
-    private String bitcoinNet;
-
-    @Value("${io.iconator.services.rates.ethereum-net:}")
-    private String ethereumNet;
-
-    @Value("${io.iconator.services.rates.ethereum-key:}")
-    private String ethereumKey;
-
-    @Value("${io.iconator.services.rates.user-agent}")
-    private String userAgent;
-
-    @Value("${io.iconator.services.rates.currencies.fiat.base}")
-    private CurrencyType baseFiatCurrency;
-
-    @Value("${io.iconator.services.rates.currencies.crypto.enabled}")
-    private CurrencyType[] enabledCryptoCurrencies;
-
-    @Value("${io.iconator.services.rates.exchanges.enabled}")
-    private ExchangeType[] enabledExchanges;
-
-    @Value("${io.iconator.services.rates.fetch.periodic.enabled}")
-    private Boolean periodicEnabled;
-
-    @Value("${io.iconator.services.rates.fetch.periodic.interval}")
-    private Integer periodicInterval;
-
-    @Value("${io.iconator.services.rates.retry.attempts.max}")
-    private Integer maxAttempts;
-
-    @Value("${io.iconator.services.rates.retry.wait-between-attemps.min}")
-    private Long minTimeWait;
-
-    @Value("${io.iconator.services.rates.retry.wait-between-attemps.max}")
-    private Long maxTimeWait;
-
-    @Value("${io.iconator.services.rates.outliers.std-dev.threshold.lower-bound}")
-    private Double outlierStdDevThresholdLowerBound;
-
-    @Value("${io.iconator.services.rates.outliers.std-dev.threshold.upper-bound}")
-    private Double outlierStdDevThresholdUpperBound;
-
-    public String getBitcoinNet() {
-        return bitcoinNet;
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
-    public String getEthereumNet() {
-        return ethereumNet;
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
-    public String getEthereumKey() {
-        return ethereumKey;
+
+    @Bean
+    public Retryer retryer(RatesAppConfigHolder ratesAppConfig) {
+        return RetryerBuilder.newBuilder()
+                .retryIfExceptionOfType(IOException.class)
+                .retryIfRuntimeException()
+                .withWaitStrategy(randomWait(ratesAppConfig.getMinTimeWait(), TimeUnit.MILLISECONDS, ratesAppConfig.getMaxTimeWait(), TimeUnit.MILLISECONDS))
+                .withStopStrategy(stopAfterAttempt(ratesAppConfig.getMaxAttempts()))
+                .build();
     }
 
-    public String getUserAgent() {
-        return userAgent;
+    @Bean(name = "bitstampExchange")
+    public Exchange bitstampExchange() {
+        return ExchangeFactory.INSTANCE.createExchange(BitstampExchange.class.getName());
     }
 
-    public CurrencyType getBaseFiatCurrency() {
-        return baseFiatCurrency;
+    @Bean(name = "bitstampMarketDataService")
+    public MarketDataService bitstampMarketDataService(@Qualifier("bitstampExchange") Exchange exchange) {
+        return exchange.getMarketDataService();
     }
 
-    public List<CurrencyType> getEnabledCryptoCurrencies() {
-        return Arrays.asList(enabledCryptoCurrencies);
+    @Bean(name = "bitfinexExchange")
+    public Exchange bitfinexExchange() {
+        return ExchangeFactory.INSTANCE.createExchange(BitfinexExchange.class.getName());
     }
 
-    public List<ExchangeType> getEnabledExchanges() {
-        return Arrays.asList(enabledExchanges);
+    @Bean(name = "bitfinexMarketDataService")
+    public MarketDataService bitfinexMarketDataService(@Qualifier("bitfinexExchange") Exchange exchange) {
+        return exchange.getMarketDataService();
     }
 
-    public Boolean getPeriodicEnabled() {
-        return periodicEnabled;
+    @Bean(name = "krakenExchange")
+    public Exchange krakenExchange() {
+        return ExchangeFactory.INSTANCE.createExchange(KrakenExchange.class.getName());
     }
 
-    public Integer getPeriodicInterval() {
-        return periodicInterval;
+    @Bean(name = "krakenMarketDataService")
+    public MarketDataService krakenMarketDataService(@Qualifier("krakenExchange") Exchange exchange) {
+        return exchange.getMarketDataService();
     }
 
-    public Integer getMaxAttempts() {
-        return maxAttempts;
+    @Bean(name = "gdaxExchange")
+    public Exchange gdaxExchange() {
+        return ExchangeFactory.INSTANCE.createExchange(GDAXExchange.class.getName());
     }
 
-    public Long getMinTimeWait() {
-        return minTimeWait;
+    @Bean(name = "gdaxMarketDataService")
+    public MarketDataService gdaxMarketDataService(@Qualifier("gdaxExchange") Exchange exchange) {
+        return exchange.getMarketDataService();
     }
 
-    public Long getMaxTimeWait() {
-        return maxTimeWait;
+    @Bean(name = "coinMarketCapExchange")
+    public Exchange coinMarketCapExchange() {
+        return ExchangeFactory.INSTANCE.createExchange(CoinMarketCapExchange.class.getName());
     }
 
-    public Double getOutlierStdDevThresholdLowerBound() {
-        return outlierStdDevThresholdLowerBound;
+    @Bean(name = "coinMarketCapMarketDataService")
+    public MarketDataService coinMarketCapMarketDataService(@Qualifier("coinMarketCapExchange") Exchange exchange) {
+        return exchange.getMarketDataService();
     }
 
-    public Double getOutlierStdDevThresholdUpperBound() {
-        return outlierStdDevThresholdUpperBound;
-    }
 }

@@ -2,7 +2,17 @@ package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -12,16 +22,13 @@ import static javax.persistence.GenerationType.SEQUENCE;
 public class EligibleForRefund {
 
     public enum RefundReason {
-        NO_INVESTOR_FOUND_FOR_RECEIVING_ADDRESS,
+        INVESTOR_MISSING,
         TOKEN_OVERFLOW,
-        MISSING_FX_RATE,
-        FAILED_CONVERSION_TO_TOKENS,
-        FAILED_CONVERSION_TO_USD,
-        FAILED_CONVERSION_FROM_WEI_TO_ETHER,
-        FAILED_CONVERSION_FROM_SATOSHI_TO_COIN,
-        MISSING_BLOCK_TIMESTAMP,
-        MISSING_BLOCK_BTC_NR,
-        FAILED_CREATING_PAYMENTLOG
+        FX_RATE_MISSING,
+        TOKEN_ALLOCATION_FAILED,
+        BLOCK_TIME_MISSING,
+        BLOCK_HEIGHT_MISSING,
+        TRANSACTION_VALUE_MISSING
     }
 
     @Id
@@ -33,8 +40,11 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private RefundReason refundReason;
 
-    @Column(name = "amount", precision = 34, scale = 0)
-    private BigInteger amount;
+    @Column(name = "cryptocurrencyAmount", precision = 34, scale = 0)
+    private BigInteger cryptocurrencyAmount;
+
+    @Column(name = "usd_amount", precision = 34, scale = 6)
+    private BigDecimal usdAmount;
 
     @Column(name = "currency")
     @Enumerated(EnumType.STRING)
@@ -47,13 +57,14 @@ public class EligibleForRefund {
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
 
-    protected EligibleForRefund() {
+    public EligibleForRefund() {
     }
 
-    public EligibleForRefund(RefundReason refundReason, BigInteger amount, CurrencyType currency,
+    public EligibleForRefund(RefundReason refundReason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount, CurrencyType currency,
                              Investor investor, String txIdentifier) {
         this.refundReason = refundReason;
-        this.amount = amount;
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
+        this.usdAmount = usdAmount;
         this.currency = currency;
         this.investor = investor;
         this.txIdentifier = txIdentifier;
@@ -75,12 +86,12 @@ public class EligibleForRefund {
         this.refundReason = refundReason;
     }
 
-    public BigInteger getAmount() {
-        return amount;
+    public BigInteger getCryptocurrencyAmount() {
+        return cryptocurrencyAmount;
     }
 
-    public void setAmount(BigInteger amount) {
-        this.amount = amount;
+    public void setCryptocurrencyAmount(BigInteger cryptocurrencyAmount) {
+        this.cryptocurrencyAmount = cryptocurrencyAmount;
     }
 
     public CurrencyType getCurrency() {
@@ -105,5 +116,13 @@ public class EligibleForRefund {
 
     public void setTxIdentifier(String txIdentifier) {
         this.txIdentifier = txIdentifier;
+    }
+
+    public BigDecimal getUsdAmount() {
+        return usdAmount;
+    }
+
+    public void setUsdAmount(BigDecimal usdAmount) {
+        this.usdAmount = usdAmount;
     }
 }

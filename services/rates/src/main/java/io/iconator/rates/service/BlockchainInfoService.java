@@ -5,13 +5,17 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -28,7 +32,7 @@ public class BlockchainInfoService {
     public static String MAIN_URL = "https://blockchain.info/latestblock";
 
     @Autowired
-    private RatesAppConfig ratesAppConfig;
+    private RatesAppConfigHolder ratesAppConfig;
 
     private static String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -42,7 +46,7 @@ public class BlockchainInfoService {
     public Long getLatestBitcoinHeight() throws IOException {
 
         final String url;
-        if(ratesAppConfig.getBitcoinNet().equals("main")) {
+        if (ratesAppConfig.getBitcoinNet().equals("main")) {
             url = MAIN_URL;
         } else {
             url = TEST_URL;
@@ -53,7 +57,7 @@ public class BlockchainInfoService {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
             String jsonText = readAll(rd);
             BlockchainInfoReply reply = new ObjectMapper().readValue(jsonText, BlockchainInfoReply.class);
-            LOG.debug("Bitcoin height: {}",reply.getHeight());
+            LOG.debug("Bitcoin height: {}", reply.getHeight());
             return reply.getHeight();
         } finally {
             is.close();

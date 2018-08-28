@@ -45,5 +45,4 @@ public class SaleTierService {
     public SaleTier saveTransactionless(SaleTier tier) {
         return saleTierRepository.saveAndFlush(tier);
     }
-
 }

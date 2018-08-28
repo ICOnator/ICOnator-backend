@@ -1,9 +1,8 @@
 package io.iconator.monitor;
 
-import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,7 @@ public class MonitoringInit {
     private final static int NR_RETRIES = WAIT_FOR_ETH_MILLIS / WAIT_ETH_RETRY_MILLIS;
 
     @Autowired
-    private MonitorAppConfig appConfig;
+    private MonitorAppConfigHolder appConfig;
 
     @Autowired
     private EthereumMonitor ethereumMonitor;
@@ -35,9 +34,6 @@ public class MonitoringInit {
 
     @Autowired
     private InvestorRepository investorRepository;
-
-    @Autowired
-    private ICOnatorMessageService messageService;
 
     @EventListener({ContextRefreshedEvent.class})
     void contextRefreshedEvent() {
@@ -64,10 +60,10 @@ public class MonitoringInit {
 
     private void initMonitors() throws Exception {
 
-        monitorExistingAddresses();
+        addExistinPaymentAdresses();
 
         if (appConfig.getEthereumNodeEnabled()) {
-            ethereumMonitor.start(appConfig.getEthereumNodeStartBlock());
+            ethereumMonitor.start();
             LOG.info("Ethereum monitor started.");
         }
 
@@ -78,7 +74,7 @@ public class MonitoringInit {
 
     }
 
-    private void monitorExistingAddresses() {
+    private void addExistinPaymentAdresses() {
 
         List<Investor> listInvestors = investorRepository.findAllByOrderByCreationDateAsc();
 
@@ -86,11 +82,11 @@ public class MonitoringInit {
             long timestamp = investor.getCreationDate().getTime() / 1000L;
 
             ofNullable(investor.getPayInBitcoinAddress()).ifPresent((bitcoinAddress) -> {
-                bitcoinMonitor.addMonitoredAddress(bitcoinAddress, timestamp);
+                bitcoinMonitor.addPaymentAddressesForMonitoring(bitcoinAddress, timestamp);
             });
 
             ofNullable(investor.getPayInEtherAddress()).ifPresent((etherAddress) -> {
-                ethereumMonitor.addMonitoredEtherAddress(etherAddress);
+                ethereumMonitor.addPaymentAddressesForMonitoring(etherAddress, timestamp);
             });
         });
 

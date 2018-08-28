@@ -1,129 +1,242 @@
 package io.iconator.monitor;
 
-import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
-import io.iconator.commons.db.services.EligibleForRefundService;
+import io.iconator.commons.amqp.service.ICOnatorMessageService;
+import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
+import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
+import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
 import io.iconator.commons.model.CurrencyType;
-import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
-import io.iconator.commons.model.db.Investor;
-import io.iconator.commons.sql.dao.InvestorRepository;
-import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.commons.model.db.PaymentLog;
+import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
-import io.iconator.monitor.service.TokenConversionService.TokenDistributionResult;
+import io.iconator.monitor.service.MonitorService;
+import io.iconator.monitor.transaction.TransactionAdapter;
+import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.OptimisticLockException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
 @Component
-public class BaseMonitor {
-
-    @Autowired
-    private MonitorAppConfig appConfig;
+abstract public class BaseMonitor {
 
     private final static Logger LOG = LoggerFactory.getLogger(BaseMonitor.class);
 
-    protected final TokenConversionService tokenConversionService;
-    protected final InvestorRepository investorRepository;
-    protected final EligibleForRefundService eligibleForRefundService;
+    protected final MonitorService monitorService;
     protected final PaymentLogService paymentLogService;
     protected final FxService fxService;
+    protected final InvestorService investorService;
+    protected final ICOnatorMessageService messageService;
+    protected final MonitorAppConfigHolder configHolder;
+    protected final Retryer<PaymentLog> retryer;
 
-    public BaseMonitor(TokenConversionService tokenConversionService,
-                       InvestorRepository investorRepository,
+    public BaseMonitor(MonitorService monitorService,
                        PaymentLogService paymentLogService,
-                       EligibleForRefundService eligibleForRefundService,
-                       FxService fxService) {
-        this.tokenConversionService = tokenConversionService;
-        this.investorRepository = investorRepository;
+                       FxService fxService,
+                       ICOnatorMessageService messageService,
+                       InvestorService investorService,
+                       MonitorAppConfigHolder configHolder,
+                       Retryer retryer) {
+        this.monitorService = monitorService;
         this.paymentLogService = paymentLogService;
-        this.eligibleForRefundService = eligibleForRefundService;
         this.fxService = fxService;
+        this.messageService = messageService;
+        this.investorService = investorService;
+        this.configHolder = configHolder;
+        this.retryer = retryer;
     }
 
-    protected boolean isTransactionUnprocessed(String txIdentifier) {
-        return !paymentLogService.existsByTxIdentifier(txIdentifier)
-                && !eligibleForRefundService.existsByTxIdentifier(txIdentifier);
-    }
+    protected abstract void start() throws Exception;
 
     /**
      *
-     * @param amount
-     * @param currencyType
-     * @param txIdentifier
-     * @param reason
-     * @param investor
+     * @param address payment address which will be monitored
+     * @param addressCreationTimestamp Creation time of the address in miliseconds since the epoch.
+     *                                 Some blockchain implementations can use this to determine
+     *                                 from which block to start scanning the chain.
      */
-    protected void eligibleForRefund(BigInteger amount,
-                                     CurrencyType currencyType,
-                                     String txIdentifier,
-                                     RefundReason reason,
-                                     Investor investor) {
+    abstract protected void addPaymentAddressesForMonitoring(String address, Long addressCreationTimestamp);
 
-        EligibleForRefund eligibleForRefund = new EligibleForRefund(reason, amount, currencyType,
-                investor, txIdentifier);
+    /**
+     * @param receivingAddress the address to which a payment has been made.
+     * @return true if this address is monitored. False otherwise.
+     */
+    abstract protected boolean isAddressMonitored(String receivingAddress);
+
+    protected void processPendingTransactions(TransactionAdapter tx) {
         try {
-            LOG.info("Creating refund entry for transaction {}.", txIdentifier);
-            // Saving without a transaction will persist to the database immediatly which makes sure
-            // that other monitor apps that run concurrently will see that this transaction has
-            // already been processed by a monitor app.
-            eligibleForRefundService.saveTransactionless(eligibleForRefund);
+            if (!isAddressMonitored(tx.getReceivingAddress())) return;
+            PaymentLog paymentLog;
+            try {
+                paymentLog = monitorService.getPendingPaymentLogForReprocessing(tx.getTransactionId());
+            } catch (PaymentLogNotFoundException e) {
+                paymentLog = createNewPaymentLog(tx, TransactionStatus.PENDING);
+            }
+            if (paymentLog == null) return;
+            paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
+            paymentLog.setInvestor(tx.getAssociatedInvestor());
+            monitorService.sendTransactionReceivedMessageAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit(),
+                    tx.getTransactionUrl());
+        } catch (MissingTransactionInformationException e) {
+            LOG.error("Error processing transaction", e);
+        }
+    }
+
+    private PaymentLog createNewPaymentLog(TransactionAdapter tx,
+                                           TransactionStatus transactionStatus)
+            throws MissingTransactionInformationException {
+
+        try {
+            return paymentLogService.saveAndCommit(new PaymentLog(
+                    tx.getTransactionId(), new Date(), tx.getCurrencyType(),
+                    transactionStatus));
+        } catch (DataIntegrityViolationException e) {
+            // The payment log was probably created by another instance just now.
+            // This is not an error because the other instance will process the transaction.
+            return null;
+        }
+    }
+
+    protected void processBuildingTransaction(TransactionAdapter tx) {
+        try {
+            if (!isAddressMonitored(tx.getReceivingAddress())) return;
+            PaymentLog paymentLog;
+            try {
+                paymentLog = monitorService.getPendingPaymentLogForProcessing(
+                        tx.getTransactionId());
+                if (paymentLog == null) {
+                    paymentLog = monitorService.getBuildingPaymentLogForReprocessing(
+                            tx.getTransactionId());
+                }
+            } catch (PaymentLogNotFoundException e) {
+                paymentLog = createNewPaymentLog(tx, TransactionStatus.BUILDING);
+            }
+            // Update attributes of payment log if it has been newly created but also if it was
+            // fetched for reprocessing.
+            paymentLog = updateBuildingPaymentLog(tx, paymentLog);
+            if (paymentLog == null) return; // no processing required.
+            BigInteger allocatedTomics = paymentLog.getAllocatedTomics();
+            if (allocatedTomics == null) {
+                // Tokens have not yet been allocated because the payment log is new or the last
+                // time it was processed the processing stopped unexpectedly before the allocation.
+                paymentLog = allocateTokensWithRetries(paymentLog);
+            }
+            monitorService.sendAllocationMessageAndSavePaymentLog(
+                    paymentLog, tx.getTransactionValueInMainUnit(), tx.getTransactionUrl());
+            LOG.info("Transaction processed: {} {} / {} USD / {} FX / investor id {} / Time: {} / Tomics Amount {}",
+                    tx.getTransactionValueInMainUnit(), tx.getCurrencyType().name(), paymentLog.getUsdAmount(),
+                    paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
+                    paymentLog.getAllocatedTomics());
+
+        } catch (Throwable t) {
+            LOG.error("Error processing transaction.", t);
+        }
+    }
+
+    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) {
+        if (paymentLog == null) return null;
+        RefundReason reason = null;
+        try {
+            reason = RefundReason.TRANSACTION_VALUE_MISSING;
+            paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
+            BigDecimal valueInMainUnit = tx.getTransactionValueInMainUnit();
+
+            reason = RefundReason.INVESTOR_MISSING;
+            paymentLog.setInvestor(tx.getAssociatedInvestor());
+
+            reason = RefundReason.BLOCK_TIME_MISSING;
+            paymentLog.setBlockTime(tx.getBlockTime());
+
+            reason = RefundReason.FX_RATE_MISSING;
+            BigDecimal fxRate = getUSDExchangeRate(tx.getBlockTime().toInstant(), tx.getCurrencyType());
+            paymentLog.setUsdFxRate(fxRate);
+            paymentLog.setUsdAmount(valueInMainUnit.multiply(fxRate));
+
+        } catch (MissingTransactionInformationException e) {
+            try {
+                monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
+            } catch (RefundEntryAlradyExistsException re) {
+                LOG.error("Couldn't save refund entry for transction {} because one alrady existed " +
+                        "for that transaction.", paymentLog.getTransactionId());
+            }
+            return null;
+        }
+        return paymentLogService.saveAndCommit(paymentLog);
+    }
+
+    private BigDecimal getUSDExchangeRate(Instant blockTimestamp, CurrencyType currencyType)
+            throws MissingTransactionInformationException {
+
+        try {
+            Optional<BigDecimal> USDExchangeRate = fxService.getUSDExchangeRate(blockTimestamp, currencyType);
+            return USDExchangeRate.orElseThrow(() -> new NoSuchElementException());
         } catch (Exception e) {
-            if (eligibleForRefundService.existsByTxIdentifier(txIdentifier)) {
-                LOG.info("Couldn't create refund entry because it already existed. " +
-                        "I.e. transaction was already processed.", e);
-            } else {
-                LOG.error("Failed creating refund entry.", e);
+            throw new MissingTransactionInformationException("Couldn't fetch USD to " + currencyType.name() + " exchange rate.", e);
+        }
+
+    }
+
+    PaymentLog allocateTokensWithRetries(PaymentLog paymentLog)
+            throws Throwable {
+
+        if (paymentLog.getUsdAmount() == null) {
+            throw new IllegalArgumentException("PaymentLog's amount in USD must not be null.");
+        }
+        if (paymentLog.getBlockTime() == null) {
+            throw new IllegalArgumentException("PaymentLog's block time must not be null.");
+        }
+
+        LOG.debug("Calling token allocation with {} USD for {} transaction {}.",
+                paymentLog.getUsdAmount().toPlainString(), paymentLog.getCurrency(),
+                paymentLog.getTransactionId());
+
+
+        try {
+            // Retry as long as there are database locking exceptions.
+            PaymentLog updatedPaymentLog = retryer.call(
+                    () -> monitorService.allocateTokens(paymentLog));
+
+            LOG.debug("Allocated {} tomics for {} transaction {}.",
+                    updatedPaymentLog.getAllocatedTomics(), updatedPaymentLog.getCurrency(),
+                    updatedPaymentLog.getTransactionId());
+
+            return updatedPaymentLog;
+        } catch (Throwable e) {
+            LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
+            RefundReason reason = RefundReason.TOKEN_ALLOCATION_FAILED;
+            monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
+            throw e;
+        }
+    }
+
+    protected void confirmTransaction(TransactionAdapter tx) {
+        try {
+            PaymentLog paymentLog = paymentLogService.getPaymentLog(tx.getTransactionId());
+            paymentLog.setTransactionStatus(TransactionStatus.CONFIRMED);
+            paymentLogService.saveAndCommit(paymentLog);
+        } catch (MissingTransactionInformationException e) {
+            LOG.error("Coulnd't set payment log status to confirmed because the transaction id " +
+                    "could not be retrieved from the {} transaction.", tx.getCurrencyType(), e);
+        } catch (PaymentLogNotFoundException e) {
+            try {
+                LOG.error("No payment log existed for {} transaction {} when trying to set the " +
+                        "transaction status to CONFIRMED", tx.getCurrencyType(), tx.getTransactionId(), e);
+            } catch (MissingTransactionInformationException ignore) {
             }
         }
     }
 
-    /**
-     * // TODO [claude, 2018-07-19], Finish documentation
-     * This is method is not holding any of the conversoin or distribution functionality but sits in
-     * this class because the method that it calls needs to be transactional and the transaction
-     * behavior of spring does only work if one object calls the transactional methods of another
-     * object. If this method where in the same class as the actual conversion and distribution
-     * method calling that method would not lead to a transactional execution of the code.
-     * @param usd
-     * @param blockTime
-     * @return
-     * @throws Throwable
-     */
-    public TokenDistributionResult convertAndDistributeToTiersWithRetries(BigDecimal usd, Date blockTime)
-            throws Throwable {
-
-        if (blockTime == null) throw new IllegalArgumentException("Block time must not be null.");
-        if (usd == null) throw new IllegalArgumentException("USD amount must not be null.");
-
-        // Retry as long as there are database locking exceptions.
-        Retryer<TokenDistributionResult> retryer = RetryerBuilder.<TokenDistributionResult>newBuilder()
-                .retryIfExceptionOfType(OptimisticLockingFailureException.class)
-                .retryIfExceptionOfType(OptimisticLockException.class)
-                .withWaitStrategy(randomWait(appConfig.getTokenConversionMaxTimeWait(), TimeUnit.MILLISECONDS))
-                .withStopStrategy(StopStrategies.neverStop())
-                .build();
-
-        try {
-            return retryer.call(() -> tokenConversionService.convertAndDistributeToTiers(usd, blockTime));
-        } catch (ExecutionException | RetryException e) {
-            LOG.error("Currency to token conversion failed.", e);
-            throw e.getCause();
-        }
-    }
 }

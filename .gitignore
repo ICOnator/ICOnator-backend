@@ -137,18 +137,13 @@ local.properties
 **/*.iml
 .gradle/
 
-gradle*
 logs/
 **/*.log
 
 **/*.gz
 
-.gradle/
-.idea/
-build/
 classes/
 out/
-*.iml
 .asscache
 **/logs/*
 **/email-file-queue.bin
@@ -160,4 +155,5 @@ reports/
 .vscode/settings.json
 *.dat
 gradlew.bat
+gradlew
 .java-version

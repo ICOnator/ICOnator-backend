@@ -25,11 +25,11 @@ public class SwaggerConfiguration {
 
     private ApiInfo apiInfo() {
         return new ApiInfo("ICOnator",
-                "A straight-forward, secure, configurable, user-friendly, and scalable open source ICO platform – driven by the community.",
-                "1.0.0",
+                "An easy, secure, configurable, and scalable open source ICO engine -- driven by the community",
                 null,
-                new Contact("", "", ""),
-                "",
+                null,
+                new Contact("ICOnator Project", "https://iconator.io", "info@iconator.io"),
+                "Apache 2",
                 "",
                 new ArrayList<VendorExtension>());
     }

@@ -139,9 +139,9 @@ public class MailContentBuilder {
         }
     }
 
-    public void buildFundsReceivedEmail(Optional<MimeMessageHelper> oMessage,
-                                        BigDecimal amountFundsReceived, CurrencyType currencyType,
-                                        String link, BigDecimal amountTokens) {
+    public void buildTransactionReceivedEmail(Optional<MimeMessageHelper> oMessage,
+                                              BigDecimal amountFundsReceived, CurrencyType currencyType,
+                                              String transactionUrl) {
         if (oMessage.isPresent()) {
             try {
                 Context context = new Context();
@@ -151,12 +151,39 @@ public class MailContentBuilder {
 
                 context.setVariable("amountFundsReceived", amountFundsReceived);
                 context.setVariable("currencyFundsReceived", currencyType.name());
-                context.setVariable("link", link);
-                context.setVariable("tomicsAmount", amountTokens);
+                context.setVariable("transactionUrl", transactionUrl);
                 context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
                 context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
                 context.setVariable("year", this.mailServiceConfigHolder.getYear());
-                String html5Content = this.templateEngine.process("funds_received_email", context);
+                String html5Content = this.templateEngine.process("transaction_received_email", context);
+                oMessage.get().setText(html5Content, true);
+
+                oMessage.get().addInline("logo", this.logoContentData, getLogoContentType());
+
+            } catch (MessagingException e) {
+                LOG.error("Error to add inline images to the message.");
+            }
+        }
+    }
+
+    public void buildTokensAllocatedEmail(Optional<MimeMessageHelper> oMessage,
+                                          BigDecimal amountFundsReceived, CurrencyType currencyType,
+                                          String transactionUrl, BigDecimal tokenAmount) {
+        if (oMessage.isPresent()) {
+            try {
+                Context context = new Context();
+                context.setVariable("logo", "logo");
+                context.setVariable("logoWidth", getLogoWidth());
+                context.setVariable("logoHeight", getLogoHeight());
+
+                context.setVariable("amountFundsReceived", amountFundsReceived);
+                context.setVariable("currencyFundsReceived", currencyType.name());
+                context.setVariable("transactionUrl", transactionUrl);
+                context.setVariable("tokenAmount", tokenAmount);
+                context.setVariable("tokenSymbol", this.mailServiceConfigHolder.getTokenSymbol());
+                context.setVariable("entityName", this.mailServiceConfigHolder.getEntityName());
+                context.setVariable("year", this.mailServiceConfigHolder.getYear());
+                String html5Content = this.templateEngine.process("tokens_allocated_email", context);
                 oMessage.get().setText(html5Content, true);
 
                 oMessage.get().addInline("logo", this.logoContentData, getLogoContentType());

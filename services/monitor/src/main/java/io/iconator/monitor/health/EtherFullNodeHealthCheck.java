@@ -1,6 +1,6 @@
 package io.iconator.monitor.health;
 
-import io.iconator.monitor.config.MonitorAppConfig;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -19,15 +19,15 @@ import java.net.URL;
 public class EtherFullNodeHealthCheck implements HealthIndicator {
 
     @Autowired
-    private MonitorAppConfig monitorAppConfig;
+    private MonitorAppConfigHolder monitorAppConfigHolder;
 
     @Override
     public Health health() {
         URL url;
         try {
-            url = new URL(this.monitorAppConfig.getEthereumNodeUrl());
+            url = new URL(this.monitorAppConfigHolder.getEthereumNodeUrl());
         } catch (MalformedURLException mue) {
-            return Health.down(mue).withDetail("URL", this.monitorAppConfig.getEthereumNodeUrl()).build();
+            return Health.down(mue).withDetail("URL", this.monitorAppConfigHolder.getEthereumNodeUrl()).build();
         }
 
         InetSocketAddress sa = new InetSocketAddress(url.getHost(), url.getPort());

@@ -18,9 +18,12 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {
@@ -86,5 +89,49 @@ public class CryptoCompareModelTest {
 
     }
 
+    @Test
+    public void testGetRateValue() {
+        List<CryptoCompareConversionRateResponse> rateResponses = Arrays.asList(
+                new CryptoCompareConversionRateResponse(CryptoCompareCurrency.BTC, new BigDecimal("1.2345")),
+                new CryptoCompareConversionRateResponse(CryptoCompareCurrency.USD, new BigDecimal("5.12345"))
+        );
+        CryptoCompareConversionRates conversionRates = new CryptoCompareConversionRates(rateResponses);
+        List<CryptoCompareResponse> responses = Arrays.asList(new CryptoCompareResponse(CryptoCompareCurrency.ETH, conversionRates));
+        CryptoCompareResponseDTO dto = new CryptoCompareResponseDTO(responses);
+
+        Optional<BigDecimal> rateValue = dto.getRateValue(CryptoCompareCurrency.ETH, CryptoCompareCurrency.USD);
+
+        assertTrue(rateValue.isPresent());
+        assertEquals(new BigDecimal("5.12345"), rateValue.get());
+    }
+
+    @Test
+    public void testGetRateValue_MissingToCurrency() {
+        List<CryptoCompareConversionRateResponse> rateResponses = Arrays.asList(
+                new CryptoCompareConversionRateResponse(CryptoCompareCurrency.BTC, new BigDecimal("1.2345"))
+        );
+        CryptoCompareConversionRates conversionRates = new CryptoCompareConversionRates(rateResponses);
+        List<CryptoCompareResponse> responses = Arrays.asList(new CryptoCompareResponse(CryptoCompareCurrency.ETH, conversionRates));
+        CryptoCompareResponseDTO dto = new CryptoCompareResponseDTO(responses);
+
+        Optional<BigDecimal> result1 = dto.getRateValue(CryptoCompareCurrency.ETH, CryptoCompareCurrency.USD);
+        assertFalse(result1.isPresent());
+
+        Optional<BigDecimal> result2 = dto.getRateValue(CryptoCompareCurrency.ETH, CryptoCompareCurrency.BTC);
+        assertTrue(result2.isPresent());
+    }
+
+    @Test
+    public void testGetRateValue_MissingFromCurrency() {
+        List<CryptoCompareConversionRateResponse> rateResponses = Arrays.asList(
+                new CryptoCompareConversionRateResponse(CryptoCompareCurrency.BTC, new BigDecimal("1.2345"))
+        );
+        CryptoCompareConversionRates conversionRates = new CryptoCompareConversionRates(rateResponses);
+        List<CryptoCompareResponse> responses = Arrays.asList(new CryptoCompareResponse(CryptoCompareCurrency.ETH, conversionRates));
+        CryptoCompareResponseDTO dto = new CryptoCompareResponseDTO(responses);
+
+        Optional<BigDecimal> result1 = dto.getRateValue(CryptoCompareCurrency.CHF, CryptoCompareCurrency.USD);
+        assertFalse(result1.isPresent());
+    }
 
 }

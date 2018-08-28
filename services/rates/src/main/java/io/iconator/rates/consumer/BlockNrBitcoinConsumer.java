@@ -2,9 +2,9 @@ package io.iconator.rates.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
-import io.iconator.rates.service.BlockchainInfoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -13,8 +13,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.Date;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
@@ -26,13 +24,8 @@ public class BlockNrBitcoinConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlockNrBitcoinConsumer.class);
 
-    public static final int TWO_HOURS = 1000 * 60 * 60 * 2;
-
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private BlockchainInfoService blockchainInfoService;
 
     private Long blockNr;
     private Long timestamp;
@@ -50,15 +43,17 @@ public class BlockNrBitcoinConsumer {
     public void receiveMessage(byte[] message) {
         LOG.debug("Received from consumer: " + new String(message));
 
-        BlockNRBitcoinMessage blockNRBitcoinMessage = null;
+        BlockNRBitcoinMessage messageObject = null;
         try {
-            blockNRBitcoinMessage = objectMapper.reader().forType(BlockNRBitcoinMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
+            messageObject = objectMapper.reader().forType(BlockNRBitcoinMessage.class).readValue(message);
+        } catch (Exception e) {
+            LOG.error("Message not valid.", e);
+            throw new AmqpRejectAndDontRequeueException(
+                    String.format("Message can't be mapped to the %s class.", BlockNRBitcoinMessage.class.getTypeName()), e);
         }
 
         try {
-            Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(blockNRBitcoinMessage);
+            Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(messageObject);
             optionalBlockNRBitcoinMessage.ifPresent((bitcoinMessage) -> {
                 blockNr = bitcoinMessage.getBlockNr();
                 timestamp = bitcoinMessage.getTimestamp();
@@ -74,28 +69,11 @@ public class BlockNrBitcoinConsumer {
         return this;
     }
 
-    public Long getCurrentBlockNr() {
-        if(blockNr == null || timestamp == null) {
-            //fallback is API call to blockchaininfo
-            try {
-                LOG.warn("No Bitcoin block since startup");
-                return blockchainInfoService.getLatestBitcoinHeight();
-            } catch (IOException e) {
-                LOG.error("Bitcoin block height fallback failed - start, discarding", e);
-                return null;
-            }
-        }
-        if(timestamp.longValue() + TWO_HOURS < new Date().getTime()) {
-            //fallback is API call to blockchaininfo
-            try {
-                LOG.warn("Bitcoin block over two hours old, using fallback");
-                return blockchainInfoService.getLatestBitcoinHeight();
-            } catch (IOException e) {
-                LOG.error("Bitcoin block height fallback failed, discarding", e);
-                return null;
-            }
-        }
+    public Long getBlockNr() {
         return blockNr;
     }
 
+    public Long getTimestamp() {
+        return timestamp;
+    }
 }

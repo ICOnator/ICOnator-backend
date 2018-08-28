@@ -1,6 +1,5 @@
 package io.iconator.commons.mailservice;
 
-import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycReminderEmailSentMessage;
 import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
@@ -69,19 +68,35 @@ public class MailService {
         }
     }
 
-    public void sendFundsReceivedEmail(Investor investor, BigDecimal amountFundsReceived,
-                                       CurrencyType currencyType, String linkToTransaction,
-                                       BigDecimal tokenAmount)
+    public void sendTransactionReceivedEmail(Investor investor, BigDecimal amountFundsReceived,
+                                             CurrencyType currencyType, String transactionUrl)
             throws EmailNotSentException, EmailNotPreparedException {
         Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
         Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),
-                this.mailServiceConfigHolder.getFundsReceivedEmailSubject(), MailType.FUNDS_RECEIVED_EMAIL);
-        this.mailContentBuilder.buildFundsReceivedEmail(oMessage, amountFundsReceived,
-                currencyType, linkToTransaction, tokenAmount);
+                this.mailServiceConfigHolder.getTransactionReceivedEmailSubject(), MailType.TOKENS_ALLOCATED_EMAIL);
+        this.mailContentBuilder.buildTransactionReceivedEmail(oMessage, amountFundsReceived,
+                currencyType, transactionUrl);
         if (this.mailServiceConfigHolder.isEnabled()) {
-            sendMail(oMessage, MailType.FUNDS_RECEIVED_EMAIL);
+            sendMail(oMessage, MailType.TRANSACTION_RECEIVED_EMAIL);
         } else {
-            LOG.info("Skip sending {} email to {}, link: {}", MailType.FUNDS_RECEIVED_EMAIL,
+            LOG.info("Skip sending {} email to {}, link: {}", MailType.TRANSACTION_RECEIVED_EMAIL,
+                    investor.getEmail());
+        }
+    }
+
+    public void sendTokensAllocatedEmail(Investor investor, BigDecimal amountFundsReceived,
+                                         CurrencyType currencyType, String transactionUrl,
+                                         BigDecimal tokenAmount)
+            throws EmailNotSentException, EmailNotPreparedException {
+        Optional<MimeMessage> oMessageContainer = createMessageContainer(investor.getEmail());
+        Optional<MimeMessageHelper> oMessage = prepareMessage(oMessageContainer, investor.getEmail(),
+                this.mailServiceConfigHolder.getTokensAllocatedEmailSubject(), MailType.TOKENS_ALLOCATED_EMAIL);
+        this.mailContentBuilder.buildTokensAllocatedEmail(oMessage, amountFundsReceived,
+                currencyType, transactionUrl, tokenAmount);
+        if (this.mailServiceConfigHolder.isEnabled()) {
+            sendMail(oMessage, MailType.TOKENS_ALLOCATED_EMAIL);
+        } else {
+            LOG.info("Skip sending {} email to {}, link: {}", MailType.TOKENS_ALLOCATED_EMAIL,
                     investor.getEmail());
         }
     }
@@ -172,7 +187,7 @@ public class MailService {
     }
 
     private void publishMailSentMessage(String recipient, MailType mailType) {
-        switch(mailType) {
+        switch (mailType) {
             case KYC_START_EMAIL:
                 KycStartEmailSentMessage startSentMessage = new KycStartEmailSentMessage(recipient);
                 messageService.send(startSentMessage);

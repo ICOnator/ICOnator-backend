@@ -4,7 +4,12 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.ExchangeType;
 import io.iconator.commons.model.db.ExchangeAggregateRate;
 import io.iconator.commons.sql.dao.ExchangeAggregateRateRepository;
-import io.iconator.rates.config.*;
+import io.iconator.rates.config.AggregationServiceConfig;
+import io.iconator.rates.config.BlockNrServiceConfig;
+import io.iconator.rates.config.ExchangeRateServiceConfig;
+import io.iconator.rates.config.RatesAppConfig;
+import io.iconator.rates.config.RatesAppConfigHolder;
+import io.iconator.rates.config.TestConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +27,12 @@ import static org.junit.Assert.assertTrue;
         TestConfig.class,
         AggregationServiceConfig.class,
         ExchangeRateServiceConfig.class,
-        RatesAppConfig.class,
+        RatesAppConfigHolder.class,
         BlockNrServiceConfig.class,
-        Beans.class,
+        RatesAppConfig.class,
         BlockchainInfoService.class,
-        EtherscanService.class
+        EtherscanService.class,
+        BlockNrProviderService.class
 })
 @DataJpaTest
 @TestPropertySource({"classpath:rates.application.properties", "classpath:application-test.properties"})

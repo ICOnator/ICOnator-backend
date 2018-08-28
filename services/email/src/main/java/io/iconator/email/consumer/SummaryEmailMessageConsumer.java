@@ -5,6 +5,7 @@ import io.iconator.commons.amqp.model.SummaryEmailMessage;
 import io.iconator.commons.mailservice.MailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -12,8 +13,6 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.REGISTER_SUMMARY_EMAIL_QUEUE;
@@ -43,17 +42,19 @@ public class SummaryEmailMessageConsumer {
     public void receiveMessage(byte[] message) {
         LOG.debug("Received from consumer: " + new String(message));
 
-        SummaryEmailMessage summaryEmailMessage = null;
+        SummaryEmailMessage messageObject = null;
         try {
-            summaryEmailMessage = objectMapper.reader().forType(SummaryEmailMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
+            messageObject = objectMapper.reader().forType(SummaryEmailMessage.class).readValue(message);
+        } catch (Exception e) {
+            LOG.error("Message not valid.", e);
+            throw new AmqpRejectAndDontRequeueException(
+                    String.format("Message can't be mapped to the %s class.", SummaryEmailMessage.class.getTypeName()), e);
         }
 
         try {
             // TODO: 05.03.18 Guil:
             // Add a retry mechanism (e.g., for when the SMTP server is offline)
-            mailService.sendSummaryEmail(summaryEmailMessage.getInvestor().toInvestor());
+            mailService.sendSummaryEmail(messageObject.getInvestor().toInvestor());
         } catch (Exception e) {
             // TODO: 05.03.18 Guil:
             // Instead of just output the error, send to a structured log,

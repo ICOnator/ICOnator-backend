@@ -1,18 +1,19 @@
 package io.iconator.monitor;
 
-import io.iconator.commons.amqp.model.FundsReceivedEmailMessage;
+import io.iconator.commons.amqp.model.TokensAllocatedEmailMessage;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.EthereumMonitorTestConfig;
+import io.iconator.monitor.config.MonitorAppConfigHolder;
+import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.FxService;
-import io.iconator.monitor.service.TokenConversionService;
+import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.utils.MockICOnatorMessageService;
-import io.iconator.testrpcj.TestBlockchain;
-import io.iconator.testrpcj.jsonrpc.TypeConverter;
+import io.iconator.testonator.TestBlockchain;
+import io.iconator.testonator.jsonrpc.TypeConverter;
 import org.ethereum.crypto.ECKey;
 import org.junit.After;
 import org.junit.Before;
@@ -41,15 +42,16 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {EthereumMonitorTestConfig.class})
+@ContextConfiguration(classes = {MonitorTestConfig.class})
 @DataJpaTest
 @TestPropertySource({"classpath:monitor.application.properties", "classpath:application-test.properties"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -80,7 +82,10 @@ public class EthereumMonitorTest {
     private SaleTierRepository saleTierRepository;
 
     @Autowired
-    private TokenConversionService tokenConversionService;
+    private MonitorService monitorService;
+
+    @Autowired
+    private MonitorAppConfigHolder configHolder;
 
     private static TestBlockchain testBlockchain;
 
@@ -104,17 +109,16 @@ public class EthereumMonitorTest {
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;
         BigDecimal usdPricePerETH = BigDecimal.ONE;
         BigDecimal fundsAmountToSendInUSD = fundsAmountToSendInETH.multiply(usdPricePerETH);
-        BigInteger tomicsAmountToBeReceived = tokenConversionService.convertUsdToTomics(
+        BigInteger tomicsAmountToBeReceived = monitorService.convertUsdToTomics(
                 fundsAmountToSendInUSD, BigDecimal.ZERO).toBigInteger();
         CurrencyType currencyType = CurrencyType.ETH;
-        Long ethBlockNumber = new Long(2);
 
-        when(fxService.getUSDperETH(eq(ethBlockNumber)))
-                .thenReturn(usdPricePerETH);
+        given(fxService.getUSDExchangeRate(any(), any(CurrencyType.class)))
+                .willReturn(Optional.of(usdPricePerETH));
 
         Investor investor = createAndSaveInvestor(TestBlockchain.ACCOUNT_1);
-        ethereumMonitor.addMonitoredEtherAddress(investor.getPayInEtherAddress());
-        ethereumMonitor.start((long) 0);
+        ethereumMonitor.addPaymentAddressesForMonitoring(investor.getPayInEtherAddress(), null);
+        ethereumMonitor.start();
 
         Credentials credentials = Credentials.create(
                 ECKeyPair.create(TestBlockchain.ACCOUNT_0.getPrivKeyBytes()));
@@ -131,30 +135,31 @@ public class EthereumMonitorTest {
         // then remove the thread sleep.
         Thread.sleep(20000);
 
-        List<FundsReceivedEmailMessage> messages = mockICOnatorMessageService.getFundsReceivedEmailMessages();
+        List<TokensAllocatedEmailMessage> tokenAllocatedEmailMessage = mockICOnatorMessageService.getTokensAllocatedEmailMessages();
 
-        assertEquals(1, messages.size());
+        assertEquals(1, tokenAllocatedEmailMessage.size());
 
-        assertTrue(matchReceivedMessage(messages, isTokenAmountReceivedEqualToCurrencyTypeSent(tomicsAmountToBeReceived)));
-        assertTrue(matchReceivedMessage(messages, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
-        assertTrue(matchReceivedMessage(messages, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
+        // TODO: 26.08.18 Guil
+        // We need to test the amount of confirmations reached, and if the token conversion was properly done!
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isTokenAmountReceivedEqualToTokenAmountSent(tomicsAmountToBeReceived)));
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
+        assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));
     }
 
-    private Predicate<FundsReceivedEmailMessage> isTokenAmountReceivedEqualToCurrencyTypeSent(BigInteger tomicsAmountSent) {
-        BigDecimal tokens = tokenConversionService.convertTomicsToTokens(tomicsAmountSent);
+    private Predicate<TokensAllocatedEmailMessage> isTokenAmountReceivedEqualToTokenAmountSent(BigInteger tomicsAmountSent) {
+        BigDecimal tokens = monitorService.convertTomicsToTokens(tomicsAmountSent);
         return p -> p.getTokenAmount().compareTo(tokens) == 0;
     }
 
-
-    public Predicate<FundsReceivedEmailMessage> isCurrencyTypeReceivedEqualToCurrencyTypeSent(CurrencyType currencySent) {
+    public Predicate<TokensAllocatedEmailMessage> isCurrencyTypeReceivedEqualToCurrencyTypeSent(CurrencyType currencySent) {
         return p -> p.getCurrencyType() == currencySent;
     }
 
-    public Predicate<FundsReceivedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
+    public Predicate<TokensAllocatedEmailMessage> isAmountFundsReceivedEqualToFundsSent(BigDecimal fundsSent) {
         return p -> p.getAmountFundsReceived().compareTo(fundsSent) == 0;
     }
 
-    private boolean matchReceivedMessage(List<FundsReceivedEmailMessage> messages, Predicate<FundsReceivedEmailMessage> predicate) {
+    private boolean matchReceivedMessage(List<TokensAllocatedEmailMessage> messages, Predicate<TokensAllocatedEmailMessage> predicate) {
         return messages.stream().allMatch(predicate);
     }
 
@@ -179,7 +184,7 @@ public class EthereumMonitorTest {
     private void createAndSaveTier() {
         Date from = Date.from(Instant.EPOCH);
         Date to = new Date();
-        BigInteger tomics = tokenConversionService.convertTokensToTomics(new BigDecimal(1000L))
+        BigInteger tomics = monitorService.convertTokensToTomics(new BigDecimal(1000L))
                 .toBigInteger();
 
         saleTierService.saveTransactionless(

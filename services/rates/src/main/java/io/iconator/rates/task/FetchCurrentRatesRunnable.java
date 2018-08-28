@@ -7,14 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FetchRatesRunnable implements Runnable {
+public class FetchCurrentRatesRunnable implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FetchRatesRunnable.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FetchCurrentRatesRunnable.class);
 
     private ExchangeRateService exchangeRateService;
 
     @Autowired
-    public FetchRatesRunnable(ExchangeRateService exchangeRateService) {
+    public FetchCurrentRatesRunnable(ExchangeRateService exchangeRateService) {
         this.exchangeRateService = exchangeRateService;
     }
 

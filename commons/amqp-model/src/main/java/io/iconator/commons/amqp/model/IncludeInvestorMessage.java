@@ -1,9 +1,11 @@
 package io.iconator.commons.amqp.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.iconator.commons.amqp.model.dto.InvestorMessageDTO;
 
 public abstract class IncludeInvestorMessage extends Message {
 
+    @JsonProperty("investor")
     private InvestorMessageDTO investor;
 
     public IncludeInvestorMessage() {

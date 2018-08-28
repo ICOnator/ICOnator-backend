@@ -1,6 +1,12 @@
 package io.iconator.commons.model.db;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
@@ -21,7 +27,8 @@ public class WhitelistEmail {
     @Column(name = "subscription_date")
     private Date subscriptionDate;
 
-    public WhitelistEmail() {}
+    public WhitelistEmail() {
+    }
 
     public WhitelistEmail(String email, Date subscriptionDate) {
         this.email = email;

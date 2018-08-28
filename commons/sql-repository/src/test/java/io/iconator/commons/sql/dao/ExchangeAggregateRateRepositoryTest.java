@@ -17,11 +17,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
@@ -115,7 +117,37 @@ public class ExchangeAggregateRateRepositoryTest {
 
     }
 
+    @Test
+    public void testFindAllByCreationDateBetweenOrderByCreationDateDesc() {
 
+        Instant now = Instant.now();
+
+        Instant start = Instant.now().minus(5, ChronoUnit.MINUTES);
+        Instant end = Instant.now().plus(5, ChronoUnit.MINUTES);
+
+        createMultipleExchangeAggregateRate(now);
+
+        List<ExchangeAggregateRate> result1 = aggregateRateRepository
+                .findAllByCreationDateBetweenOrderByCreationDateDesc(Date.from(start), Date.from(end));
+
+        long countResult1 = result1.stream().count();
+        assertTrue(!result1.isEmpty());
+        assertEquals(3, countResult1);
+
+        List<ExchangeAggregateRate> result2 = aggregateRateRepository
+                .findAllByCreationDateBetweenOrderByCreationDateDesc(Date.from(now), Date.from(end));
+
+        long countResult2 = result2.stream().count();
+        assertTrue(!result2.isEmpty());
+        assertEquals(2, countResult2);
+
+        List<ExchangeAggregateRate> result3 = aggregateRateRepository
+                .findAllByCreationDateBetweenOrderByCreationDateDesc(
+                        Date.from(now.minus(1, ChronoUnit.HOURS)),
+                        Date.from(now.minus(1, ChronoUnit.HOURS).plusSeconds(10)));
+
+        assertTrue(result3.isEmpty());
+    }
 
     private ExchangeAggregateRate createExchangeAggregateRateWithMultipleExchangeEntry(ExchangeType... exchangeTypes) {
         ExchangeAggregateRate aggregateRate = createExchangeAggregateRate();

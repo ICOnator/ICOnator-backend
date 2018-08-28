@@ -54,4 +54,11 @@ final class AsyncAMQPMessageService implements AMQPMessageService {
         });
     }
 
+    @Override
+    public Object sendAndReceive(final String routingKey, final Object message) {
+        // This call does not go through the executor service by definition,
+        // since there's the need to wait for completion anyway.
+        return amqpService.sendAndReceive(routingKey, message);
+    }
+
 }

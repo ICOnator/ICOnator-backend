@@ -1,7 +1,7 @@
 package io.iconator.rates.config;
 
-import io.iconator.rates.task.FetchRatesRunnable;
-import io.iconator.rates.task.FetchRatesTrigger;
+import io.iconator.rates.task.FetchCurrentRatesRunnable;
+import io.iconator.rates.task.FetchCurrentRatesTrigger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,29 +14,27 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
-@Import({RatesAppConfig.class, FetchRatesRunnable.class, FetchRatesTrigger.class})
+@Import({RatesAppConfigHolder.class, FetchCurrentRatesRunnable.class, FetchCurrentRatesTrigger.class})
 @EnableScheduling
 public class ScheduleConfig implements SchedulingConfigurer {
 
     @Autowired
-    private FetchRatesRunnable fetchRatesRunnable;
+    private FetchCurrentRatesRunnable fetchRatesRunnable;
 
     @Autowired
-    private FetchRatesTrigger fetchRatesTrigger;
+    private FetchCurrentRatesTrigger fetchRatesTrigger;
 
     @Autowired
-    private RatesAppConfig ratesAppConfig;
+    private RatesAppConfigHolder ratesAppConfigHolder;
 
     @Bean(destroyMethod = "shutdown")
     public ScheduledExecutorService taskExecutor() {
-        // TODO: 01.04.18 Guil:
-        // Just create the executor if the "periodic fetch rates feature" is enabled.
         return Executors.newScheduledThreadPool(100);
     }
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        if (this.ratesAppConfig.getPeriodicEnabled()) {
+        if (this.ratesAppConfigHolder.getCurrentPeriodicEnabled()) {
             taskRegistrar.setScheduler(taskExecutor());
             taskRegistrar.addTriggerTask(
                     this.fetchRatesRunnable,

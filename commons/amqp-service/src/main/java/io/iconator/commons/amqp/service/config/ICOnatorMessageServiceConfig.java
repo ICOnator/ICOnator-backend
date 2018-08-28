@@ -11,6 +11,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,11 @@ import java.util.Optional;
 
 @Configuration
 public class ICOnatorMessageServiceConfig {
+
+    @Bean
+    public Jackson2JsonMessageConverter converter(ObjectMapper objectMapper) {
+        return new Jackson2JsonMessageConverter(objectMapper);
+    }
 
     @Bean
     public ConnectionFactory connectionFactory(AMQPConnectionConfig amqpConnectionConfig) {
@@ -35,6 +41,7 @@ public class ICOnatorMessageServiceConfig {
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setReplyTimeout(10000);
+        rabbitTemplate.setReceiveTimeout(10000);
 
         RetryTemplate retryTemplate = new RetryTemplate();
         ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
