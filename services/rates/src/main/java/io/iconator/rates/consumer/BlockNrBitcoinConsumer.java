@@ -40,20 +40,9 @@ public class BlockNrBitcoinConsumer {
                     ),
                     key = BLOCK_NR_BITCOIN_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        BlockNRBitcoinMessage messageObject = null;
+    public void receiveMessage(BlockNRBitcoinMessage message) {
         try {
-            messageObject = objectMapper.reader().forType(BlockNRBitcoinMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", BlockNRBitcoinMessage.class.getTypeName()), e);
-        }
-
-        try {
-            Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(messageObject);
+            Optional<BlockNRBitcoinMessage> optionalBlockNRBitcoinMessage = ofNullable(message);
             optionalBlockNRBitcoinMessage.ifPresent((bitcoinMessage) -> {
                 blockNr = bitcoinMessage.getBlockNr();
                 timestamp = bitcoinMessage.getTimestamp();

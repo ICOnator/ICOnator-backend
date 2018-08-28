@@ -40,20 +40,9 @@ public class BlockNrEthereumConsumer {
                     ),
                     key = BLOCK_NR_ETHEREUM_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        BlockNREthereumMessage messageObject = null;
+    public void receiveMessage(BlockNREthereumMessage message) {
         try {
-            messageObject = objectMapper.reader().forType(BlockNREthereumMessage.class).readValue(message);
-        } catch (Exception e) {
-            LOG.error("Message not valid.", e);
-            throw new AmqpRejectAndDontRequeueException(
-                    String.format("Message can't be mapped to the %s class.", BlockNREthereumMessage.class.getTypeName()), e);
-        }
-
-        try {
-            Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(messageObject);
+            Optional<BlockNREthereumMessage> optionalBlockNREthereumMessage = ofNullable(message);
             optionalBlockNREthereumMessage.ifPresent((ethereumMessage) -> {
                 blockNr = ethereumMessage.getBlockNr();
                 timestamp = ethereumMessage.getTimestamp();

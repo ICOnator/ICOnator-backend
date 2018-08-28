@@ -62,15 +62,9 @@ public class RatesConsumerTest {
         FetchRatesRequestMessage requestMessage = new FetchRatesRequestMessage(
                 Date.from(now), CurrencyType.USD, Arrays.asList(CurrencyType.ETH));
 
-        String requestMessageString = objectMapper.writer()
-                .forType(FetchRatesRequestMessage.class)
-                .writeValueAsString(requestMessage);
-
-        LOG.info(requestMessageString);
-
         when(ratesProviderService.getRate(eq(CurrencyType.ETH), any())).thenReturn(new BigDecimal("1.1234567"));
 
-        FetchRatesResponseMessage responseMessage = ratesConsumer.receiveMessage(requestMessageString.getBytes());
+        FetchRatesResponseMessage responseMessage = ratesConsumer.receiveMessage(requestMessage);
 
         assertNotNull(responseMessage);
         assertTrue(responseMessage.getFrom() == CurrencyType.USD);
