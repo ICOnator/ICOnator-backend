@@ -18,9 +18,12 @@ import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
+import io.iconator.monitor.transaction.TransactionAdapter;
+import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -133,6 +136,22 @@ public class MonitorService {
         } catch (OptimisticLockingFailureException e) {
             // If payment log was just now updated by another monitor instance
             // the payment log does not need to be reprocessed.
+            return null;
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PaymentLog createNewPaymentLog(TransactionAdapter tx,
+                                           TransactionStatus transactionStatus)
+            throws MissingTransactionInformationException {
+
+        try {
+            return paymentLogService.save(new PaymentLog(
+                    tx.getTransactionId(), tx.getCurrencyType(),
+                    transactionStatus));
+        } catch (DataIntegrityViolationException e) {
+            // The payment log was probably created by another instance just now.
+            // This is not an error because the other instance will process the transaction.
             return null;
         }
     }

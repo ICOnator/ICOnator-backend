@@ -1,6 +1,7 @@
 package io.iconator.commons.model.db;
 
 import io.iconator.commons.model.CurrencyType;
+import org.springframework.lang.NonNull;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -40,7 +41,7 @@ public class PaymentLog {
     private String transactionId;
 
     @Column(name = "create_date", nullable = false)
-    private Date createDate;
+    private Date createDate = new Date();
 
     @Column(name = "block_time")
     private Date blockTime;
@@ -62,6 +63,10 @@ public class PaymentLog {
     @JoinColumn(name = "investor_id")
     private Investor investor;
 
+    /*
+     * It is important that the default value is null and not 0 because this is
+     * used for checks in the processing of transactions.
+     */
     @Column(name = "allocated_tomics", precision = 34, scale = 0)
     private BigInteger allocatedTomics = null;
 
@@ -82,10 +87,9 @@ public class PaymentLog {
     public PaymentLog() {
     }
 
-    public PaymentLog(String transactionId, Date createDate,
-                      CurrencyType currency, TransactionStatus transactionStatus) {
+    public PaymentLog(String transactionId, CurrencyType currency,
+                      TransactionStatus transactionStatus) {
         this.transactionId = transactionId;
-        this.createDate = createDate;
         this.currency = currency;
         this.transactionStatus = transactionStatus;
     }

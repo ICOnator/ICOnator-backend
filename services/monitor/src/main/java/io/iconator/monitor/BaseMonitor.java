@@ -17,13 +17,11 @@ import io.iconator.monitor.transaction.TransactionAdapter;
 import io.iconator.monitor.transaction.exception.MissingTransactionInformationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -61,8 +59,7 @@ abstract public class BaseMonitor {
     protected abstract void start() throws Exception;
 
     /**
-     *
-     * @param address payment address which will be monitored
+     * @param address                  payment address which will be monitored
      * @param addressCreationTimestamp Creation time of the address in miliseconds since the epoch.
      *                                 Some blockchain implementations can use this to determine
      *                                 from which block to start scanning the chain.
@@ -82,7 +79,7 @@ abstract public class BaseMonitor {
             try {
                 paymentLog = monitorService.getPendingPaymentLogForReprocessing(tx.getTransactionId());
             } catch (PaymentLogNotFoundException e) {
-                paymentLog = createNewPaymentLog(tx, TransactionStatus.PENDING);
+                paymentLog = monitorService.createNewPaymentLog(tx, TransactionStatus.PENDING);
             }
             if (paymentLog == null) return;
             paymentLog.setCryptocurrencyAmount(tx.getTransactionValue());
@@ -95,25 +92,10 @@ abstract public class BaseMonitor {
         }
     }
 
-    private PaymentLog createNewPaymentLog(TransactionAdapter tx,
-                                           TransactionStatus transactionStatus)
-            throws MissingTransactionInformationException {
-
-        try {
-            return paymentLogService.saveAndCommit(new PaymentLog(
-                    tx.getTransactionId(), new Date(), tx.getCurrencyType(),
-                    transactionStatus));
-        } catch (DataIntegrityViolationException e) {
-            // The payment log was probably created by another instance just now.
-            // This is not an error because the other instance will process the transaction.
-            return null;
-        }
-    }
-
     protected void processBuildingTransaction(TransactionAdapter tx) {
+        PaymentLog paymentLog = null;
         try {
             if (!isAddressMonitored(tx.getReceivingAddress())) return;
-            PaymentLog paymentLog;
             try {
                 paymentLog = monitorService.getPendingPaymentLogForProcessing(
                         tx.getTransactionId());
@@ -122,12 +104,16 @@ abstract public class BaseMonitor {
                             tx.getTransactionId());
                 }
             } catch (PaymentLogNotFoundException e) {
-                paymentLog = createNewPaymentLog(tx, TransactionStatus.BUILDING);
+                paymentLog = monitorService.createNewPaymentLog(tx, TransactionStatus.BUILDING);
             }
-            // Update attributes of payment log if it has been newly created but also if it was
-            // fetched for reprocessing.
             paymentLog = updateBuildingPaymentLog(tx, paymentLog);
             if (paymentLog == null) return; // no processing required.
+
+            if (isAmountInsufficient(paymentLog.getUsdAmount())) {
+                monitorService.createRefundEntryForPaymentLogAndCommit( paymentLog,
+                        RefundReason.INSUFFICIENT_PAYMENT_AMOUNT);
+            }
+
             BigInteger allocatedTomics = paymentLog.getAllocatedTomics();
             if (allocatedTomics == null) {
                 // Tokens have not yet been allocated because the payment log is new or the last
@@ -141,12 +127,19 @@ abstract public class BaseMonitor {
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
                     paymentLog.getAllocatedTomics());
 
+        } catch (RefundEntryAlradyExistsException e) {
+            LOG.error("Couldn't save refund entry for transction {} because one already existed " +
+                    "for that transaction.", paymentLog.getTransactionId(), e);
         } catch (Throwable t) {
             LOG.error("Error processing transaction.", t);
         }
     }
 
-    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) {
+    private boolean isAmountInsufficient(BigDecimal usdAmount) {
+        return usdAmount.compareTo(configHolder.getUsdPaymentMinimum()) < 0;
+    }
+
+    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlradyExistsException {
         if (paymentLog == null) return null;
         RefundReason reason = null;
         try {
@@ -166,12 +159,7 @@ abstract public class BaseMonitor {
             paymentLog.setUsdAmount(valueInMainUnit.multiply(fxRate));
 
         } catch (MissingTransactionInformationException e) {
-            try {
-                monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
-            } catch (RefundEntryAlradyExistsException re) {
-                LOG.error("Couldn't save refund entry for transction {} because one alrady existed " +
-                        "for that transaction.", paymentLog.getTransactionId());
-            }
+            monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
             return null;
         }
         return paymentLogService.saveAndCommit(paymentLog);

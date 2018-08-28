@@ -39,6 +39,9 @@ public class MonitorAppConfigHolder {
     @Value("${io.iconator.services.monitor.token.atomic-unit-factor}")
     private Integer atomicUnitFactor;
 
+    @Value("${io.iconator.services.monitor.usd.payment-min}")
+    private BigDecimal usdPaymentMinimum;
+
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
     }
@@ -77,5 +80,9 @@ public class MonitorAppConfigHolder {
 
     public Integer getBitcoinConfirmationBlockdepth() {
         return bitcoinConfirmationBlockdepth;
+    }
+
+    public BigDecimal getUsdPaymentMinimum() {
+        return usdPaymentMinimum;
     }
 }
