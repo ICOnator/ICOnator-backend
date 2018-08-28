@@ -1,0 +1,10 @@
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (1, '0x0eB5C5de600D088AB0260d068E9765022FD5173b','mgfRrsDH56YfTgw3pWJg7j4yEaUgxJxxim', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (2, '0x51edb6a5fA433fEeba0a242122faB2e31Eec7D08','ms8Ux2eEMFTq4HKXiCiPGCXvzrV9dPeALx', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (3, '0x3Bf54439C6056B564C14986b08e46637dD438372','mhCKesVtR6coeLRGXg3V8D7cQmgjXzaQj2', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (4, '0x2D4A5a6FDf6f29ce236251974572ead525eC319D','muBFsGpYiDLAcTbqZ4vcHsf9dnUTjBoVKg', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (5, '0x541b8ce0954FD40d2Df8aEA786Caf487e3Cf29e8','mzwiXLR3YHdHhq1F2S2QrcBqphjmVSfWqR', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (6, '0xA226Cff667ca87f598005EdCD5058208224524F2','mrvJc7Kk9HtuecMSDpffvrjQkHmQivPaAJ', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (7, '0x2e64A68286eCCF82f603035D25284e841A4d2c33','miufBKyarwhPoFtHAVjWnW7fsaKMxJmhHz', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (8, '0xCfFE3Ef24601619d0465969Aa15f49D83F678487','mwWbY6c6DCs2pc3bEaAagP99jrwhkC4gur', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (9, '0x0d7011af62e3A54D29d98c9D58Ef640ead611cc4','mihfnPk6f4yafr5sCG15GeUgbJBcC7XBCL', true);
+INSERT INTO keypairs (`id`, `public_btc`, `public_eth`, `available`) VALUES (10, '0x63C0504c5C28Ec8FEce0C906e5a42307b8a9Ee88','n4CS3vyACkcvCyVLm2RS5tpvyy6NNvbCBr', true);
