@@ -84,9 +84,6 @@ public class EthereumMonitorTest {
     @Autowired
     private MonitorService monitorService;
 
-    @Autowired
-    private MonitorAppConfigHolder configHolder;
-
     private static TestBlockchain testBlockchain;
 
     @BeforeClass
@@ -104,6 +101,12 @@ public class EthereumMonitorTest {
         saleTierRepository.deleteAll();
     }
 
+     /*
+     * TODO make independent of properties values.
+     * This test depends on multiple values from the {@code monitor.application.properties} to
+     * be set just right so that the test runs successful. Either go back to a mock of the
+     * MonitorAppConfigHolder or create a application-test.properties.
+     */
     @Test
     public void testPayment() throws Exception {
         BigDecimal fundsAmountToSendInETH = BigDecimal.ONE;

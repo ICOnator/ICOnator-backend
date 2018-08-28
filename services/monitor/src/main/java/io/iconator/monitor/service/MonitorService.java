@@ -8,13 +8,12 @@ import io.iconator.commons.db.services.EligibleForRefundService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
-import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
+import io.iconator.commons.db.services.exception.RefundEntryAlreadyExistsException;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.model.db.PaymentLog.TransactionStatus;
 import io.iconator.commons.model.db.SaleTier;
-import io.iconator.commons.sql.dao.PaymentLogRepository;
 import io.iconator.commons.sql.dao.SaleTierRepository;
 import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.exceptions.NoTierAtDateException;
@@ -40,16 +39,11 @@ public class MonitorService {
 
     private final static Logger LOG = LoggerFactory.getLogger(MonitorService.class);
 
-    private final static long MINUTE_IN_MS = 60 * 1000;
-
     @Autowired
     private SaleTierRepository saleTierRepository;
 
     @Autowired
     private EligibleForRefundService eligibleForRefundService;
-
-    @Autowired
-    private PaymentLogRepository paymentLogRepository;
 
     @Autowired
     private PaymentLogService paymentLogService;
@@ -65,10 +59,45 @@ public class MonitorService {
 
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
     public PaymentLog createRefundEntryForPaymentLogAndCommit(
-            PaymentLog paymentLog, RefundReason reason) throws RefundEntryAlradyExistsException {
-        return createRefundEntryForAmount(paymentLog, reason, paymentLog.getCryptocurrencyAmount(), paymentLog.getUsdAmount());
+            PaymentLog paymentLog, RefundReason reason) throws RefundEntryAlreadyExistsException {
+
+        paymentLog = createRefundEntryForAmount(paymentLog, reason,
+                paymentLog.getCryptocurrencyAmount(), paymentLog.getUsdAmount());
+        return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
+    private PaymentLog createRefundEntryForAmount(
+            PaymentLog paymentLog, RefundReason reason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount)
+            throws RefundEntryAlreadyExistsException {
+
+        EligibleForRefund refund = eligibleForRefundService.save(
+                new EligibleForRefund(reason, cryptocurrencyAmount, usdAmount,
+                        paymentLog.getCurrency(), paymentLog.getInvestor(),
+                        paymentLog.getTransactionId()));
+        paymentLog.setEligibleForRefund(refund);
+        return paymentLog;
+    }
+
+    private PaymentLog createRefundEntryForOverflow(PaymentLog paymentLog, BigDecimal overflowInUsd)
+            throws RefundEntryAlreadyExistsException {
+
+        BigInteger cryptocurrencyAmount = overflowInUsd.multiply(paymentLog.getUsdFxRate())
+                .multiply(paymentLog.getCurrency().getAtomicUnitFactor())
+                .toBigInteger();
+        return createRefundEntryForAmount(paymentLog, RefundReason.TOKEN_OVERFLOW,
+                cryptocurrencyAmount, overflowInUsd);
+    }
+
+    /**
+     * Fetches the payment log corresponding to the given transaction id if it is in status
+     * {@link TransactionStatus#PENDING}. If successful it also updates the payment log status to
+     * {@link TransactionStatus#BUILDING} before returning it.
+     * @param transactionId The transaction id for which the corresponding payment log should be
+     *                      retrieved.
+     * @return the payment log for given transaction id if it is in status
+     * {@link TransactionStatus#PENDING}. Null otherwise.
+     * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public PaymentLog getPendingPaymentLogForProcessing(String transactionId)
             throws PaymentLogNotFoundException {
@@ -78,9 +107,8 @@ public class MonitorService {
             if (paymentLog.getTransactionStatus() != TransactionStatus.PENDING) {
                 return null;
             } else {
-                paymentLog.setCreateDate(new Date());
                 paymentLog.setTransactionStatus(TransactionStatus.BUILDING);
-                return paymentLogService.save(paymentLog);
+                return paymentLogService.updateProcessedDateAndSave(paymentLog);
             }
         } catch (OptimisticLockingFailureException e) {
             // If payment log was just now updated by another monitor instance
@@ -89,6 +117,20 @@ public class MonitorService {
         }
     }
 
+    /**
+     * Fetches the payment log that corresponds to the given transaction id if it exists, but only
+     * if the transaction was previously incompletely processed as a building transaciton.
+     *
+     * @param transactionId The transaction id for which corresponding payment
+     *                      log should be retrieved.
+     * @return the payment log for given transaction id if the transaction has to be reprocessed
+     * as a building transaction. Null, if the payment log is still in status
+     * {@link TransactionStatus#PENDING} or the transaction was already fully processed as a building
+     * transaction or * the transaction is still being processed at the moment of calling this method.
+     * See the {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime}
+     * property for the latter.
+     * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public PaymentLog getBuildingPaymentLogForReprocessing(String transactionId)
             throws PaymentLogNotFoundException {
@@ -98,17 +140,20 @@ public class MonitorService {
             boolean pending = paymentLog.getTransactionStatus() == TransactionStatus.PENDING;
             boolean allocationMailSent = paymentLog.isAllocationMessageSent();
             boolean refundEntryExists = paymentLog.getEligibleForRefund() == null;
+            // If a refund entry exists and no tokens have been allocated it means that the processing
+            // of the transaction was completed with the refund entry. If some tokens where allocted
+            // it means that there was an overflow in the token allocation but the transaction
+            // was not fully processed if the allocation mail was not sent.
             boolean noTokensAllocated = paymentLog.getAllocatedTomics() == null;
-            boolean youngerThanOneMinute =
-                    paymentLog.getCreateDate().getTime() > new Date().getTime() - MINUTE_IN_MS;
+            boolean recentlyChanged = paymentLog.getProcessedDate().getTime() >
+                    new Date().getTime() - appConfig.getTransactionProcessingTime();
             if (pending || allocationMailSent || (refundEntryExists && noTokensAllocated)
-                    || youngerThanOneMinute) {
+                    || recentlyChanged) {
                 return null;
             } else {
-                paymentLog.setCreateDate(new Date());
-                // Not updating the transaction status. It is either BUIDLING or
-                // CONFIRMED which is both fine at this point.
-                return paymentLogService.save(paymentLog);
+                // Updating the last processed date so that other monitor instances can see that
+                // the transaction is currently being processed.
+                return paymentLogService.updateProcessedDateAndSave(paymentLog);
             }
         } catch (OptimisticLockingFailureException e) {
             // If payment log was just now updated by another monitor instance
@@ -117,6 +162,22 @@ public class MonitorService {
         }
     }
 
+    /**
+     * Fetches the payment log that corresponds to the given transaction id if it exists, but only
+     * if the transaction was incompletely processed in status {@link TransactionStatus#PENDING}
+     * before.
+     *
+     * @param transactionId The transaction id for which corresponding payment
+     *                      log should be retrieved.
+     * @return the payment log for given transaciton id if the transaction has to be reprocessed
+     * as a pending transaction. Null, if the payment log is already higher than the
+     * {@link TransactionStatus#PENDING} status or the transaction was already fully processed as a
+     * pending transaction or * the transaction is still being processed at the moment of calling
+     * this method. See the
+     * {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime} property
+     * for the latter.
+     * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public PaymentLog getPendingPaymentLogForReprocessing(String transactionId)
             throws PaymentLogNotFoundException {
@@ -125,13 +186,14 @@ public class MonitorService {
             PaymentLog paymentLog = paymentLogService.getPaymentLog(transactionId);
             boolean confirmationMailSent = paymentLog.isTransactionReceivedMessageSent();
             boolean notPending = paymentLog.getTransactionStatus() != TransactionStatus.PENDING;
-            boolean youngerThanOneMinute =
-                    paymentLog.getCreateDate().getTime() > new Date().getTime() - MINUTE_IN_MS;
-            if (confirmationMailSent || notPending || youngerThanOneMinute) {
+            boolean recentlyChanged = paymentLog.getProcessedDate().getTime() >
+                    new Date().getTime() - appConfig.getTransactionProcessingTime();
+            if (confirmationMailSent || notPending || recentlyChanged) {
                 return null;
             } else {
-                paymentLog.setCreateDate(new Date());
-                return paymentLogService.save(paymentLog);
+                // Updating the last processed date so that other monitor instances can see that
+                // the transaction is currently being processed.
+                return paymentLogService.updateProcessedDateAndSave(paymentLog);
             }
         } catch (OptimisticLockingFailureException e) {
             // If payment log was just now updated by another monitor instance
@@ -157,18 +219,18 @@ public class MonitorService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void sendTransactionReceivedMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
+    public PaymentLog sendTransactionReceivedMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
         messageService.send(new TransactionReceivedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
                 amountInMainUnit,
                 paymentLog.getCurrency(),
                 transactionUrl));
         paymentLog.setTransactionReceivedMessageSent(true);
-        paymentLogService.save(paymentLog);
+        return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void sendAllocationMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
+    public PaymentLog sendAllocationMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
         messageService.send(new TokensAllocatedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
                 amountInMainUnit,
@@ -176,7 +238,7 @@ public class MonitorService {
                 transactionUrl,
                 convertTomicsToTokens(paymentLog.getAllocatedTomics())));
         paymentLog.setAllocationMessageSent(true);
-        paymentLogService.save(paymentLog);
+        return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
@@ -194,47 +256,20 @@ public class MonitorService {
             } else {
                 result = distributeToTier(usd, oTier.get(), blockTime);
             }
-            paymentLog = updatePaymentLog(paymentLog, result);
+            paymentLog.setAllocatedTomics(result.getAllocatedTomics());
             if (result.hasOverflow()) {
                 LOG.info("{} transaction {} generated a overflow of {} USD", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), result.getOverflow());
                 try {
-                    createRefundEntryForOverflow(paymentLog, result.getOverflow());
-                } catch (RefundEntryAlradyExistsException e) {
+                    paymentLog = createRefundEntryForOverflow(paymentLog, result.getOverflow());
+                } catch (RefundEntryAlreadyExistsException e) {
                     LOG.error("Couldn't save overflow USD {} as refund beacause a refund entry for " +
                             "transaction {} already existed", result.getOverflow(), paymentLog.getTransactionId());
                 }
             }
-            return paymentLog;
+            return paymentLogService.updateProcessedDateAndSave(paymentLog);
         } else {
             throw new NoTierAtDateException();
         }
-    }
-
-    private PaymentLog createRefundEntryForAmount(
-            PaymentLog paymentLog, RefundReason reason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount)
-            throws RefundEntryAlradyExistsException {
-
-        EligibleForRefund refund = eligibleForRefundService.save(
-                new EligibleForRefund(reason, cryptocurrencyAmount, usdAmount,
-                        paymentLog.getCurrency(), paymentLog.getInvestor(),
-                        paymentLog.getTransactionId()));
-        paymentLog.setEligibleForRefund(refund);
-        return paymentLogRepository.saveAndFlush(paymentLog);
-    }
-
-    private PaymentLog createRefundEntryForOverflow(PaymentLog paymentLog, BigDecimal overflowInUsd)
-            throws RefundEntryAlradyExistsException {
-
-        BigInteger cryptocurrencyAmount = overflowInUsd.multiply(paymentLog.getUsdFxRate())
-                .multiply(paymentLog.getCurrency().getAtomicUnitFactor())
-                .toBigInteger();
-        return createRefundEntryForAmount(paymentLog, RefundReason.TOKEN_OVERFLOW,
-                cryptocurrencyAmount, overflowInUsd);
-    }
-
-    private PaymentLog updatePaymentLog(PaymentLog paymentLog, TokenAllocationResult result) {
-        paymentLog.setAllocatedTomics(result.getAllocatedTomics());
-        return paymentLogRepository.saveAndFlush(paymentLog);
     }
 
     private TokenAllocationResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {

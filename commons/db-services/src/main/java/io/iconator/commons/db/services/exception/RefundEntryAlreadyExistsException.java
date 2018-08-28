@@ -1,14 +1,14 @@
 package io.iconator.commons.db.services.exception;
 
-public class RefundEntryAlradyExistsException extends Exception {
+public class RefundEntryAlreadyExistsException extends Exception {
     private static String REASON = "Refund entry with that transaction ID " +
             "already exists in database.";
 
-    public RefundEntryAlradyExistsException() {
+    public RefundEntryAlreadyExistsException() {
         super(REASON);
     }
 
-    public RefundEntryAlradyExistsException(Throwable cause) {
+    public RefundEntryAlreadyExistsException(Throwable cause) {
         super(REASON, cause);
     }
 }

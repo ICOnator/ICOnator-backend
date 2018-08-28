@@ -5,7 +5,7 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
-import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
+import io.iconator.commons.db.services.exception.RefundEntryAlreadyExistsException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
@@ -110,8 +110,9 @@ abstract public class BaseMonitor {
             if (paymentLog == null) return; // no processing required.
 
             if (isAmountInsufficient(paymentLog.getUsdAmount())) {
-                monitorService.createRefundEntryForPaymentLogAndCommit( paymentLog,
+                monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog,
                         RefundReason.INSUFFICIENT_PAYMENT_AMOUNT);
+                return;
             }
 
             BigInteger allocatedTomics = paymentLog.getAllocatedTomics();
@@ -127,7 +128,7 @@ abstract public class BaseMonitor {
                     paymentLog.getUsdFxRate(), tx.getAssociatedInvestor(), paymentLog.getCreateDate(),
                     paymentLog.getAllocatedTomics());
 
-        } catch (RefundEntryAlradyExistsException e) {
+        } catch (RefundEntryAlreadyExistsException e) {
             LOG.error("Couldn't save refund entry for transction {} because one already existed " +
                     "for that transaction.", paymentLog.getTransactionId(), e);
         } catch (Throwable t) {
@@ -139,7 +140,7 @@ abstract public class BaseMonitor {
         return usdAmount.compareTo(configHolder.getUsdPaymentMinimum()) < 0;
     }
 
-    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlradyExistsException {
+    private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlreadyExistsException {
         if (paymentLog == null) return null;
         RefundReason reason = null;
         try {

@@ -42,6 +42,14 @@ public class MonitorAppConfigHolder {
     @Value("${io.iconator.services.monitor.usd.payment-min}")
     private BigDecimal usdPaymentMinimum;
 
+    /**
+     * Sets the time in miliseconds which is used to determine if a transaction might still
+     * be processed by a monitor instance. If the last modified date of a payment log is within
+     * this time it is assumed that the correspoding transaction is still being processed.
+     */
+    @Value("${io.iconator.services.monitor.transaction-processing-time}")
+    private Integer transactionProcessingTime;
+
     public Boolean getEthereumNodeEnabled() {
         return ethereumNodeEnabled;
     }
@@ -84,5 +92,9 @@ public class MonitorAppConfigHolder {
 
     public BigDecimal getUsdPaymentMinimum() {
         return usdPaymentMinimum;
+    }
+
+    public Integer getTransactionProcessingTime() {
+        return transactionProcessingTime;
     }
 }

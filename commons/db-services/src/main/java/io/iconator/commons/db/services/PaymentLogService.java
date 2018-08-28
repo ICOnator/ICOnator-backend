@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -34,6 +35,11 @@ public class PaymentLogService {
     }
 
     public PaymentLog save(PaymentLog log) {
+        return paymentLogRepository.saveAndFlush(log);
+    }
+
+    public PaymentLog updateProcessedDateAndSave(PaymentLog log) {
+        log.setProcessedDate(new Date());
         return paymentLogRepository.saveAndFlush(log);
     }
 
