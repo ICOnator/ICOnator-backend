@@ -14,7 +14,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
@@ -45,18 +44,9 @@ public class SetWalletAddressMessageConsumer {
                     ),
                     key = ADDRESS_SET_WALLET_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        SetWalletAddressMessage setWalletAddressMessage = null;
+    public void receiveMessage(SetWalletAddressMessage messageObject) {
         try {
-            setWalletAddressMessage = objectMapper.reader().forType(SetWalletAddressMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
-        }
-
-        try {
-            Optional<SetWalletAddressMessage> optionalSetWalletAddressMessage = ofNullable(setWalletAddressMessage);
+            Optional<SetWalletAddressMessage> optionalSetWalletAddressMessage = ofNullable(messageObject);
             optionalSetWalletAddressMessage.ifPresent((m) -> {
                 ofNullable(m.getInvestor()).ifPresent((investor) -> {
                     long timestamp = investor.getCreationDate().getTime();
