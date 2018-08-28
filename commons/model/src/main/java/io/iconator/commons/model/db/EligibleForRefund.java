@@ -46,7 +46,7 @@ public class EligibleForRefund {
     @Column(name = "usd_amount", precision = 34, scale = 6)
     private BigDecimal usdAmount;
 
-    @Column(name = "currency")
+    @Column(name = "cryptocurrency_type")
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 

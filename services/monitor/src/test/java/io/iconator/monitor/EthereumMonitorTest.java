@@ -84,9 +84,6 @@ public class EthereumMonitorTest {
     @Autowired
     private MonitorService monitorService;
 
-    @Autowired
-    private MonitorAppConfigHolder configHolder;
-
     private static TestBlockchain testBlockchain;
 
     @BeforeClass

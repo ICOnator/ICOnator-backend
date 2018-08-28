@@ -12,6 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.persistence.Version;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,6 +31,7 @@ public class PaymentLog {
     }
 
     @Version
+    @Column(name = "version")
     private Long version = 0L;
 
     @Id
@@ -39,13 +42,19 @@ public class PaymentLog {
     @Column(name = "transaction_id", unique = true, nullable = false)
     private String transactionId;
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "create_date", nullable = false)
     private Date createDate;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "processed_date")
+    private Date processedDate = new Date();
+
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "block_time")
     private Date blockTime;
 
-    @Column(name = "currency", nullable = false)
+    @Column(name = "cryptocurrency_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
@@ -209,5 +218,13 @@ public class PaymentLog {
 
     public void setTransactionStatus(TransactionStatus transactionStatus) {
         this.transactionStatus = transactionStatus;
+    }
+
+    public Date getProcessedDate() {
+        return processedDate;
+    }
+
+    public void setProcessedDate(Date processedDate) {
+        this.processedDate = processedDate;
     }
 }

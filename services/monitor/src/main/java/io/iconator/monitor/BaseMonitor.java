@@ -5,7 +5,7 @@ import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
-import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
+import io.iconator.commons.db.services.exception.RefundEntryAlreadyExistsException;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.EligibleForRefund.RefundReason;
 import io.iconator.commons.model.db.PaymentLog;
@@ -168,7 +168,7 @@ abstract public class BaseMonitor {
         } catch (MissingTransactionInformationException e) {
             try {
                 monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
-            } catch (RefundEntryAlradyExistsException re) {
+            } catch (RefundEntryAlreadyExistsException re) {
                 LOG.error("Couldn't save refund entry for transction {} because one alrady existed " +
                         "for that transaction.", paymentLog.getTransactionId());
             }

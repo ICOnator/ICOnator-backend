@@ -1,6 +1,6 @@
 package io.iconator.commons.db.services;
 
-import io.iconator.commons.db.services.exception.RefundEntryAlradyExistsException;
+import io.iconator.commons.db.services.exception.RefundEntryAlreadyExistsException;
 import io.iconator.commons.model.db.EligibleForRefund;
 import io.iconator.commons.sql.dao.EligibleForRefundRepository;
 import org.slf4j.Logger;
@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EligibleForRefundService {
@@ -21,11 +19,11 @@ public class EligibleForRefundService {
 
 
     public EligibleForRefund save(EligibleForRefund refundEntry)
-            throws RefundEntryAlradyExistsException {
+            throws RefundEntryAlreadyExistsException {
         try {
             return eligibleForRefundRepository.saveAndFlush(refundEntry);
         } catch (DataIntegrityViolationException e) {
-            throw new RefundEntryAlradyExistsException();
+            throw new RefundEntryAlreadyExistsException();
         }
     }
 }
