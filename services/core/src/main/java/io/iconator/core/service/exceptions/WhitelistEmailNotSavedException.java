@@ -1,4 +1,4 @@
-package io.iconator.core.service.exception;
+package io.iconator.core.service.exceptions;
 
 public class WhitelistEmailNotSavedException extends Exception {
 

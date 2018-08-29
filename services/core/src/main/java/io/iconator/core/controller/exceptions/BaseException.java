@@ -8,6 +8,11 @@ public class BaseException extends Exception {
         this.internalErrorCode = internalErrorCode;
     }
 
+    public BaseException(int internalErrorCode, String reason) {
+        super(reason);
+        this.internalErrorCode = internalErrorCode;
+    }
+
     public int getInternalErrorCode() {
         return internalErrorCode;
     }

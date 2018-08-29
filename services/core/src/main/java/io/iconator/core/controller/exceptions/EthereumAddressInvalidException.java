@@ -1,13 +1,15 @@
 package io.iconator.core.controller.exceptions;
 
-import io.iconator.core.controller.exceptions.constants.ExceptionConstants;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = ExceptionConstants.ETHEREUM_ADDRESS_INVALID_REASON)
+import static io.iconator.core.controller.exceptions.constants.ExceptionConstants.ETHEREUM_ADDRESS_INVALID_CODE;
+import static io.iconator.core.controller.exceptions.constants.ExceptionConstants.ETHEREUM_ADDRESS_INVALID_REASON;
+
+@ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = ETHEREUM_ADDRESS_INVALID_REASON)
 public class EthereumAddressInvalidException extends BaseException {
 
     public EthereumAddressInvalidException() {
-        super(ExceptionConstants.ETHEREUM_ADDRESS_INVALID_CODE);
+        super(ETHEREUM_ADDRESS_INVALID_CODE, ETHEREUM_ADDRESS_INVALID_REASON);
     }
 }

@@ -1,6 +1,7 @@
 package io.iconator.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.iconator.core.utils.Constants;
 
 import javax.validation.constraints.NotNull;
@@ -11,6 +12,7 @@ public class WhitelistEmailRequest {
 
     @NotNull
     @Size(max = Constants.EMAIL_CHAR_MAX_SIZE)
+    @JsonProperty("email")
     private String email;
 
     public WhitelistEmailRequest() {

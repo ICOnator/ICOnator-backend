@@ -5,7 +5,7 @@ import io.iconator.commons.model.db.WhitelistEmail;
 import io.iconator.core.dto.WhitelistEmailRequest;
 import io.iconator.core.dto.WhitelistEmailResponse;
 import io.iconator.core.service.WhitelistEmailService;
-import io.iconator.core.service.exception.WhitelistEmailNotSavedException;
+import io.iconator.core.service.exceptions.WhitelistEmailNotSavedException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

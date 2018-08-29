@@ -22,10 +22,13 @@ dependencies {
     compile project(':commons:recaptcha-service')
     compile project(':commons:country-filter-service')
 
+    compile 'org.apache.commons:commons-csv:1.5'
+
     compile 'javax.ws.rs:jsr311-api:1.1.1'
     compile 'org.springframework.boot:spring-boot-starter-actuator'
 
     testCompile project(':commons:test-utils')
+    testCompile 'org.springframework.security:spring-security-test'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
 

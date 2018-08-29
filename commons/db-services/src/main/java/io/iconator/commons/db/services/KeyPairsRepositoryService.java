@@ -36,15 +36,22 @@ public class KeyPairsRepositoryService {
         }
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
     public boolean addKeyPairsIfNotPresent(KeyPairs keyPairs) {
         try {
-            this.keyPairsRepository.save(keyPairs);
+            this.keyPairsRepository.saveAndFlush(keyPairs);
             return true;
         } catch (Exception e) {
             LOG.warn("Not loading key [{}, {}]. Error: {}", keyPairs.getPublicEth(), keyPairs.getPublicBtc(), e);
             return false;
         }
+    }
+
+    public Optional<KeyPairs> findByPublicEth(String publicEth) {
+        return this.keyPairsRepository.findFirstOptionalByPublicEth(publicEth);
+    }
+
+    public Optional<KeyPairs> findByPublicBtc(String publicBtc) {
+        return this.keyPairsRepository.findFirstOptionalByPublicBtc(publicBtc);
     }
 
     public Optional<KeyPairs> findById(long id) {

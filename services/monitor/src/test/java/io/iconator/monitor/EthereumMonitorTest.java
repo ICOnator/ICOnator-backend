@@ -7,7 +7,6 @@ import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.SaleTier;
 import io.iconator.commons.sql.dao.SaleTierRepository;
-import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.config.MonitorTestConfig;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
@@ -101,7 +100,7 @@ public class EthereumMonitorTest {
         saleTierRepository.deleteAll();
     }
 
-     /*
+    /*
      * TODO make independent of properties values.
      * This test depends on multiple values from the {@code monitor.application.properties} to
      * be set just right so that the test runs successful. Either go back to a mock of the
@@ -142,8 +141,8 @@ public class EthereumMonitorTest {
 
         assertEquals(1, tokenAllocatedEmailMessage.size());
 
-        // TODO: 26.08.18 Guil
-        // We need to test the amount of confirmations reached, and if the token conversion was properly done!
+        // TODO: 30.08.18 Guil
+        // We need to test if the transaction was received! However, we need supported from the TestBlockchain implementation
         assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isTokenAmountReceivedEqualToTokenAmountSent(tomicsAmountToBeReceived)));
         assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isCurrencyTypeReceivedEqualToCurrencyTypeSent(currencyType)));
         assertTrue(matchReceivedMessage(tokenAllocatedEmailMessage, isAmountFundsReceivedEqualToFundsSent(fundsAmountToSendInETH)));

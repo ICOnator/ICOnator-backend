@@ -18,4 +18,8 @@ public interface KeyPairsRepository extends JpaRepository<KeyPairs, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     KeyPairs save(KeyPairs entity);
 
+    Optional<KeyPairs> findFirstOptionalByPublicBtc(String publicBtc);
+
+    Optional<KeyPairs> findFirstOptionalByPublicEth(String publicEth);
+
 }

@@ -1,6 +1,7 @@
 package io.iconator.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.iconator.core.utils.Constants;
 
 import javax.validation.constraints.NotNull;
@@ -11,12 +12,15 @@ public class AddressRequest {
 
     @NotNull
     @Size(max = Constants.ETH_ADDRESS_CHAR_MAX_SIZE)
+    @JsonProperty("address")
     private String address;
 
     @Size(max = Constants.ETH_ADDRESS_CHAR_MAX_SIZE)
+    @JsonProperty("refundETH")
     private String refundETH;
 
     @Size(max = Constants.BTC_ADDRESS_CHAR_MAX_SIZE)
+    @JsonProperty("refundBTC")
     private String refundBTC;
 
     public String getAddress() {

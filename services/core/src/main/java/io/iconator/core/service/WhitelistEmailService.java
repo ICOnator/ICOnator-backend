@@ -2,7 +2,7 @@ package io.iconator.core.service;
 
 import io.iconator.commons.model.db.WhitelistEmail;
 import io.iconator.commons.sql.dao.WhitelistEmailRepository;
-import io.iconator.core.service.exception.WhitelistEmailNotSavedException;
+import io.iconator.core.service.exceptions.WhitelistEmailNotSavedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

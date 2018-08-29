@@ -29,4 +29,7 @@ public class ExceptionConstants {
     public final static String  RECAPTCHA_INVALID_REASON = "Recaptcha response code could not be validated.";
     public final static int     RECAPTCHA_INVALID_CODE = 8;
 
+    public final static String CSV_IMPORT_FAILED_REASON = "CSV file failed to be imported.";
+    public final static int    CSV_IMPORT_FAILED_CODE = 9;
+
 }

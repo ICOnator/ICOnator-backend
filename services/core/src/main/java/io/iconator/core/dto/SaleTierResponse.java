@@ -1,5 +1,7 @@
 package io.iconator.core.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.iconator.commons.model.db.SaleTier.StatusType;
 
 import javax.validation.constraints.NotNull;
@@ -7,29 +9,38 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SaleTierResponse {
 
+    @JsonProperty("tierNo")
     private long tierNo;
 
     @NotNull
+    @JsonProperty("name")
     private String name;
 
     @NotNull
+    @JsonProperty("type")
     private StatusType type;
 
     @NotNull
+    @JsonProperty("startDate")
     private Date startDate;
 
     @NotNull
+    @JsonProperty("endDate")
     private Date endDate;
 
     @NotNull
+    @JsonProperty("discount")
     private BigDecimal discount;
 
     @NotNull
+    @JsonProperty("amount")
     private BigInteger amount;
 
     @NotNull
+    @JsonProperty("maxAmount")
     private BigInteger maxAmount;
 
     public SaleTierResponse() {}
