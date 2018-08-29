@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -24,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {TestConfig.class})
 @DataJpaTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class PaymentLogRepositoryTest {
 
     private static final CurrencyType CURRENCY_TYPE = CurrencyType.BTC;
@@ -55,14 +57,17 @@ public class PaymentLogRepositoryTest {
     }
 
     @Test
-    public void testExistsByInvestorId() {
+    public void testExistsByInvestorId_Exists() {
         Investor i = createInvestor(1);
-        PaymentLog p = paymentLogRepository.save(createPaymentLog(i, "1"));
+        paymentLogRepository.save(createPaymentLog(i, "1"));
         boolean result1 = paymentLogRepository.existsByInvestorId(1);
         assertTrue(result1);
-        paymentLogRepository.delete(p);
-        boolean result2 = paymentLogRepository.existsByInvestorId(1);
-        assertFalse(result2);
+    }
+
+    @Test
+    public void testExistsByInvestorId_Does_Not_Exists() {
+        boolean result1 = paymentLogRepository.existsByInvestorId(1);
+        assertFalse(result1);
     }
 
     @Test(expected = DataIntegrityViolationException.class)
