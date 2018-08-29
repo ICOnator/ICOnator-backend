@@ -1,6 +1,5 @@
 package io.iconator.kyc.consumer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.KycStartEmailSentMessage;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
@@ -15,8 +14,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.KYC_START_EMAIL_SENT_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_START_EMAIL_SENT_ROUTING_KEY;
@@ -24,9 +21,6 @@ import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_S
 @Component
 public class KycStartEmailSentMessageConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(KycStartEmailSentMessageConsumer.class);
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private InvestorService investorService;
@@ -44,22 +38,13 @@ public class KycStartEmailSentMessageConsumer {
                     ),
                     key = KYC_START_EMAIL_SENT_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        KycStartEmailSentMessage kycStartEmailSentMessage = null;
+    public void receiveMessage(KycStartEmailSentMessage message) {
         try {
-            kycStartEmailSentMessage = objectMapper.reader().forType(KycStartEmailSentMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
-        }
-
-        try {
-            long investorId = investorService.getInvestorByEmail(kycStartEmailSentMessage.getEmailAddress()).getId();
+            long investorId = investorService.getInvestorByEmail(message.getEmailAddress()).getId();
             kycInfoService.setKycStartEmailSent(investorId);
             LOG.debug("Set kycStartEmailSent for investor with ID {} to true", investorId);
         } catch (InvestorNotFoundException e) {
-            LOG.error("Investor with address {} not found", kycStartEmailSentMessage.getEmailAddress());
+            LOG.error("Investor with address {} not found", message.getEmailAddress());
         }
     }
 

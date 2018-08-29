@@ -3,7 +3,9 @@ package io.iconator.kyc.config;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.sql.dao.InvestorRepository;
+import io.iconator.commons.sql.dao.PaymentLogRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -36,5 +38,10 @@ public class KycConfig {
     @Bean
     public InvestorService investorService(InvestorRepository investorRepository) {
         return new InvestorService(investorRepository);
+    }
+
+    @Bean
+    public PaymentLogService paymentLogService() {
+        return new PaymentLogService();
     }
 }

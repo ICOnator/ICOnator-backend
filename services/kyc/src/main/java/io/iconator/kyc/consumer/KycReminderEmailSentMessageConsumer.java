@@ -1,6 +1,5 @@
 package io.iconator.kyc.consumer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.KycReminderEmailSentMessage;
 import io.iconator.commons.db.services.InvestorService;
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
@@ -15,8 +14,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.QueueConstants.KYC_REMINDER_EMAIL_SENT_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_SENT_ROUTING_KEY;
@@ -24,9 +21,6 @@ import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_R
 @Component
 public class KycReminderEmailSentMessageConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(KycReminderEmailSentMessageConsumer.class);
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private InvestorService investorService;
@@ -44,22 +38,13 @@ public class KycReminderEmailSentMessageConsumer {
                     ),
                     key = KYC_REMINDER_EMAIL_SENT_ROUTING_KEY)
     )
-    public void receiveMessage(byte[] message) {
-        LOG.debug("Received from consumer: " + new String(message));
-
-        KycReminderEmailSentMessage kycReminderEmailSentMessage = null;
+    public void receiveMessage(KycReminderEmailSentMessage message) {
         try {
-            kycReminderEmailSentMessage = objectMapper.reader().forType(KycReminderEmailSentMessage.class).readValue(message);
-        } catch (IOException e) {
-            LOG.error("Message not valid.");
-        }
-
-        try {
-            long investorId = investorService.getInvestorByEmail(kycReminderEmailSentMessage.getEmailAddress()).getId();
+            long investorId = investorService.getInvestorByEmail(message.getEmailAddress()).getId();
             kycInfoService.increaseNumberOfRemindersSent(investorId);
             LOG.debug("Increased numberOfRemindersSent for investor with ID {} by 1", investorId);
         } catch (InvestorNotFoundException e) {
-            LOG.error("Investor with address {} not found", kycReminderEmailSentMessage.getEmailAddress());
+            LOG.error("Investor with address {} not found", message.getEmailAddress());
         }
     }
 

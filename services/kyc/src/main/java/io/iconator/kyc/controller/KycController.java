@@ -4,6 +4,7 @@ import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
@@ -53,6 +54,9 @@ public class KycController {
     private InvestorService investorService;
 
     @Autowired
+    private PaymentLogService paymentLogService;
+
+    @Autowired
     private IdentificationService fetcher;
 
     @Autowired
@@ -61,8 +65,9 @@ public class KycController {
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
     // TODO: handle errors better
+    // use DTOs for everything and then throw custom exception with HttpStatus (see core for reference)
 
-    @RequestMapping(value = "/kyc/start", method = POST)
+    @RequestMapping(value = "/kyc/start", method = POST, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<StartAllKycResponseDTO> startKyc(@Context HttpServletRequest requestContext) {
         List<Long> kycStartedList = new ArrayList<>();
         List<Long> errorList = new ArrayList<>();
@@ -74,14 +79,17 @@ public class KycController {
         List<Investor> investorList = investorService.getAllInvestors();
         List<Long> alreadySentList = kycInfoService.getAllInvestorIdWhereStartKycEmailSent();
 
+        // initiate KYC for all investors where startKycEmail not sent and have already invested
         for(Investor investor : investorList) {
             if(!alreadySentList.contains(investor.getId())) {
-                response = initiateKyc(investor.getId(), null);
-                if(response.getStatusCode() == HttpStatus.OK) {
-                    kycStartedList.add(investor.getId());
-                } else {
-                    LOG.error("Error while initiating KYC for investor {}", investor.getId());
-                    errorList.add(investor.getId());
+                if(paymentLogService.hasInvestorInvested(investor.getId())) {
+                    response = initiateKyc(investor.getId(), null);
+                    if (response.getStatusCode() == HttpStatus.OK) {
+                        kycStartedList.add(investor.getId());
+                    } else {
+                        LOG.error("Error while initiating KYC for investor {}", investor.getId());
+                        errorList.add(investor.getId());
+                    }
                 }
             }
         }
@@ -101,7 +109,7 @@ public class KycController {
         String kycLink = kycStartRequest != null ? kycStartRequest.getKycLink() : null;
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
-        LOG.info("/start called from {} with investorId {}", ipAddress, investorId);
+        LOG.info("{}/start called from {}", investorId, ipAddress);
 
         try {
             KycInfo kycInfo = kycInfoService.getKycInfoByInvestorId(investorId);

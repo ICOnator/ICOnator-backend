@@ -5,6 +5,7 @@ import io.iconator.commons.amqp.model.KycReminderEmailMessage;
 import io.iconator.commons.amqp.model.KycStartEmailMessage;
 import io.iconator.commons.amqp.service.ICOnatorMessageService;
 import io.iconator.commons.db.services.InvestorService;
+import io.iconator.commons.db.services.PaymentLogService;
 import io.iconator.commons.db.services.exception.InvestorNotFoundException;
 import io.iconator.commons.model.db.Investor;
 import io.iconator.commons.model.db.KycInfo;
@@ -63,6 +64,9 @@ public class KycControllerTest {
     private InvestorService mockInvestorService;
 
     @Mock
+    private PaymentLogService mockPaymentLogService;
+
+    @Mock
     private AmqpMessageFactory mockMessageFactory;
 
     @Mock
@@ -92,14 +96,20 @@ public class KycControllerTest {
         Investor investor1 = new Investor(new Date(), "investor1@test.com", "investor1token").setId(1);
         Investor investor2 = new Investor(new Date(), "investor2@test.com", "investor2token").setId(2);
         Investor investor3 = new Investor(new Date(), "investor3@test.com", "investor3token").setId(3);
+        Investor investor4 = new Investor(new Date(), "investor4@test.com", "investor4token").setId(4);
         investorList.add(investor1);
         investorList.add(investor2);
         investorList.add(investor3);
+        investorList.add(investor4);
         kycStartedList.add(2L);
 
         when(mockInvestorService.getAllInvestors()).thenReturn(investorList);
         when(mockKycInfoService.getAllInvestorIdWhereStartKycEmailSent()).thenReturn(kycStartedList);
         when(mockLinkCreatorService.getKycLink(anyLong())).thenReturn(KYC_LINK);
+        when(mockPaymentLogService.hasInvestorInvested(1)).thenReturn(true);
+        when(mockPaymentLogService.hasInvestorInvested(3)).thenReturn(false);
+        when(mockPaymentLogService.hasInvestorInvested(4)).thenReturn(true);
+
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post(KYC_START_ALL)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -110,7 +120,7 @@ public class KycControllerTest {
         StartAllKycResponseDTO responseDTO =
                 mapper.readValue(result.getResponse().getContentAsString(), StartAllKycResponseDTO.class);
 
-        assertThat(responseDTO.getKycStartedList()).containsExactly(1L, 3L);
+        assertThat(responseDTO.getKycStartedList()).containsExactly(1L, 4L);
         assertThat(responseDTO.getErrorList()).isEmpty();
     }
 

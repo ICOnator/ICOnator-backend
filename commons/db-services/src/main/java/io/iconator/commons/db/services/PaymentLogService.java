@@ -43,4 +43,8 @@ public class PaymentLogService {
         return paymentLogRepository.saveAndFlush(log);
     }
 
+    public boolean hasInvestorInvested(long investorId) {
+        return paymentLogRepository.existsByInvestor_Id(investorId);
+    }
+
 }

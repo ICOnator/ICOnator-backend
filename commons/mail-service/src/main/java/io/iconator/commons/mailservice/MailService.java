@@ -107,7 +107,12 @@ public class MailService {
                 this.mailServiceConfigHolder.getKycStartEmailSubject(), MailType.KYC_START_EMAIL);
         this.mailContentBuilder.buildKycStartEmail(oMessage, kycUrl);
         if (this.mailServiceConfigHolder.isEnabled()) {
-            sendMail(oMessage, MailType.KYC_START_EMAIL);
+            try {
+                sendMail(oMessage, MailType.KYC_START_EMAIL);
+                publishMailSentMessage(getRecipient(oMessage), MailType.KYC_START_EMAIL);
+            } catch (MessagingException me) {
+                LOG.error("Failed getting recipient after sending email type {}. Reason {}", MailType.KYC_START_EMAIL, me.toString());
+            }
         } else {
             LOG.info("Skip sending {} email to {}", MailType.KYC_START_EMAIL, investor.getEmail());
         }
@@ -119,7 +124,12 @@ public class MailService {
                 this.mailServiceConfigHolder.getKycReminderEmailSubject(), MailType.KYC_REMINDER_EMAIL);
         this.mailContentBuilder.buildKycReminderEmail(oMessage, kycUrl);
         if (this.mailServiceConfigHolder.isEnabled()) {
-            sendMail(oMessage, MailType.KYC_REMINDER_EMAIL);
+            try {
+                sendMail(oMessage, MailType.KYC_REMINDER_EMAIL);
+                publishMailSentMessage(getRecipient(oMessage), MailType.KYC_REMINDER_EMAIL);
+            } catch (MessagingException me) {
+                LOG.error("Failed getting recipient after sending email type {}. Reason {}", MailType.KYC_REMINDER_EMAIL, me.toString());
+            }
         } else {
             LOG.info("Skip sending {} email to {}", MailType.KYC_REMINDER_EMAIL, investor.getEmail());
         }
@@ -137,8 +147,7 @@ public class MailService {
         String recipient = null;
         try {
             if (oMessage.isPresent()) {
-                // TODO: don't assume that the "to" email field has at least one address
-                recipient = oMessage.get().getMimeMessage().getRecipients(Message.RecipientType.TO)[0].toString();
+                recipient = getRecipient(oMessage);
                 if (!this.mailServiceConfigHolder.isEnabled()) {
                     LOG.info("Skipping sending email type {} to {} with body: {}",
                             emailType, recipient, oMessage.get().getMimeMessage().getContent());
@@ -146,8 +155,6 @@ public class MailService {
                 }
                 LOG.info("Sending email type {} to {}", emailType, recipient);
                 this.javaMailService.send(oMessage.get().getMimeMessage());
-                // TODO: publish email sent message to amqp
-                publishMailSentMessage(recipient, emailType);
             } else {
                 throw new Exception();
             }
@@ -184,6 +191,11 @@ public class MailService {
 
     private Optional<MimeMessage> createMessageContainer(String recipient) {
         return Optional.ofNullable(this.javaMailService.createMimeMessage());
+    }
+
+    private String getRecipient(Optional<MimeMessageHelper> oMessage) throws MessagingException {
+        // TODO: don't assume that the "to" email field has at least one address
+        return oMessage.get().getMimeMessage().getRecipients(Message.RecipientType.TO)[0].toString();
     }
 
     private void publishMailSentMessage(String recipient, MailType mailType) {
