@@ -137,7 +137,7 @@ abstract public class BaseMonitor {
     }
 
     private boolean isAmountInsufficient(BigDecimal usdAmount) {
-        return usdAmount.compareTo(configHolder.getUsdPaymentMinimum()) < 0;
+        return usdAmount.compareTo(configHolder.getFiatBasePaymentMinimum()) < 0;
     }
 
     private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlreadyExistsException {

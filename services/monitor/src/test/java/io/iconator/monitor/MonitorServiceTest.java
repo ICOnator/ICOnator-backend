@@ -93,7 +93,7 @@ public class MonitorServiceTest {
     public void setUp() {
         when(appConfig.getTotalTokenAmount())
                 .thenReturn(new BigDecimal("100000000"));
-        when(appConfig.getUsdPerToken())
+        when(appConfig.getFiatBasePerToken())
                 .thenReturn(new BigDecimal("0.1"));
         when(appConfig.getAtomicUnitFactor())
                 .thenReturn(BigInteger.TEN.pow(18));
@@ -128,7 +128,7 @@ public class MonitorServiceTest {
         BigDecimal usd = monitorService.convertTomicsToUsd(tomics, discount);
         BigDecimal expectedResult = new BigDecimal("3.333")
                 .multiply(BigDecimal.ONE.subtract(discount), MathContext.DECIMAL128)
-                .multiply(appConfig.getUsdPerToken());
+                .multiply(appConfig.getFiatBasePerToken());
         assertEquals(0, usd.compareTo(expectedResult));
     }
 
@@ -369,7 +369,7 @@ public class MonitorServiceTest {
         final TestTier tt1 = new TestTier(1, "1970-01-01", "1970-01-03", new BigDecimal("0.25"), totalTomicsAmount().add(tomicsFactor()), true, false);
         tt1.tomicsSoldMustBe(totalTomicsAmount());
 
-        final BigDecimal overflow = appConfig.getUsdPerToken().divide(new BigDecimal("2"));
+        final BigDecimal overflow = appConfig.getFiatBasePerToken().divide(new BigDecimal("2"));
         final BigDecimal payment = monitorService.convertTomicsToUsd(totalTomicsAmount(), tt1.getDiscount()).add(overflow);
 
         // test
@@ -397,7 +397,7 @@ public class MonitorServiceTest {
         assertEquals(0, log.getAllocatedTomics().compareTo(tomicsFromTier));
         t.assertTier();
 
-        final BigDecimal overflow = appConfig.getUsdPerToken().divide(new BigDecimal("2"));
+        final BigDecimal overflow = appConfig.getFiatBasePerToken().divide(new BigDecimal("2"));
         payment = monitorService.convertTomicsToUsd(tomicsFromTier, t.getDiscount()).add(overflow);
         t.tomicsSoldMustBe(totalTomicsAmount());
 

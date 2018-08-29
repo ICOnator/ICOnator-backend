@@ -30,8 +30,8 @@ public class MonitorAppConfigHolder {
     @Value("${io.iconator.services.monitor.retry.wait-between-attempts.max}")
     private Long tokenConversionMaxTimeWait;
 
-    @Value("${io.iconator.services.monitor.token.usd-per-token}")
-    private BigDecimal usdPerToken;
+    @Value("${io.iconator.services.monitor.token.fiat-base-per-token}")
+    private BigDecimal fiatBasePerToken;
 
     @Value("${io.iconator.services.monitor.token.total-amount}")
     private BigDecimal totalTokenAmount;
@@ -39,8 +39,8 @@ public class MonitorAppConfigHolder {
     @Value("${io.iconator.services.monitor.token.atomic-unit-factor}")
     private Integer atomicUnitFactor;
 
-    @Value("${io.iconator.services.monitor.usd.payment-min}")
-    private BigDecimal usdPaymentMinimum;
+    @Value("${io.iconator.services.monitor.fiat-base.payment.min}")
+    private BigDecimal fiatBasePaymentMinimum;
 
     /**
      * Sets the time in miliseconds which is used to determine if a transaction might still
@@ -70,8 +70,8 @@ public class MonitorAppConfigHolder {
         return tokenConversionMaxTimeWait;
     }
 
-    public BigDecimal getUsdPerToken() {
-        return usdPerToken;
+    public BigDecimal getFiatBasePerToken() {
+        return fiatBasePerToken;
     }
 
     public BigDecimal getTotalTokenAmount() {
@@ -90,8 +90,8 @@ public class MonitorAppConfigHolder {
         return bitcoinConfirmationBlockdepth;
     }
 
-    public BigDecimal getUsdPaymentMinimum() {
-        return usdPaymentMinimum;
+    public BigDecimal getFiatBasePaymentMinimum() {
+        return fiatBasePaymentMinimum;
     }
 
     public Integer getTransactionProcessingTime() {

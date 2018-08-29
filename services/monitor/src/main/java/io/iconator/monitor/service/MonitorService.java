@@ -319,7 +319,7 @@ public class MonitorService {
      * @return the amount of tokens (in their atomic unit) worth the given USD amount
      */
     public BigDecimal convertUsdToTomics(BigDecimal usd, BigDecimal discount) {
-        BigDecimal discountedUsdPerToken = appConfig.getUsdPerToken().multiply(BigDecimal.ONE.subtract(discount));
+        BigDecimal discountedUsdPerToken = appConfig.getFiatBasePerToken().multiply(BigDecimal.ONE.subtract(discount));
         BigDecimal tokens = usd.divide(discountedUsdPerToken, MathContext.DECIMAL128);
         return convertTokensToTomics(tokens);
     }
@@ -332,7 +332,7 @@ public class MonitorService {
      */
     public BigDecimal convertTomicsToUsd(BigDecimal tomics, BigDecimal discount) {
         BigDecimal tokens = convertTomicsToTokens(tomics);
-        BigDecimal discountedUsdPerToken = appConfig.getUsdPerToken().multiply(BigDecimal.ONE.subtract(discount));
+        BigDecimal discountedUsdPerToken = appConfig.getFiatBasePerToken().multiply(BigDecimal.ONE.subtract(discount));
         return tokens.multiply(discountedUsdPerToken);
     }
 
