@@ -8,8 +8,8 @@ import java.math.MathContext;
 
 public class EthereumUtils {
 
-    public static BigInteger convertUsdToWei(BigDecimal usd, BigDecimal usdPerEth) {
-        BigDecimal ethers = usd.divide(usdPerEth, MathContext.DECIMAL128);
+    public static BigInteger convertFiatToWei(BigDecimal fiatAmount, BigDecimal fiatPerEther) {
+        BigDecimal ethers = fiatAmount.divide(fiatPerEther, MathContext.DECIMAL128);
         try {
             return EthereumUnitConverter.convert(ethers, EthereumUnit.ETHER, EthereumUnit.WEI).toBigInteger();
         } catch (EthereumUnitConversionNotImplementedException e) {
