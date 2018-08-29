@@ -8,7 +8,6 @@ import java.math.MathContext;
 
 public class EthereumUtils {
 
-    // TODO This is only used in tests but no productive code.
     public static BigInteger convertUsdToWei(BigDecimal usd, BigDecimal usdPerEth) {
         BigDecimal ethers = usd.divide(usdPerEth, MathContext.DECIMAL128);
         try {
