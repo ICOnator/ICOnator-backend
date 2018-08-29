@@ -1,7 +1,6 @@
 package io.iconator.commons.db.services;
 
 import io.iconator.commons.db.services.exception.PaymentLogNotFoundException;
-import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.PaymentLog;
 import io.iconator.commons.sql.dao.PaymentLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
-import java.util.Optional;
 
 @Service
 public class PaymentLogService {
@@ -44,7 +42,7 @@ public class PaymentLogService {
     }
 
     public boolean hasInvestorInvested(long investorId) {
-        return paymentLogRepository.existsByInvestor_Id(investorId);
+        return paymentLogRepository.existsByInvestorId(investorId);
     }
 
 }

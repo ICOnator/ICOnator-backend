@@ -18,6 +18,7 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.Optional;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
@@ -53,6 +54,17 @@ public class PaymentLogRepositoryTest {
         assertTrue(oPaymentLog.filter((paymentLog) -> paymentLog.equals(p)).isPresent());
     }
 
+    @Test
+    public void testExistsByInvestorId() {
+        Investor i = createInvestor(1);
+        PaymentLog p = paymentLogRepository.save(createPaymentLog(i, "1"));
+        boolean result1 = paymentLogRepository.existsByInvestorId(1);
+        assertTrue(result1);
+        paymentLogRepository.delete(p);
+        boolean result2 = paymentLogRepository.existsByInvestorId(1);
+        assertFalse(result2);
+    }
+
     @Test(expected = DataIntegrityViolationException.class)
     public void testSaveTwoPaymentLogWithSameTransactionIdentifier() {
         Investor i1 = createInvestor(1);
@@ -66,9 +78,9 @@ public class PaymentLogRepositoryTest {
 
     private Investor createInvestor(int i) {
         return investorRepository.save(
-                new Investor(new Date(),  "emailAddress" + i, "token" + i, "walletAddress",
+                new Investor(new Date(), "emailAddress" + i, "token" + i, "walletAddress",
                         "payInEtherPublicKey" + i, "payInBitcoinPublicKey" + i,
-                        "refundEtherAddress", "refundBitcoinAddress", "ipAddress" ));
+                        "refundEtherAddress", "refundBitcoinAddress", "ipAddress"));
     }
 
     private PaymentLog createPaymentLog(Investor investor, String txIdentifier) {

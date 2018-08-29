@@ -15,5 +15,5 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
     Optional<PaymentLog> findOptionalByTransactionId(String transactionId);
 
-    boolean existsByInvestor_Id(long investorId);
+    boolean existsByInvestorId(long investorId);
 }
