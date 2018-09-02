@@ -11,7 +11,7 @@ after_success:
 deploy:
 - provider: releases
   api_key:
-    secure: cnm97Hjiemox19I+ZE6VzD3qWYh//IgZQwIq5hyylm2pbr8jY+0Vot1gSVsNZ3ul1d1hVCsDVxuAsGLb8mjNHsOKmwklq6ASQhpfPU5UJG4ygtxiMf6CHxq6H3ypLd4XKvEILrTm/3XXYDXGaXe85f8lnRNL4KUDAHoTOudgLIG+ZnHGgxGyeKz/rvsXRtjFhmhnDn3y0hsZdPX+1cH1cecRU8YguD4aEBsuazvQ2I/eGICLU2D8kByFCTAuWcXVgj/pke8kGZWjb1VLw+SjSK3FtrOvocUPpJsUqFBDNJWrZTsOwxYVCs2dQUUCa1XcBRXH7bZ8sJ0VYwvPwQpF45hv9dZZHRNzKIUmNTf6dUVv5EPFewtByGQoClZvKD/fXSIvge3qZfKxBshCZEs8CASEVRIHhz2IlJQ4sVaXrzt3g3rqH8vdL59zi92UKuFtmi9HlO4Q67TIC+TM5rdZj+FttSx7WAWZ2fpB++vJx4fUHsLt8KdhbHGw49q4QanVAZj/lzRmNixIR57iU9JmhBT/grkEwdIE8yCe1TP2XBrBAeo0FzKOjEwSoRxAGXSxgXRWZF/jj6qFhE0o97eaw/ozqrrjDlorOglg9GTY+Vhz8u5j0t209zSQ2wjVU8SfwU+6FjKvH5CT8vnF+Yss93J9ytthbnGzKWF4Fo0uZmo=
+    secure: k9YLRYYUfMkdF65wC7jD3o2cEq6L/PJTJGeceoOlz8wito5BaUd+4udmZagd7YaSG7mE4uM97VRvsaqhtEMkkMdQQHjRY8AnDsKIRZwzOG6g6aID4ujDOrJXVpD7djj73r4MigwICuNkFSFQF1UC2mjCFfYJGy6RaLKbePGitXG2gUG858y3e38V3EwVDXXUcfBKJmgoB8kXQFbw8/Z7sxs/E9coBq1KGryC+7Jr4sOS/FNkYPj3+s16gGKb/zSD6mLK4yvtd5iNozmIhktocggC2qFpwm/J/vv7pU+ilaKS7rOtUTeK9mS81zQYZdyYv2YJhgXehQ0WQA32QB3U2RDPsCzP/hSG4dgeIeZTgljKgnzHvFNEmPoo1FhvzHUpMN2wXQv36b9lOmW5zz3xo5DqjN9kIwDrHePtF8/b5qhDjrA7Lu45nCmwi6wgDuqyJPX3ilA3tj73JidynSr5Y1QUXRzc2R184mXftEp4nr09NLce9jysgtU/A9L6wsynufckaqUcQlCWeErQVcdL3xYig7UxrkQUe+OzlaMYDy8sdSarOtVmqK9xePbdn3jQ2y2PEp8rIHz6pcUOwSfwiGx7vqbVYoQrDWiZzQEcZGpKa/mdcBP/ShcsxDZmmCNfgSLxkkW9sW5vSxG3Tj/mTl675GHLUIIN7v8bmFtVjzw=
   file:
   - services/core/build/libs/core-exec.jar
   - services/email/build/libs/email-exec.jar
@@ -22,14 +22,14 @@ deploy:
   on:
     tags: true
     all_branches: true
-    condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
+    condition: "$TRAVIS_TAG =~ ^(.*)-(release|beta)$"
 - provider: script
   script: export ICONATOR_DOCKER_VERSION=$TRAVIS_TAG && sh docker/docker_push.sh
   skip_cleanup: true
   on:
     tags: true
     all_branches: true
-    condition: "$TRAVIS_TAG =~ ^(release|beta)-.*$"
+    condition: "$TRAVIS_TAG =~ ^(.*)-(release|beta)$"
 - provider: script
   script: export ICONATOR_DOCKER_IMAGE_NAME=master && sh docker/docker_push.sh
   skip_cleanup: true
@@ -37,4 +37,4 @@ deploy:
     branch: master
 notifications:
   slack:
-    secure: affKg25STF2JFL/yiu13Sw5XW3T0NXyaKRyg9Mp2Mnx9Do/1jB2O7+7v8/pnrwj5Co8OmIgC9o2TMgindHv4Gtat1DocucJOKhVA0ckaMKiTeNmpEVCzaSzjPX/yLJkYjp74Sb5+I/Zk4vp1PH7CWMc+YCip1gBOTh3mE7IyuqRJHYxqjnW179n043iQ6UeXq/06hc5u6/cadbwloQcOtAcGf7Ss/PGuy2/LgWGi2IX5wxXCNtpxeKlf0pxMK2togNYn2B0pZe72eNvVs9j8ozIm/5S6ABdDIAmVCLBJ5afKl82GD9FbgZMQIdLhrjDQTumlL771HD/Gg4X5Cw0vSxlr8fUhvBPKXQ0CwK/JQbvLlEHSrj4Cn7OsOFq0LqYqPmFwji+4Uznes+64fWYtZbuUJgZbiHRcb4JICFLsxgzeivxmKeBF7azyP9xH68+GRY/N1TggL1PxNCf2mmMZmB6BSEyE3C1o8Y6ydDTEFp/Hy9WYwRVono9IOAuumjnnvHrflpZtd/63JS7qCvt2KQ/umRVNhZlD7bRLFBYfkvhN9jLjj+6Tl1A6hWZp2rRvBbNoa6qqROLkIhNLjjPIMR8tCbv7x6neZE/lzry0klrUGS4MfFeqYYwzbxN4ipwT2PKvul/LO0nMufqL5gfpORhraQFCGoPf1C2wtizSmdU=
+    secure: X9lXVsLnAM7H7nUvmsk9gDJbeOlSXcNCqGCARNwOBfi4mqosdQesZnX4CHVrlKtF/97HoeCt6OtDS0njd5um5iDGXWaT3HMSI6NXPM8s0dg9PXCAlTmdgC+WU5GIx6DUMbzSRlLToLDjqdl0Du95LZRwPiBez1iRDNWOwqfcIcsIlmTAhkhx5TatlD44o72bU3oFN5/4cKFlHaaRBJcNdMexnRC4jUKPAOpfL3O+s9Aks3N29Hcb/MrGg/Fgqxfu3+t6NcLXY7o/zGnGyBU3y9OqE/WvmiqKoQaoNYrzHkmHx2NubpXG9n7JmvuEkNrqnBeOCAFEm+M1a0uf/chueJEBRZS0enbO3ddnfDmVzJbqO/XEc7OSSMTaDBgsIRMDtGaTEbHxB0D/v7N/jVihpOL06Wj/gTPa9P0sBVAfBiGIwUAXtJABv2VBkHD/Z5GjvbFPYB8i2I4OpogBElpVnqDqYfst9cXpEVEDsWfcU0zsohpprfvB6QjnnkUypLNJak6wE3FPiUAMPJIXBEDe7BRzvqdzzkvlllvrNHAA0R1eu8DMl+qedquyVQbUENdeOD7JI5o/wyKjBTegasDG6+Bg8kvdXvK7dQuuprfkJVXGi4HOL72zL4J/WNGzTdMfMEPrkQS0JcPswUaxCZTxhSxEXdu8wcaQ8o0Bn+zzPmQ=
