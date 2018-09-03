@@ -1,16 +1,22 @@
 package io.iconator.core.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.iconator.commons.auth.ActuatorAuthSecurityConfig;
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.core.dto.SaleTierRequest;
 import io.iconator.core.dto.SaleTierResponse;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.security.web.FilterChainProxy;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -18,21 +24,32 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {ActuatorAuthSecurityConfig.class, FilterChainProxy.class})
+@TestPropertySource({"classpath:core.application.properties", "classpath:application-test.properties"})
 public class TierControllerTest {
 
     private MockMvc mockMvc;
+
+    @Autowired
+    FilterChainProxy springSecurityFilterChain;
 
     @Mock
     private SaleTierService saleTierService;
@@ -40,22 +57,23 @@ public class TierControllerTest {
     @InjectMocks
     private TierController tierController;
 
-    private JacksonTester<List<SaleTierResponse>> saleTierResponse;
-
     private static final String TIERS_ENDPOINT = "/tiers";
+    private static final String TIERS_CREATE_ENDPOINT = "/tiers/create";
 
     private List<SaleTier> tiers;
+
+    private JacksonTester<List<SaleTierRequest>> jsonSaleTierRequest;
+    private JacksonTester<List<SaleTierResponse>> jsonSaleTierResponse;
 
     @Before
     public void setUp() {
         JacksonTester.initFields(this, new ObjectMapper());
-        this.mockMvc = MockMvcBuilders.standaloneSetup(tierController).build();
-        tiers = createFiveTiers();
+        this.mockMvc = MockMvcBuilders.standaloneSetup(tierController).apply(springSecurity(springSecurityFilterChain)).build();
     }
 
     @Test
     public void getAllTiers() throws Exception {
-
+        tiers = createFiveTiers();
         when(saleTierService.getAllSaleTiersOrderByStartDate())
                 .thenReturn(tiers);
         MvcResult result = this.mockMvc.perform(get(TIERS_ENDPOINT)
@@ -69,7 +87,57 @@ public class TierControllerTest {
                 .collect(Collectors.toList());
 
         assertThat(result.getResponse().getContentAsString()).isEqualTo(
-                saleTierResponse.write(responses).getJson());
+                jsonSaleTierResponse.write(responses).getJson());
+    }
+
+    @Test
+    public void createTiers_With_Right_Credential() throws Exception {
+        when(saleTierService.getAllSaleTiersOrderByStartDate())
+                .thenReturn(tiers);
+
+        Instant now = Instant.now();
+        SaleTierRequest req1 = new SaleTierRequest(1, "test1",
+                Date.from(now), Date.from(now.plusSeconds(6000)),
+                new BigDecimal("0.5"), new BigInteger("0"), new BigInteger("1000000000"),
+                true, true);
+        List<SaleTierRequest> listRequest = Arrays.asList(req1);
+        SaleTier saleTierEntityRequest = tierController.fromRequestToEntity(req1);
+
+        when(saleTierService.saveTransactionless(any())).thenReturn(saleTierEntityRequest);
+
+        MvcResult result = this.mockMvc.perform(post(TIERS_CREATE_ENDPOINT)
+                .with(httpBasic("user", "password"))
+                .content(jsonSaleTierRequest.write(listRequest).getJson())
+                .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        SaleTierResponse resp1 = new SaleTierResponse(1, "test1", SaleTier.StatusType.ACTIVE,
+                Date.from(now), Date.from(now.plusSeconds(6000)),
+                new BigDecimal("0.5"), new BigInteger("0"), new BigInteger("1000000000"));
+        List<SaleTierResponse> listResponse = Arrays.asList(resp1);
+
+        assertThat(result.getResponse().getContentAsString()).isEqualTo(
+                jsonSaleTierResponse.write(listResponse).getJson());
+    }
+
+    @Test
+    public void createTiers_With_Wrong_Credential() throws Exception {
+        Instant now = Instant.now();
+        SaleTierRequest req1 = new SaleTierRequest(1, "test1",
+                Date.from(now), Date.from(now.plusSeconds(6000)),
+                new BigDecimal("0.5"), new BigInteger("0"), new BigInteger("1000000000"),
+                true, true);
+        List<SaleTierRequest> listRequest = Arrays.asList(req1);
+
+        this.mockMvc.perform(post(TIERS_CREATE_ENDPOINT)
+                .with(httpBasic("user", "wrongpass"))
+                .content(jsonSaleTierRequest.write(listRequest).getJson())
+                .contentType(APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andDo(print())
+                .andReturn();
     }
 
     private List<SaleTier> createFiveTiers() {

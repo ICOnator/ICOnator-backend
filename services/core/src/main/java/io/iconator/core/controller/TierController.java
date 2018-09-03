@@ -2,6 +2,7 @@ package io.iconator.core.controller;
 
 import io.iconator.commons.db.services.SaleTierService;
 import io.iconator.commons.model.db.SaleTier;
+import io.iconator.core.dto.SaleTierRequest;
 import io.iconator.core.dto.SaleTierResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,17 +10,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tiers")
 public class TierController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RegisterController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TierController.class);
 
     @Autowired
     private SaleTierService saleTierService;
@@ -36,6 +45,32 @@ public class TierController {
         return ResponseEntity.ok(saleTiers);
     }
 
+    @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<List<SaleTierResponse>> createTiers(
+            @RequestBody List<SaleTierRequest> tiersRequest) {
+
+        List<SaleTierResponse> tiersResponse = tiersRequest.stream().map((request) -> {
+            return saleTierService.saveTransactionless(fromRequestToEntity(request));
+        }).map((savedEntity) -> fromEntityToResponse(savedEntity)).collect(Collectors.toList());
+
+        return ResponseEntity.ok(tiersResponse);
+    }
+
+    protected SaleTier fromRequestToEntity(SaleTierRequest request) {
+        return new SaleTier(
+                request.getTierNo(),
+                request.getDescription(),
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getDiscount(),
+                request.getTomicsSold(),
+                request.getTomicsMax(),
+                request.getHasDynamicDuration(),
+                request.getHasDynamicMax()
+        );
+    }
+
     protected SaleTierResponse fromEntityToResponse(SaleTier tier) {
         SaleTierResponse response = new SaleTierResponse();
         response.setAmount(tier.getTomicsSold());
@@ -45,7 +80,7 @@ public class TierController {
         response.setMaxAmount(tier.getTomicsMax());
         response.setName(tier.getDescription());
         response.setTierNo(tier.getTierNo());
-        response.setType(tier.getStatusAtDate(new Date()));
+        response.setType(tier.getStatusAtDate(Date.from(Instant.now())));
         return response;
     }
 }

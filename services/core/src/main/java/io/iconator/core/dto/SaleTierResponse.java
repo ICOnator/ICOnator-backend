@@ -43,7 +43,9 @@ public class SaleTierResponse {
     @JsonProperty("maxAmount")
     private BigInteger maxAmount;
 
-    public SaleTierResponse() {}
+    public SaleTierResponse() {
+    }
+
     public SaleTierResponse(long tierNo, @NotNull String name, @NotNull StatusType statusType,
                             @NotNull Date startDate, @NotNull Date endDate,
                             @NotNull BigDecimal discount, @NotNull BigInteger amount,
