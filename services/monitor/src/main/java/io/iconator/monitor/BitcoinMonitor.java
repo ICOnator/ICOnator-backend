@@ -106,7 +106,7 @@ public class BitcoinMonitor extends BaseMonitor {
      * @see <a href="https://groups.google.com/d/msg/bitcoinj/bYcUTimAz9w/jwS_7gOsCwAJ">google groups bitcoinj answer</a>
      */
     private void addCoinsReceivedListener() {
-        // The provided listener is only called once per transacton, e.g. when
+        // The provided listener is only called once per transaction, e.g. when
         // the transaction is first seen on the network. It will not be called
         // again for the same transaction when it is added to a block.
         wallet.addCoinsReceivedEventListener((wallet_, bitcoinjTx, prevBalance, newBalance) -> {
@@ -129,12 +129,12 @@ public class BitcoinMonitor extends BaseMonitor {
         Transaction bitcoinjTx = tx.getBitcoinjTransaction();
         if (isPending(bitcoinjTx)) {
             processPendingTransactions(tx);
-            trackTransactoinForStatusChanges(tx);
+            trackTransactionForStatusChanges(tx);
         } else if (isBuilding(bitcoinjTx)) {
             processBuildingTransaction(tx);
-            trackTransactoinForStatusChanges(tx);
+            trackTransactionForStatusChanges(tx);
         } else if (isUnknown(bitcoinjTx)) {
-            trackTransactoinForStatusChanges(tx);
+            trackTransactionForStatusChanges(tx);
         }
     }
 
@@ -150,7 +150,7 @@ public class BitcoinMonitor extends BaseMonitor {
         return tx.getConfidence().getConfidenceType().equals(ConfidenceType.UNKNOWN);
     }
 
-    private void trackTransactoinForStatusChanges(BitcoinTransactionAdapter tx) {
+    private void trackTransactionForStatusChanges(BitcoinTransactionAdapter tx) {
         tx.getBitcoinjTransaction().getConfidence().addEventListener(
                 new TransactionConfidence.Listener() {
 
