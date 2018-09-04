@@ -4,11 +4,12 @@ import io.iconator.commons.baseservice.ConfigNaming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
 import static org.springframework.boot.SpringApplication.run;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = RepositoryRestMvcAutoConfiguration.class)
 @ComponentScan({"io.iconator.commons.auth", "io.iconator.email"})
 public class EmailApplication {
     static { ConfigNaming.set("email.application"); }
@@ -20,7 +21,7 @@ public class EmailApplication {
         } catch (Throwable t) {
             //ignore silent exception
             if (!t.getClass().toString().endsWith("SilentExitException")) {
-                LOG.error("cannot execute core", t);
+                LOG.error("Cannot execute email.", t);
             }
         }
     }
