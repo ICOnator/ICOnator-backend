@@ -9,4 +9,8 @@ ENV EXEC_COMMAND="java -Djava.security.egd=file:/dev/./urandom -jar ${JAR_FILE_N
 
 ADD ${JAR_FILE} ${JAR_FILE_NAME}
 
+RUN apk add --update \
+    curl \
+    && rm -rf /var/cache/apk/*
+
 CMD [ "sh", "-c", "${EXEC_COMMAND}" ]
