@@ -5,7 +5,7 @@ import io.iconator.core.CoreApplication;
 import io.iconator.email.EmailApplication;
 import io.iconator.monitor.MonitorApplication;
 import io.iconator.rates.RatesApplication;
-import io.iconator.testrpcj.TestBlockchain;
+import io.iconator.testonator.TestBlockchain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,7 +35,7 @@ public class ICOnatorLocalDevApplication {
                     EmailApplication.class,
                     MonitorApplication.class,
                     RatesApplication.class,
-                    io.iconator.testrpcj.TestBlockchain.class).run(args);
+                    io.iconator.testonator.TestBlockchain.class).run(args);
         } catch (Throwable t) {
             //ignore silent exception
             if (!t.getClass().toString().endsWith("SilentExitException")) {
