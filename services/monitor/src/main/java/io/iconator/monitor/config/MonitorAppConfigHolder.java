@@ -24,6 +24,9 @@ public class MonitorAppConfigHolder {
     @Value("${io.iconator.services.monitor.btc.node.enabled}")
     private Boolean bitcoinNodeEnabled;
 
+    @Value("${io.iconator.services.monitor.btc.node.peer-group-seed}")
+    private String[] bitcoinNodePeerGroupSeed;
+
     @Value("${io.iconator.services.monitor.btc.confirmation-blockdepth}")
     private Integer bitcoinConfirmationBlockdepth;
 
@@ -64,6 +67,10 @@ public class MonitorAppConfigHolder {
 
     public Boolean getBitcoinNodeEnabled() {
         return bitcoinNodeEnabled;
+    }
+
+    public String[] getBitcoinNodePeerGroupSeed() {
+        return bitcoinNodePeerGroupSeed;
     }
 
     public Long getTokenConversionMaxTimeWait() {
