@@ -23,7 +23,7 @@ dependencies {
 
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'io.iconator:testonator:1.0.22'
+    testCompile 'io.iconator:testonator:1.0.24'
     testCompile project(':commons:test-utils')
 }
 

@@ -13,7 +13,7 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-devtools'
 
     // Ethereum and Bitcoin libs
-    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.7'
 
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
