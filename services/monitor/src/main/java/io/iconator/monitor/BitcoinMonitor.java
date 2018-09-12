@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.time.Instant;
 import java.util.Date;
 
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
@@ -81,6 +82,9 @@ public class BitcoinMonitor extends BaseMonitor {
 
     @Override
     protected void start() {
+        LOG.info("Bitcoin PeerGroup: starting the SPV with fast catch-up time: {}",
+                Instant.ofEpochSecond(bitcoinPeerGroup.getFastCatchupTimeSecs()));
+
         bitcoinPeerGroup.start();
 
         final DownloadProgressTracker downloadListener = new DownloadProgressTracker() {
