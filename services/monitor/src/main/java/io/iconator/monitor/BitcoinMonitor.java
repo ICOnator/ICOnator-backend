@@ -82,8 +82,11 @@ public class BitcoinMonitor extends BaseMonitor {
 
     @Override
     protected void start() {
-        LOG.info("Bitcoin PeerGroup: starting the SPV with fast catch-up time: {}",
-                Instant.ofEpochSecond(bitcoinPeerGroup.getFastCatchupTimeSecs()));
+
+        configHolder.getBitcoinNodeFastCatchUp().ifPresent((fastCatchUpInstant) -> {
+            LOG.info("Bitcoin PeerGroup: setting fast catch-up time to {}", fastCatchUpInstant);
+            bitcoinPeerGroup.setFastCatchupTimeSecs(fastCatchUpInstant.getEpochSecond());
+        });
 
         bitcoinPeerGroup.start();
 
@@ -106,6 +109,8 @@ public class BitcoinMonitor extends BaseMonitor {
             }
         };
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
+        LOG.info("Bitcoin PeerGroup: starting the SPV with fast catch-up time: {}",
+                Instant.ofEpochSecond(bitcoinPeerGroup.getFastCatchupTimeSecs()));
         LOG.info("Downloading SPV blockchain...");
     }
 

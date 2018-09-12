@@ -116,12 +116,6 @@ public class MonitorBean {
         } else if (chainNetworkParameters.equals(TestNet3Params.get())) {
             peerGroup.addPeerDiscovery(new DnsDiscovery(chainNetworkParameters));
         }
-
-        appConfig.getBitcoinNodeFastCatchUp().ifPresent((fastCatchUpInstant) -> {
-            LOG.info("Bitcoin PeerGroup: setting fast catch-up time to {}", fastCatchUpInstant);
-            peerGroup.setFastCatchupTimeSecs(fastCatchUpInstant.getEpochSecond());
-        });
-
         return peerGroup;
     }
 
