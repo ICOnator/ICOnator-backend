@@ -1,13 +1,22 @@
 package io.iconator.monitor.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Optional;
 
 @Configuration
 public class MonitorAppConfigHolder {
+
+    private final static Logger LOG = LoggerFactory.getLogger(MonitorAppConfigHolder.class);
 
     @Value("${io.iconator.services.monitor.eth.node.enabled}")
     private Boolean ethereumNodeEnabled;
@@ -26,6 +35,9 @@ public class MonitorAppConfigHolder {
 
     @Value("${io.iconator.services.monitor.btc.node.peer-group-seed}")
     private String[] bitcoinNodePeerGroupSeed;
+
+    @Value("${io.iconator.services.monitor.btc.node.fast-catch-up:#{null}}")
+    private String bitcoinNodeFastCatchUp;
 
     @Value("${io.iconator.services.monitor.btc.confirmation-blockdepth}")
     private Integer bitcoinConfirmationBlockdepth;
@@ -71,6 +83,20 @@ public class MonitorAppConfigHolder {
 
     public String[] getBitcoinNodePeerGroupSeed() {
         return bitcoinNodePeerGroupSeed;
+    }
+
+    public Optional<Instant> getBitcoinNodeFastCatchUp() {
+        if (bitcoinNodeFastCatchUp == null) {
+            return Optional.empty();
+        }
+        try {
+            Date fastCatchUpDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+                    .parse(bitcoinNodeFastCatchUp);
+            return Optional.of(fastCatchUpDate.toInstant());
+        } catch (ParseException e) {
+            LOG.error("Parameter bitcoinNodeFastCatchUp not set due to an error while parsing the date.", e);
+            return Optional.empty();
+        }
     }
 
     public Long getTokenConversionMaxTimeWait() {

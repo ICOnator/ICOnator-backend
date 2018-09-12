@@ -101,7 +101,7 @@ public class MonitorBean {
 
     @Bean
     public PeerGroup peerGroup(BlockChain bitcoinBlockchain, Context bitcoinContext,
-                               NetworkParameters chainNetworkParameters) throws UnknownHostException {
+                               NetworkParameters chainNetworkParameters) {
         PeerGroup peerGroup = new PeerGroup(bitcoinContext, bitcoinBlockchain);
         // Regtest has no peer-to-peer functionality
         if (chainNetworkParameters.equals(MainNetParams.get())) {
@@ -116,6 +116,12 @@ public class MonitorBean {
         } else if (chainNetworkParameters.equals(TestNet3Params.get())) {
             peerGroup.addPeerDiscovery(new DnsDiscovery(chainNetworkParameters));
         }
+
+        appConfig.getBitcoinNodeFastCatchUp().ifPresent((fastCatchUpInstant) -> {
+            LOG.info("Bitcoin PeerGroup: setting fast catch-up time to {}", fastCatchUpInstant);
+            peerGroup.setFastCatchupTimeSecs(fastCatchUpInstant.getEpochSecond());
+        });
+
         return peerGroup;
     }
 
