@@ -9,17 +9,24 @@ import io.iconator.monitor.config.MonitorAppConfigHolder;
 import io.iconator.monitor.service.FxService;
 import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.BitcoinTransactionAdapter;
-import org.bitcoinj.core.*;
+import org.bitcoinj.core.Address;
+import org.bitcoinj.core.BlockChain;
+import org.bitcoinj.core.Context;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.PeerGroup;
+import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.TransactionConfidence;
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.Date;
 
-import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.*;
+import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
 
 public class BitcoinMonitor extends BaseMonitor {
 
@@ -103,6 +110,7 @@ public class BitcoinMonitor extends BaseMonitor {
      * transactions directed to the wallet's addresses.
      * It is assumed that old transactions which are already in blocks are also
      * handed to the listener when starting up the monitor application.
+     *
      * @see <a href="https://groups.google.com/d/msg/bitcoinj/bYcUTimAz9w/jwS_7gOsCwAJ">google groups bitcoinj answer</a>
      */
     private void addCoinsReceivedListener() {
@@ -182,5 +190,14 @@ public class BitcoinMonitor extends BaseMonitor {
     protected boolean isAddressMonitored(String receivingAddress) {
         return wallet.getWatchedAddresses().stream().anyMatch(
                 a -> a.toBase58().contentEquals(receivingAddress));
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void reportBitcoinPeersConnected() {
+        int amountConnectedPeers = bitcoinPeerGroup.numConnectedPeers();
+        int mostCommonChainHeight = bitcoinPeerGroup.getMostCommonChainHeight();
+        int bestChainHeight = bitcoinBlockchain.getBestChainHeight();
+        LOG.info("Bitcoin PeerGroup: amountConnectedPeers={} mostCommonChainHeight={} bestChainHeight={}",
+                amountConnectedPeers, mostCommonChainHeight, bestChainHeight);
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoCon
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import static org.springframework.boot.SpringApplication.run;
 
@@ -17,7 +18,7 @@ import static org.springframework.boot.SpringApplication.run;
 @ComponentScan({"io.iconator.commons.auth",
         "io.iconator.monitor",
         "io.iconator.commons.db.services"})
-
+@EnableScheduling
 public class MonitorApplication {
     static { ConfigNaming.set("monitor.application"); }
     private static final Logger LOG = LoggerFactory.getLogger(MonitorApplication.class);

@@ -20,6 +20,10 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="STASH" />
         </root>
+        <logger name="org.bitcoinj" additivity="false" level="ERROR">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="STASH" />
+        </logger>
     </springProfile>
 
 </configuration>
