@@ -2,12 +2,12 @@ package io.iconator.email.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.model.TransactionReceivedEmailMessage;
+import io.iconator.commons.amqp.model.constants.RoutingKeyConstants;
 import io.iconator.commons.mailservice.MailService;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -40,7 +40,7 @@ public class TransactionReceivedEmailMessageConsumer {
                             ignoreDeclarationExceptions = "true",
                             durable = "true"
                     ),
-                    key = TRANSACTION_RECEIVED_EMAIL_QUEUE)
+                    key = RoutingKeyConstants.TRANSACTION_RECEIVED_ROUTING_KEY)
     )
     public void receiveMessage(TransactionReceivedEmailMessage messageObject) {
         try {
