@@ -1,5 +1,7 @@
 package io.iconator.commons.amqp.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.iconator.commons.amqp.AMQPMessageService;
 import io.iconator.commons.amqp.model.BlockNRBitcoinMessage;
 import io.iconator.commons.amqp.model.BlockNREthereumMessage;
@@ -37,9 +39,11 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     private static final Logger LOG = getLogger(ConcreteICOnatorMessageService.class);
 
     private final AMQPMessageService amqpMessageService;
+    private final ObjectMapper objectMapper;
 
-    public ConcreteICOnatorMessageService(AMQPMessageService amqpMessageService) {
+    public ConcreteICOnatorMessageService(AMQPMessageService amqpMessageService, ObjectMapper objectMapper) {
         this.amqpMessageService = amqpMessageService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -105,18 +109,29 @@ public class ConcreteICOnatorMessageService implements ICOnatorMessageService {
     }
 
     private void sendExchange(String routingKey, Object message) {
-        LOG.info("Message to <{}> exchange. Message content: {}", routingKey, message);
+        LOG.info("Message to <{}> exchange. Message content: {}", routingKey, toJsonOrReferenceString(message));
         this.amqpMessageService.send(routingKey, message);
     }
 
     private FetchRatesResponseMessage sendExchangeAndReceive(String routingKey, Object message) throws InvalidMessageFormatException {
-        LOG.info("Message to <{}> exchange, and wait for the response. Message content: {}", routingKey, message);
+        LOG.info("Message to <{}> exchange, and wait for the response. Message content: {}", routingKey, toJsonOrReferenceString(message));
         // TODO: what if the received message cannot be cast? :-)
         try {
             return (FetchRatesResponseMessage) this.amqpMessageService.sendAndReceive(routingKey, message);
         } catch (Exception e) {
             throw new InvalidMessageFormatException("Cannot cast the received object to 'FetchRatesResponseMessage' class.", e);
         }
+    }
+
+    private String toJsonOrReferenceString(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            if (obj != null) {
+                return obj.toString();
+            }
+        }
+        return null;
     }
 
 }

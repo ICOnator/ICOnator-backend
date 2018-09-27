@@ -60,9 +60,11 @@ public class ICOnatorMessageServiceConfig {
     }
 
     @Bean
-    public ICOnatorMessageService iconatorMessageService(AMQPConnectionConfig amqpConnectionConfig, RabbitTemplate rabbitTemplate) {
+    public ICOnatorMessageService iconatorMessageService(AMQPConnectionConfig amqpConnectionConfig,
+                                                         RabbitTemplate rabbitTemplate,
+                                                         ObjectMapper objectMapper) {
         AMQPMessageService amqpMessageService = getMessageService(amqpConnectionConfig, rabbitTemplate);
-        return new ConcreteICOnatorMessageService(amqpMessageService);
+        return new ConcreteICOnatorMessageService(amqpMessageService, objectMapper);
     }
 
     @Bean
