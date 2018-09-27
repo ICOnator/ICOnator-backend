@@ -11,9 +11,12 @@ import io.iconator.monitor.service.MonitorService;
 import io.iconator.monitor.transaction.EthereumTransactionAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
+import org.web3j.protocol.core.methods.response.EthBlockNumber;
+import org.web3j.protocol.core.methods.response.NetPeerCount;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -157,5 +160,17 @@ public class EthereumMonitor extends BaseMonitor {
     @Override
     protected boolean isAddressMonitored(String receivingAddress) {
         return monitoredAddresses.contains(receivingAddress);
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void reportBitcoinPeersConnected() {
+        try {
+            EthBlockNumber ethBlockNumber = web3j.ethBlockNumber().send();
+            NetPeerCount netPeerCount = web3j.netPeerCount().send();
+            LOG.info("Ethereum Node: ethBlockNumber={} netPeerCount={}",
+                    ethBlockNumber.getBlockNumber(), netPeerCount.getQuantity());
+        } catch (Exception e) {
+            LOG.error("Could not fetch the current ethBlockNumber or netPeerCount. Please, check Ethereum full node connection. Cause: {}", e.getMessage());
+        }
     }
 }
