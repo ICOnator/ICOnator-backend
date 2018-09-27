@@ -167,8 +167,8 @@ public class EthereumMonitor extends BaseMonitor {
         try {
             EthBlockNumber ethBlockNumber = web3j.ethBlockNumber().send();
             NetPeerCount netPeerCount = web3j.netPeerCount().send();
-            LOG.info("Ethereum Node: ethBlockNumber={} netPeerCount={}",
-                    ethBlockNumber.getBlockNumber(), netPeerCount.getQuantity());
+            LOG.info("Ethereum Node: netPeerCount={} ethBlockNumber={}",
+                    netPeerCount.getQuantity(), ethBlockNumber.getBlockNumber());
         } catch (Exception e) {
             LOG.error("Could not fetch the current ethBlockNumber or netPeerCount. Please, check Ethereum full node connection. Cause: {}", e.getMessage());
         }

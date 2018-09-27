@@ -218,7 +218,7 @@ abstract public class BaseMonitor {
             paymentLog.setTransactionStatus(TransactionStatus.CONFIRMED);
             paymentLogService.saveAndCommit(paymentLog);
         } catch (MissingTransactionInformationException e) {
-            LOG.error("Coulnd't set payment log status to confirmed because the transaction id " +
+            LOG.error("Couldn't set payment log status to confirmed because the transaction id " +
                     "could not be retrieved from the {} transaction.", tx.getCurrencyType(), e);
         } catch (PaymentLogNotFoundException e) {
             try {
