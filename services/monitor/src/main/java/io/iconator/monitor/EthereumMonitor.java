@@ -163,7 +163,7 @@ public class EthereumMonitor extends BaseMonitor {
     }
 
     @Scheduled(fixedRate = 60000)
-    public void reportBitcoinPeersConnected() {
+    public void reportEthereumFullNode() {
         try {
             EthBlockNumber ethBlockNumber = web3j.ethBlockNumber().send();
             NetPeerCount netPeerCount = web3j.netPeerCount().send();
