@@ -7,10 +7,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
 @Configuration
@@ -90,10 +91,11 @@ public class MonitorAppConfigHolder {
             return Optional.empty();
         }
         try {
-            Date fastCatchUpDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-                    .parse(bitcoinNodeFastCatchUp);
-            return Optional.of(fastCatchUpDate.toInstant());
-        } catch (ParseException e) {
+            Instant fastCatchUpInstant = LocalDateTime
+                    .parse(bitcoinNodeFastCatchUp, DateTimeFormatter.ISO_DATE_TIME)
+                    .toInstant(ZoneOffset.UTC);
+            return Optional.of(fastCatchUpInstant);
+        } catch (DateTimeParseException e) {
             LOG.error("Parameter bitcoinNodeFastCatchUp not set due to an error while parsing the date.", e);
             return Optional.empty();
         }

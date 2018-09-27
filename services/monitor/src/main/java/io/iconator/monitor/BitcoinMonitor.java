@@ -77,7 +77,7 @@ public class BitcoinMonitor extends BaseMonitor {
     public synchronized void addPaymentAddressesForMonitoring(String addressString, Long addressCreationTimestamp) {
         final Address address = Address.fromBase58(bitcoinNetworkParameters, addressString);
         LOG.info("Add monitored Bitcoin Address: {}", addressString);
-        wallet.addWatchedAddress(address, addressCreationTimestamp / 1000);
+        wallet.addWatchedAddress(address, addressCreationTimestamp);
     }
 
     @Override
@@ -108,7 +108,12 @@ public class BitcoinMonitor extends BaseMonitor {
                 LOG.info("Downloading chain: {}%", (int) pct);
             }
         };
+
+        LOG.info("Bitcoin PeerGroup: starting the SPV with fast catch-up time: {}",
+                Instant.ofEpochSecond(bitcoinPeerGroup.getFastCatchupTimeSecs()));
+
         bitcoinPeerGroup.startBlockChainDownload(downloadListener);
+
         LOG.info("Bitcoin PeerGroup: starting the SPV with fast catch-up time: {}",
                 Instant.ofEpochSecond(bitcoinPeerGroup.getFastCatchupTimeSecs()));
         LOG.info("Downloading SPV blockchain...");

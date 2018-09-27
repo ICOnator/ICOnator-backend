@@ -79,7 +79,7 @@ public class MonitoringInit {
         List<Investor> listInvestors = investorRepository.findAllByOrderByCreationDateAsc();
 
         listInvestors.stream().forEach((investor) -> {
-            long timestamp = investor.getCreationDate().getTime() / 1000L;
+            long timestamp = investor.getCreationDate().toInstant().getEpochSecond();
 
             ofNullable(investor.getPayInBitcoinAddress()).ifPresent((bitcoinAddress) -> {
                 bitcoinMonitor.addPaymentAddressesForMonitoring(bitcoinAddress, timestamp);
