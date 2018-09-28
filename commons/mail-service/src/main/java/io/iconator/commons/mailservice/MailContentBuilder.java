@@ -1,7 +1,5 @@
 package io.iconator.commons.mailservice;
 
-import io.iconator.commons.bitcoin.BitcoinAddressService;
-import io.iconator.commons.ethereum.EthereumAddressService;
 import io.iconator.commons.mailservice.config.MailServiceConfigHolder;
 import io.iconator.commons.model.CurrencyType;
 import io.iconator.commons.model.db.Investor;
@@ -31,20 +29,14 @@ public class MailContentBuilder {
     private final static Logger LOG = LoggerFactory.getLogger(MailContentBuilder.class);
 
     private final TemplateEngine templateEngine;
-    private final BitcoinAddressService bitcoinAddressService;
-    private final EthereumAddressService ethereumAddressService;
     private final MailServiceConfigHolder mailServiceConfigHolder;
 
     private static ByteArrayResource logoContentData;
 
     @Autowired
     public MailContentBuilder(TemplateEngine templateEngine,
-                              BitcoinAddressService bitcoinAddressService,
-                              EthereumAddressService ethereumAddressService,
                               MailServiceConfigHolder mailServiceConfigHolder) {
         this.templateEngine = templateEngine;
-        this.bitcoinAddressService = bitcoinAddressService;
-        this.ethereumAddressService = ethereumAddressService;
         this.mailServiceConfigHolder = mailServiceConfigHolder;
     }
 

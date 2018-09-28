@@ -6,8 +6,6 @@ bootJar.enabled = false
 
 dependencies {
     compile project(':commons:model')
-    compile project(':commons:bitcoin')
-    compile project(':commons:ethereum')
     compile project(':commons:amqp-service')
 
     // Spring Boot
