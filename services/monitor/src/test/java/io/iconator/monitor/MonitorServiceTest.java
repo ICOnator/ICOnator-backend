@@ -203,7 +203,7 @@ public class MonitorServiceTest {
         tt1.tomicsSoldMustBe(tomicsToSellFromTier1);
 
         TestTier tt2 = new TestTier(2, "1970-01-03", "1970-01-05", new BigDecimal("0.1"), new BigInteger("1000").multiply(tomicsFactor()), false, false);
-        BigInteger tomicsToSellFromTier2 = tt2.getTomicsMax().divide(BigInteger.valueOf(2));
+        BigInteger tomicsToSellFromTier2 = tt2.getTomicsMax().divide(BigInteger.valueOf(3));
         tt2.datesMustBeShiftedBy(tt1.getTier().getEndDate().getTime() - blockTime.getTime());
         tt2.tomicsSoldMustBe(tomicsToSellFromTier2);
 
@@ -219,7 +219,7 @@ public class MonitorServiceTest {
         tt1.assertTier();
         tt2.assertTier();
 
-        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 4);
+        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 3);
         tt1.assertTier();
         tt2.assertTier();
     }
@@ -240,7 +240,7 @@ public class MonitorServiceTest {
         tt1.tomicsSoldMustBe(tomicsToSellFromTier1);
 
         TestTier tt2 = new TestTier(2, "1970-01-03", "1970-01-05", new BigDecimal("0.1"), new BigInteger("1000").multiply(tomicsFactor()), false, false);
-        final BigInteger tomicsToSellFromTier2 = tt2.getTomicsMax().divide(BigInteger.valueOf(2));
+        final BigInteger tomicsToSellFromTier2 = tt2.getTomicsMax().divide(BigInteger.valueOf(3));
         tt2.tomicsSoldMustBe(tomicsToSellFromTier2);
 
         final BigDecimal paymentToTier1 = monitorService.convertTomicsToUsd(tomicsToSellFromTier1, tt1.getDiscount());
@@ -255,7 +255,7 @@ public class MonitorServiceTest {
         tt1.assertTier();
         tt2.assertTier();
 
-        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 4);
+        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 3);
         tt1.assertTier();
         tt2.assertTier();
     }
@@ -276,7 +276,7 @@ public class MonitorServiceTest {
 
         TestTier tt2 = new TestTier(2, "1970-01-03", "1970-01-05", new BigDecimal("0.1"), BigInteger.ZERO, false, true);
         BigInteger tomicsMax = totalTomicsAmount().subtract(tomicsToSellFromTier1);
-        final BigInteger tomicsToSellFromTier2 = tomicsMax.divide(BigInteger.valueOf(2));
+        final BigInteger tomicsToSellFromTier2 = tomicsMax.divide(BigInteger.valueOf(3));
         tt2.tomicsSoldMustBe(tomicsToSellFromTier2);
         tt2.tomicsMaxMustBe(tomicsMax);
 
@@ -292,7 +292,7 @@ public class MonitorServiceTest {
         tt1.assertTier();
         tt2.assertTier();
 
-        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 4);
+        makeAndConvertPaymentFailingOnOverflow(tt2, blockTime, 3);
         tt1.assertTier();
         tt2.assertTier();
     }
@@ -453,16 +453,16 @@ public class MonitorServiceTest {
 
         // Fill 3/4 of presale tier
         Date blockTime = Date.valueOf("2018-08-02");
-        makeAndConvertPaymentFailingOnOverflow(tiers.get(0), blockTime, 2);
+        makeAndConvertPaymentFailingOnOverflow(tiers.get(0), blockTime, 3);
         blockTime = Date.valueOf("2018-08-31");
-        makeAndConvertPaymentFailingOnOverflow(tiers.get(0), blockTime, 4);
+        makeAndConvertPaymentFailingOnOverflow(tiers.get(0), blockTime, 5);
         tiers.forEach(TestTier::assertTier);
 
         // Fill 3/4 of first tier
         blockTime = Date.valueOf("2018-09-01");
-        makeAndConvertPaymentFailingOnOverflow(tiers.get(1), blockTime, 2);
+        makeAndConvertPaymentFailingOnOverflow(tiers.get(1), blockTime, 3);
         blockTime = Date.valueOf("2018-09-28");
-        makeAndConvertPaymentFailingOnOverflow(tiers.get(1), blockTime, 4);
+        makeAndConvertPaymentFailingOnOverflow(tiers.get(1), blockTime, 5);
         tiers.forEach(TestTier::assertTier);
 
         // Fill first tier. Dates shifted two days after this test.
@@ -489,7 +489,7 @@ public class MonitorServiceTest {
         // Skip second tier and add to third tier directly.
         blockTime = Date.valueOf("2018-10-03");
         BigInteger overallRemainingTomics = totalTomicsAmount().subtract(saleTierService.getTotalTomicsSold());
-        BigInteger tomicsFromTier3 = overallRemainingTomics.divide(BigInteger.valueOf(4));
+        BigInteger tomicsFromTier3 = overallRemainingTomics.divide(BigInteger.valueOf(3));
         BigDecimal paymentToTier3 = monitorService.convertTomicsToUsd(tomicsFromTier3, tiers.get(3).getDiscount());
         tiers.get(3).tomicsMaxMustBe(overallRemainingTomics);
         tiers.get(3).tomicsSoldMustBe(tomicsFromTier3);
