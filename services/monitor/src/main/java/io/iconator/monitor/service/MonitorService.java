@@ -241,6 +241,18 @@ public class MonitorService {
         return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
+    /**
+     * Allocates tokens according to the USD amount in the given payment log.
+     *
+     * The selection of the tier happens based on the block time of the payment. If an 'old' payment
+     * get processed with a block time that coincides with a tier that is not active anymore at
+     * processing time, this method still tries to take the tokens from that tier.
+     * @param paymentLog The payment for which tokens should be allocated.
+     * @return The given input payment log with the amount of allocated tokens and/or a reference
+     * to a refund entry set.
+     * @throws NoTierAtDateException if the block time of the payment log does not fall into the
+     * date range of any tier.
+     */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public PaymentLog allocateTokens(PaymentLog paymentLog)
             throws NoTierAtDateException {
@@ -383,10 +395,11 @@ public class MonitorService {
         long dateShift;
         if (blockTime.getTime() < tier.getStartDate().getTime()) {
             dateShift = tier.getEndDate().getTime() - tier.getStartDate().getTime();
+            tier.setEndDate(tier.getStartDate());
         } else {
             dateShift = tier.getEndDate().getTime() - blockTime.getTime();
+            tier.setEndDate(blockTime);
         }
-        tier.setEndDate(blockTime);
         tier = saleTierRepository.save(tier);
         saleTierService.getAllSubsequentTiers(tier).forEach(t -> {
             t.setStartDate(new Date(t.getStartDate().getTime() - dateShift));
