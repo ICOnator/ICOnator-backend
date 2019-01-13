@@ -6,6 +6,7 @@ import io.iconator.commons.sql.dao.InvestorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Provides common methods related to {@link Investor} entity.
+ * Acts as a facade to the {@link InvestorRepository}.
+ */
 @Service
 public class InvestorService {
     private final Logger LOG = LoggerFactory.getLogger(InvestorService.class);
@@ -55,6 +60,14 @@ public class InvestorService {
         return investorFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Inserts the given {@link Investor} into the database or updates it if it already exists.
+     * Flushes changes to the database. The save is executed transactionless, which means that the
+     * changes are commited to the database immediatly.
+     * @param investor The investor to insert/update.
+     * @return the inserted/updated investor entry.
+     * @see CrudRepository#save(java.lang.Object)
+     */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Investor saveTransactionless(Investor investor) {
         return investorRepository.saveAndFlush(investor);

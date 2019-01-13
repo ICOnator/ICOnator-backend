@@ -45,6 +45,10 @@ public class TierController {
         return ResponseEntity.ok(saleTiers);
     }
 
+    /**
+     * TODO: Check for conflicting sale tier configurations (e.g. overlapping start and end dates)
+     * before inserting the received sale tier.
+     */
     @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_UTF8_VALUE,
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<List<SaleTierResponse>> createTiers(
