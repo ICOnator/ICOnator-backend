@@ -21,6 +21,12 @@ import java.util.Set;
 import static javax.persistence.GenerationType.SEQUENCE;
 import static javax.persistence.TemporalType.TIMESTAMP;
 
+/**
+ * An instance of this entity represents a record of multiple exchange rates for cryptocurrencies
+ * taken at a specific time from a specific exchange service. It references mutliple
+ * {@link ExchangeCurrencyRate}s (one for each cryptocurrency) which contain the actual exchange
+ * rate values.
+ */
 @Entity
 @Table(name = "exchange_entry_rate")
 public class ExchangeEntryRate {
@@ -34,10 +40,16 @@ public class ExchangeEntryRate {
     @Column(name = "creation_date", nullable = false)
     private Date creationDate;
 
+    /**
+     * The exchange service used to retrieve the exchange rates.
+     */
     @Column(name = "exchange_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private ExchangeType exchangeType;
 
+    /**
+     * The set of exchange rates for the different cryptocurrencies.
+     */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "exchange_currency_rates_id")
     private Set<ExchangeCurrencyRate> exchangeCurrencyRates = new HashSet<>();

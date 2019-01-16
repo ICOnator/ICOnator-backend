@@ -17,6 +17,11 @@ import java.math.BigInteger;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
+/**
+ * Represents an investor's eligibility for a refund. These refund entries are created if a payment
+ * of an investor cannot be processed correctly. The reasons for which a refund entry is created
+ * are given in the {@link RefundReason} enum.
+ */
 @Entity
 @Table(name = "eligible_for_refund")
 public class EligibleForRefund {
@@ -40,9 +45,15 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private RefundReason refundReason;
 
+    /**
+     * The amount in cryptocurrency that this refund is worth.
+     */
     @Column(name = "cryptocurrencyAmount", precision = 34, scale = 0)
     private BigInteger cryptocurrencyAmount;
 
+    /**
+     * The amount in fiat currency (USD) that this refund is worth.
+     */
     @Column(name = "usd_amount", precision = 34, scale = 6)
     private BigDecimal usdAmount;
 
@@ -50,10 +61,16 @@ public class EligibleForRefund {
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
+    /**
+     * The investor that is eligible for this refund.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "investor_id", nullable = false)
     private Investor investor;
 
+    /**
+     * The transaction for which this refund entry was created.
+     */
     @Column(name = "tx_identifier", unique = true, nullable = false)
     private String txIdentifier;
 

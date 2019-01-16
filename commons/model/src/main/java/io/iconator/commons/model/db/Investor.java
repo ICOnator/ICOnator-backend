@@ -14,6 +14,9 @@ import java.util.Objects;
 import static javax.persistence.GenerationType.SEQUENCE;
 import static javax.persistence.TemporalType.TIMESTAMP;
 
+/**
+ * Represents a registered investor participating in the ICO.
+ */
 @Entity
 @Table(
         name = "investor",
@@ -36,24 +39,42 @@ public class Investor {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
+    /**
+     * Used to verify the investors email address in the registration process.
+     */
     @Column(name = "email_confirmation_token", unique = true, nullable = false)
     private String emailConfirmationToken;
 
     @Column(name = "wallet_address")
     private String walletAddress;
 
+    /**
+     * The Ether address to which the investor can make investments to.
+     */
     @Column(name = "pay_in_ether_address", unique = true)
     private String payInEtherAddress;
 
+    /**
+     * The Bitcoin address to which the investor can make investments to.
+     */
     @Column(name = "pay_in_bitcoin_address", unique = true)
     private String payInBitcoinAddress;
 
+    /**
+     * The investor's Ether address to which refunds can be send.
+     */
     @Column(name = "refund_ether_address")
     private String refundEtherAddress;
 
+    /**
+     * The investor's Bitcoin address to which refunds can be send.
+     */
     @Column(name = "refund_bitcoin_address")
     private String refundBitcoinAddress;
 
+    /**
+     * The IP address obtained from HTTP requests sent by the investor on registering for the ICO.
+     */
     @Column(name = "ip_address")
     private String ipAddress;
 

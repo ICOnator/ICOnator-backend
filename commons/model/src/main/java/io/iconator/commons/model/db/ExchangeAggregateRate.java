@@ -24,6 +24,15 @@ import java.util.stream.Collectors;
 import static javax.persistence.GenerationType.SEQUENCE;
 import static javax.persistence.TemporalType.TIMESTAMP;
 
+/**
+ * An instance of this entity represents a record of multiple aggregated exchange rates for
+ * cryptocurrencies taken at a specific time. It references mutliple
+ * {@link ExchangeAggregateCurrencyRate}s (one for each cryptocurrency) which contain the actual
+ * exchange rate aggregate values.
+ */
+// TODO: Instead of storing the two attributes blockNrEth and blockNrBtc on this class, they should
+//       be stored on the corresponding ExchangeAggregateCurrencyRate. This would make extending the
+//       ICOnator with a new cryptocurrency easier.
 @Entity
 @Table(name = "exchange_aggregate_rate", indexes = {
         @Index(columnList = "block_nr_eth", name = "block_nr_eth_idx"),
@@ -39,16 +48,29 @@ public class ExchangeAggregateRate {
     @Column(name = "creation_date", nullable = false)
     private Date creationDate;
 
+    /**
+     * The Ethereum block number that was current at the time of creating this rates entry.
+     */
     @Column(name = "block_nr_eth")
     private Long blockNrEth;
 
+    /**
+     * The Bitcoin block number that was current at the time of creating this rates entry.
+     */
     @Column(name = "block_nr_btc")
     private Long blockNrBtc;
 
+    /**
+     * This list contains an entry for each exchange service that was used to retrive the exchange
+     * rates that where aggregated.
+     */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "exchange_entry_rates_id")
     private List<ExchangeEntryRate> exchangeEntryRates = new ArrayList<>();
 
+    /**
+     * The set of aggregated exchange rates for the different cryptocurrencies.
+     */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "exchange_aggregate_currency_rates_id")
     private Set<ExchangeAggregateCurrencyRate> exchangeAggregateCurrencyRates = new HashSet<>();

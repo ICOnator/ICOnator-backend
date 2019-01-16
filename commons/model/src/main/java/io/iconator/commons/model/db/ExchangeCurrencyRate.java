@@ -13,6 +13,12 @@ import java.math.BigDecimal;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
+/**
+ * An instance of this entity represents a record of an exchange rate at a specific time for a
+ * specific cryptocurrency. The timestamp at which the rate was retrieved is given in the
+ * corresponding {@link ExchangeEntryRate}.
+ * The rate is meant to be fiat base currency (e.g. USD) per cruptocurrency unit.
+ */
 @Entity
 @Table(name = "exchange_currency_rate")
 public class ExchangeCurrencyRate {

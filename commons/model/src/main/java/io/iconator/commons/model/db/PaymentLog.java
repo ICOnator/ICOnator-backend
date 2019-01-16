@@ -22,15 +22,28 @@ import java.util.Date;
 
 import static javax.persistence.GenerationType.SEQUENCE;
 
+/**
+ * A payment log holds information about a payment received from an investor. It holds the required
+ * information for processing the corresponding payment. It is also used to track the state of the
+ * processing, e.g. if the payment was fully processed and can be considered completed.
+ * The terms payment and transaction are used as synonymes.
+ */
 @Entity(name = "payment_log")
 public class PaymentLog {
 
+    /**
+     * A payment can be in either of the three status given in this enum.
+     * These status correspond to the states of a transaction on the blockchain.
+     */
     public enum TransactionStatus {
-        PENDING,
-        BUILDING,
-        CONFIRMED
+        PENDING, /* The transaction is in the network but not yet on a block. */
+        BUILDING, /* The trannsaction is on a block. */
+        CONFIRMED /* The transaction is covered by enough blocks to be considered confirmed. */
     }
 
+    /**
+     * The version number is needed for optimistic locking in concurrent database accesses.
+     */
     @Version
     @Column(name = "version")
     private Long version = 0L;
@@ -40,6 +53,9 @@ public class PaymentLog {
     @Column(name = "id", nullable = false)
     private long id;
 
+    /**
+     * The id of the blockchain transaction that this payment log corresponds to.
+     */
     @Column(name = "transaction_id", unique = true, nullable = false)
     private String transactionId;
 
@@ -47,45 +63,80 @@ public class PaymentLog {
     @Column(name = "create_date", nullable = false)
     private Date createDate = new Date();
 
+    /**
+     * The date and time on which this payment log was last processed.
+     */
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "processed_date")
     private Date processedDate = new Date();
 
+    /**
+     * The time at which the transaction was added to a block.
+     */
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "block_time")
     private Date blockTime;
 
+    /**
+     * The cryptocurrency in which the payment was made.
+     */
     @Column(name = "cryptocurrency_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private CurrencyType currency;
 
+    /**
+     * The payment amount in cryptocurrency.
+     */
     @Column(name = "cryptocurrency_amount", precision = 34, scale = 0)
     private BigInteger cryptocurrencyAmount = BigInteger.ZERO;
 
+    /**
+     * The exchange rate used to convert from the cryptocurrency value of this payment to fiat
+     * currency value (USD).
+     */
     @Column(name = "usd_fx_rate")
     private BigDecimal usdFxRate = BigDecimal.ZERO;
 
+    /**
+     * The payment amount in USD.
+     */
     @Column(name = "usd_amount", precision = 34, scale = 6)
     private BigDecimal usdAmount = BigDecimal.ZERO;
 
+    /**
+     * The investor that made this payment.
+     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "investor_id")
     private Investor investor;
 
-    /*
-     * It is important that the default value is null and not 0 because this is
+    /**
+     * The amount of tokens that were allocated for this payment. Given in the token's atomic unit.
+     *
+     * Note: It is important that the default value is null and not 0 because this is
      * used for checks in the processing of transactions.
      */
     @Column(name = "allocated_tomics", precision = 34, scale = 0)
     private BigInteger allocatedTomics = null;
 
+    /**
+     * A reference to a refund entry if the processing of the payment ran into an error.
+     */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "eligible_for_refund_id")
     private EligibleForRefund eligibleForRefund;
 
+    /**
+     * This flag is true if a message was sent to the investor that informs him that his transaction
+     * was seen on the blockchain network.
+     */
     @Column(name = "is_transaction_received_message_sent")
     private Boolean isTransactionReceivedMessageSent = false;
 
+    /**
+     * This flag is true if a message was sent to the investor that informs him about how many
+     * tokens where allocated to him.
+     */
     @Column(name = "is_allocation_message_sent")
     private Boolean isAllocationMessageSent = false;
 
