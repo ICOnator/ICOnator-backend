@@ -18,6 +18,9 @@ import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATO
 import static io.iconator.commons.amqp.model.constants.QueueConstants.KYC_START_EMAIL_SENT_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_START_EMAIL_SENT_ROUTING_KEY;
 
+/**
+ * Message consumer that sets kycStartEmailSent to true after the KYC start email has been sent
+ */
 @Component
 public class KycStartEmailSentMessageConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(KycStartEmailSentMessageConsumer.class);

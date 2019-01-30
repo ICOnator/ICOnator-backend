@@ -17,6 +17,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * This service handles all the interaction with the KycInfo repository
+ */
 @Service
 public class KycInfoService {
 

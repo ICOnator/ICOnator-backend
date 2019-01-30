@@ -18,6 +18,9 @@ import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATO
 import static io.iconator.commons.amqp.model.constants.QueueConstants.KYC_REMINDER_EMAIL_SENT_QUEUE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.KYC_REMINDER_EMAIL_SENT_ROUTING_KEY;
 
+/**
+ * Message consumer that increases the number of reminders sent after a reminder email gets sent
+ */
 @Component
 public class KycReminderEmailSentMessageConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(KycReminderEmailSentMessageConsumer.class);

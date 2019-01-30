@@ -24,6 +24,8 @@ public class EtherFullNodeHealthCheck implements HealthIndicator {
     @Override
     public Health health() {
         URL url;
+        long latency;
+
         try {
             url = new URL(this.monitorAppConfigHolder.getEthereumNodeUrl());
         } catch (MalformedURLException mue) {
@@ -31,18 +33,12 @@ public class EtherFullNodeHealthCheck implements HealthIndicator {
         }
 
         InetSocketAddress sa = new InetSocketAddress(url.getHost(), url.getPort());
-        Socket s = new Socket();
 
         long start = System.currentTimeMillis();
-        try {
-            s.connect(sa, 1000);
-        } catch (Exception e) {
-            return Health.down(e).build();
-        }
-        long latency = System.currentTimeMillis() - start;
 
-        try {
-            s.close();
+        try(Socket s = new Socket()) {
+            s.connect(sa, 1000);
+            latency = System.currentTimeMillis() - start;
         } catch (IOException ioe) {
             return Health.down(ioe).build();
         }

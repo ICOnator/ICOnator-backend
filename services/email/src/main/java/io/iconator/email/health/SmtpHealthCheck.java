@@ -9,6 +9,9 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+/**
+ * Health check that checks if the configured SMTP server is still online
+ */
 @Component
 public class SmtpHealthCheck implements HealthIndicator {
 
@@ -21,12 +24,11 @@ public class SmtpHealthCheck implements HealthIndicator {
     @Override
     public Health health() {
         InetSocketAddress sa = new InetSocketAddress(host, port);
-        Socket s = new Socket();
 
         long latency;
         String info;
 
-        try{
+        try(Socket s = new Socket()) {
             long start = System.currentTimeMillis();
             s.connect(sa, 1000);
             latency = System.currentTimeMillis() - start;
@@ -49,8 +51,6 @@ public class SmtpHealthCheck implements HealthIndicator {
             }
 
             out.println("QUIT");
-
-            s.close();
         } catch(IOException e) {
             return Health.down(e).build();
         }
