@@ -10,6 +10,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+/**
+ * Determines the next execution time for fetching rates.
+ * The interval is configurable in the the application properties.
+ */
 @Component
 public class FetchCurrentRatesTrigger implements Trigger {
 

@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Offers getters for rates-related application properties.
+ */
 @Configuration
 public class RatesAppConfigHolder {
 

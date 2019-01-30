@@ -33,6 +33,10 @@ public class TierController {
     @Autowired
     private SaleTierService saleTierService;
 
+    /**
+     * @return HTTP response containing all sale tiers in the database ordered by  the tiers' start
+     * date.
+     */
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
@@ -46,9 +50,12 @@ public class TierController {
     }
 
     /**
-     * TODO: Check for conflicting sale tier configurations (e.g. overlapping start and end dates)
-     * before inserting the received sale tier.
+     * Saves the sale tier received in the HTTP request to the database.
+     * @param tiersRequest The HTTP with the sale tier to be stored/updated.
+     * @return HTTP response with the just stored sale tier.
      */
+    // TODO: Check for conflicting sale tier configurations (e.g. overlapping start and end dates)
+    //       before inserting the received sale tier.
     @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_UTF8_VALUE,
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<List<SaleTierResponse>> createTiers(

@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
+/**
+ * Rates-related bean declarations.
+ */
 @Configuration
 public class RatesAppConfig {
 

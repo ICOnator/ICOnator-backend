@@ -14,6 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
+/**
+ * Offers getters for monitor-related application properties.
+ */
 @Configuration
 public class MonitorAppConfigHolder {
 

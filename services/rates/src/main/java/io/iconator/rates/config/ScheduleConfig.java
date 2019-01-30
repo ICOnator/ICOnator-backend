@@ -13,6 +13,9 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Configuration for the periodic rates fetching task.
+ */
 @Configuration
 @Import({RatesAppConfigHolder.class, FetchCurrentRatesRunnable.class, FetchCurrentRatesTrigger.class})
 @EnableScheduling

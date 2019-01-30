@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * The task that initializes the fetching of exchange rates.
+ */
 @Component
 public class FetchCurrentRatesRunnable implements Runnable {
 
