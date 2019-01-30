@@ -17,6 +17,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * This service handles all the interaction with the KycInfo repository
+ */
 @Service
 public class KycInfoService {
 
@@ -30,6 +33,13 @@ public class KycInfoService {
         this.kycInfoRepository = kycInfoRepository;
     }
 
+    /**
+     * Saves the KYC info to the database
+     * @param investorId The id of the investor
+     * @param kycUri The KYC URI assigned to this investor
+     * @return The KYC info that was saved to the database
+     * @throws KycInfoNotSavedException if an error happened while trying to save the KYC info to the database
+     */
     @Transactional
     public KycInfo saveKycInfo(long investorId, URI kycUri) throws KycInfoNotSavedException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
@@ -58,6 +68,13 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(KycInfoNotSavedException::new);
     }
 
+    /**
+     * Sets the KYC process completion in the database entry for the specified investor
+     * @param investorId The id of the investor
+     * @param isKycComplete
+     * @return The KYC info that was changed
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     @Transactional
     public KycInfo setKycComplete(long investorId, boolean isKycComplete) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
@@ -70,6 +87,13 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Sets the KYC process completion in the database entry for the specified investor
+     * @param uuid UUID of the investor
+     * @param isKycComplete
+     * @return The KYC info that was changed
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     @Transactional
     public KycInfo setKycCompleteByUuid(UUID uuid, boolean isKycComplete) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(uuid);
@@ -82,6 +106,13 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Sets the {@link KycInfo#kycUri} for the specified investor in the database
+     * @param investorId The id of the investor
+     * @param kycUri The KYC URI to be assigned to the investor
+     * @return The KYC info that was changed
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     @Transactional
     public KycInfo setKycUri(long investorId, String kycUri) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
@@ -94,6 +125,12 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Sets the entry for {@link KycInfo#isStartKycEmailSent} to complete
+     * @param investorId The id of the investor
+     * @return The KYC info that was changed
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     @Transactional
     public KycInfo setKycStartEmailSent(long investorId) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
@@ -106,6 +143,12 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Increases {@link KycInfo#noOfRemindersSent} for the specified investor by one
+     * @param investorId The id of the investor
+     * @return The KYC info that was changed
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     @Transactional
     public KycInfo increaseNumberOfRemindersSent(long investorId) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
@@ -118,18 +161,33 @@ public class KycInfoService {
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Returns the KYC info for the specified investor
+     * @param investorId
+     * @return
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     public KycInfo getKycInfoByInvestorId(long investorId) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByInvestorId(investorId);
 
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * Returns the KYC info for the specified investor
+     * @param kycUuid
+     * @return
+     * @throws InvestorNotFoundException if the investor does not exist in the database
+     */
     public KycInfo getKycInfoByKycUuid(UUID kycUuid) throws InvestorNotFoundException {
         Optional<KycInfo> kycInfoFromDb = kycInfoRepository.findOptionalByKycUuid(kycUuid);
 
         return kycInfoFromDb.orElseThrow(InvestorNotFoundException::new);
     }
 
+    /**
+     * @return A list of all investors for which the KYC start email has already been sent
+     */
     public List<Long> getAllInvestorIdWhereStartKycEmailSent() {
         return kycInfoRepository.findAll().stream()
                 .filter(KycInfo::isStartKycEmailSent)

@@ -49,6 +49,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+/**
+ * Provides all the REST endpoints for the KYC module
+ */
 @RestController
 public class KycController {
 
@@ -74,6 +77,15 @@ public class KycController {
 
     private AmqpMessageFactory messageFactory = new AmqpMessageFactory();
 
+    /**
+     * Initiates the KYC process for all the investors in the database that have not yet started the KYC process.
+     * The KYC URI gets generated automatically depending on which implementation of the {@link KycLinkCreatorService} is injected.
+     * @param requestContext The context of the request that called this endpoint
+     * @return DTO containing the list of investors for which KYC was started and a list of investors for which it failed
+     * @throws NonexistentInvestorException if investor for which KYC is initiated does not exist
+     * @throws KycLinkException if there is something wrong with the generated KYC URI
+     * @throws UnexpectedException if for some reason the KYC info does not get saved
+     */
     @RequestMapping(value = "/kyc/start", method = POST, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<StartAllKycResponseDTO> startKyc(@Context HttpServletRequest requestContext)
             throws NonexistentInvestorException, KycLinkException, UnexpectedException {
@@ -106,6 +118,19 @@ public class KycController {
                 .body(new StartAllKycResponseDTO().setKycStartedList(kycStartedList).setErrorList(errorList));
     }
 
+    /**
+     * Initiates the KYC process for a specific investor
+     * @param investorId The id of the investor for whom the KYC process is initiated
+     * @param kycStartRequest An optional DTO containing the KYC URI
+     * @param requestContext The context of the request that called this endpoint
+     * @return A DTO containing the investor id and a boolean for success or failure
+     * @throws KycAlreadyStartedWithEmailException if KYC has already been started for this investor and an email has been sent
+     * @throws KycAlreadyStartedWithoutEmailException if KYC has already been started for this investor but no email has been sent
+     * @throws KycAlreadyCompletedException if KYC was already completed for this investor
+     * @throws KycLinkException if there is something wrong with the KYC URI
+     * @throws NonexistentInvestorException if the specified investor does not exist
+     * @throws UnexpectedException if for some reason the KYC info does not get saved
+     */
     @RequestMapping(value = "/kyc/{investorId}/start", method = POST, consumes = APPLICATION_JSON_UTF8_VALUE,
             produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<StartSingleKycResponseDTO> startKycForInvestor(@PathVariable("investorId") Long investorId,
@@ -128,7 +153,6 @@ public class KycController {
                 if(kycInfo.isStartKycEmailSent()) {
                     throw new KycAlreadyStartedWithEmailException();
                 } else {
-                    // TODO: start email should be resent at this point
                     throw new KycAlreadyStartedWithoutEmailException();
                 }
             } else {
@@ -152,6 +176,16 @@ public class KycController {
         return response;
     }
 
+    /**
+     * Sends a reminder email to the specified investor
+     * @param investorId The id of the investor who should be reminded of the KYC
+     * @param requestContext The context of the request that called this endpoint
+     * @return A DTO containing the investor id and a boolean for success or failure
+     * @throws KycAlreadyCompletedException if KYC was already completed for this investor
+     * @throws KycLinkException if there is something wrong with the KYC URI
+     * @throws NonexistentInvestorException if the specified investor does not exist
+     * @throws KycNotYetStartedException if the KYC for the specified investor has not yet been initiated
+     */
     @RequestMapping(value = "/kyc/{investorId}/remind", method = POST, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<RemindSingleKycResponseDTO> remindInvestor(@PathVariable("investorId") Long investorId,
                                             @Context HttpServletRequest requestContext)
@@ -180,6 +214,14 @@ public class KycController {
         }
     }
 
+    /**
+     * Completes the KYC process for the specified investor
+     * @param investorId The id of the investor for whom the KYC should be completed
+     * @param requestContext The context of the request that called this endpoint
+     * @return A DTO containing the investor id and a boolean for success or failure
+     * @throws NonexistentInvestorException if the specified investor does not exist
+     * @throws KycAlreadyCompletedException if KYC was already completed for this investor
+     */
     @RequestMapping(value = "/kyc/{investorId}/complete", method = POST, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<CompleteSingleKycResponseDTO> setInvestorComplete(@PathVariable("investorId") Long investorId,
                                                  @Context HttpServletRequest requestContext)
@@ -205,6 +247,13 @@ public class KycController {
         }
     }
 
+    /**
+     * Returns the status of the KYC process for the specified investor
+     * @param investorId The id of the investor for whom the KYC status should be returned
+     * @param requestContext The context of the request that called this endpoint
+     * @return All the KYC info about the specified investor
+     * @throws NonexistentInvestorException if the specified investor does not exist
+     */
     @RequestMapping(value = "/kyc/{investorId}/status", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<KycInfo> getKycStatus(@PathVariable("investorId") Long investorId,
                                           @Context HttpServletRequest requestContext)
@@ -223,6 +272,12 @@ public class KycController {
         }
     }
 
+    /**
+     * Fetches the KYC results from the external provider and completes the KYC process for all investors found in the data from the external provider.
+     * Which external provider is used depends on which implementation of the {@link IdentificationService} is injected
+     * @param requestContext The context of the request that called this endpoint
+     * @return A DTO with a list of investors for which the KYC has been completed and a list of investors for which it failed
+     */
     @RequestMapping(value = "/kyc/fetchall", method = GET, produces = APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<FetchAllResponseDTO> fetchAllKycIdentifications(@Context HttpServletRequest requestContext) {
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);

@@ -79,8 +79,8 @@ public class MailService {
         if (this.mailServiceConfigHolder.isEnabled()) {
             sendMail(oMessage, MailType.TRANSACTION_RECEIVED_EMAIL);
         } else {
-            LOG.info("Skip sending {} email to {}, link: {}", MailType.TRANSACTION_RECEIVED_EMAIL,
-                    investor.getEmail());
+            LOG.info("Skip sending {} email to {}, funds: {}, currency: {}, url: {}", MailType.TRANSACTION_RECEIVED_EMAIL,
+                    investor.getEmail(), amountFundsReceived, currencyType, transactionUrl);
         }
     }
 
@@ -96,8 +96,8 @@ public class MailService {
         if (this.mailServiceConfigHolder.isEnabled()) {
             sendMail(oMessage, MailType.TOKENS_ALLOCATED_EMAIL);
         } else {
-            LOG.info("Skip sending {} email to {}, link: {}", MailType.TOKENS_ALLOCATED_EMAIL,
-                    investor.getEmail());
+            LOG.info("Skip sending {} email to {}, funds: {}, currency: {}, url: {}, tokens: {}", MailType.TOKENS_ALLOCATED_EMAIL,
+                    investor.getEmail(), amountFundsReceived, currencyType, transactionUrl, tokenAmount);
         }
     }
 
@@ -114,7 +114,7 @@ public class MailService {
                 LOG.error("Failed getting recipient after sending email type {}. Reason {}", MailType.KYC_START_EMAIL, me.toString());
             }
         } else {
-            LOG.info("Skip sending {} email to {}", MailType.KYC_START_EMAIL, investor.getEmail());
+            LOG.info("Skip sending {} email to {}, url: {}", MailType.KYC_START_EMAIL, investor.getEmail(), kycUrl);
         }
     }
 
@@ -131,7 +131,7 @@ public class MailService {
                 LOG.error("Failed getting recipient after sending email type {}. Reason {}", MailType.KYC_REMINDER_EMAIL, me.toString());
             }
         } else {
-            LOG.info("Skip sending {} email to {}", MailType.KYC_REMINDER_EMAIL, investor.getEmail());
+            LOG.info("Skip sending {} email to {}, url: {}", MailType.KYC_REMINDER_EMAIL, investor.getEmail(), kycUrl);
         }
     }
 
@@ -195,7 +195,7 @@ public class MailService {
 
     private String getRecipient(Optional<MimeMessageHelper> oMessage) throws MessagingException {
         // TODO: don't assume that the "to" email field has at least one address
-        return oMessage.get().getMimeMessage().getRecipients(Message.RecipientType.TO)[0].toString();
+        return oMessage.orElseThrow(MessagingException::new).getMimeMessage().getRecipients(Message.RecipientType.TO)[0].toString();
     }
 
     private void publishMailSentMessage(String recipient, MailType mailType) {
