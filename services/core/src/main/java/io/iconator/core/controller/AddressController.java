@@ -81,11 +81,11 @@ public class AddressController {
         return setWalletAddress(addressRequest, emailConfirmationToken);
     }
 
-    @Transactional
-    public ResponseEntity<AddressResponse> setWalletAddress(AddressRequest addressRequest, String emailConfirmationToken)
-            throws ConfirmationTokenNotFoundException, WalletAddressAlreadySetException,
-            EthereumWalletAddressEmptyException, BitcoinAddressInvalidException, EthereumAddressInvalidException,
-            AvailableKeyPairNotFoundException, UnexpectedException {
+    private ResponseEntity<AddressResponse> setWalletAddress(AddressRequest addressRequest, String emailConfirmationToken)
+            throws ConfirmationTokenNotFoundException, EthereumWalletAddressEmptyException,
+            BitcoinAddressInvalidException, EthereumAddressInvalidException, AvailableKeyPairNotFoundException,
+            UnexpectedException {
+
         // Get the user that belongs to the token
         Optional<Investor> oInvestor = findInvestorOrThrowException(emailConfirmationToken);
 
@@ -117,8 +117,12 @@ public class AddressController {
             return new AvailableKeyPairNotFoundException();
         });
 
-        // Persist the updated investor
+        // If it is desired, that storing the new investor is rolledback in case sending the summary email to the
+        // investor or informing the monitor about the new investor fails, then a transaction has to start here.
+        // The below storing and message sending code would then have to be moved into an @Transactional method
+        // outside of this class.
         try {
+            // Persist the updated investor
             Investor investor = oInvestor.get();
             investor.setWalletAddress(addPrefixEtherIfNotExist(walletAddress))
                     .setPayInBitcoinAddress(keyPairs.getPublicBtc())
@@ -128,12 +132,17 @@ public class AddressController {
             LOG.debug("Saving wallet for the investor (" + investor.getEmail()
                     + ") with confirmation token (" + investor.getEmailConfirmationToken() + ").");
             investorRepository.save(investor);
+        } catch (Exception e) {
+            LOG.error("Unexpected exception while trying to store new investor. Exception: {}", e);
+            throw new UnexpectedException();
+        }
+        try {
             SummaryEmailMessage summaryEmailMessage = new SummaryEmailMessage(build(oInvestor.get()));
             messageService.send(summaryEmailMessage);
             SetWalletAddressMessage setWalletAddressMessage = new SetWalletAddressMessage(build(oInvestor.get()));
             messageService.send(setWalletAddressMessage);
         } catch (Exception e) {
-            LOG.error("Unexpected exception in AddressController:", e);
+            LOG.error("Unexpected exception while trying to queue messages. Exception:", e);
             throw new UnexpectedException();
         }
 
