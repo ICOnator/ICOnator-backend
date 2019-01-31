@@ -2,8 +2,6 @@ package io.iconator.commons.recaptcha;
 
 import io.iconator.commons.recaptcha.config.RecaptchaConfig;
 import io.iconator.commons.recaptcha.config.RecaptchaConfigHolder;
-import io.iconator.commons.recaptcha.exceptions.InvalidInputResponseException;
-import io.iconator.commons.recaptcha.exceptions.MissingInputResponseException;
 import io.iconator.commons.recaptcha.exceptions.RecaptchaException;
 import io.iconator.commons.recaptcha.model.RecaptchaResponse;
 import org.junit.Test;
@@ -71,7 +69,7 @@ public class RecaptchaClientServiceTest {
         assertFalse(result);
     }
 
-    @Test(expected = InvalidInputResponseException.class)
+    @Test
     public void testVerify_Invalid_Input_Response() {
         String[] errors = new String[]{RecaptchaClientService.INVALID_INPUT_RESPONSE};
         RecaptchaResponse recaptchaResponse = new RecaptchaResponse(false, new Date(), "hostname", errors);
@@ -81,7 +79,7 @@ public class RecaptchaClientServiceTest {
         assertFalse(result);
     }
 
-    @Test(expected = MissingInputResponseException.class)
+    @Test
     public void testVerify_Missing_Input_Response() {
         String[] errors = new String[]{RecaptchaClientService.MISSING_INPUT_RESPONSE};
         RecaptchaResponse recaptchaResponse = new RecaptchaResponse(false, new Date(), "hostname", errors);

@@ -70,8 +70,7 @@ public class RegisterController {
         String ipAddress = IPAddressUtil.getIPAddress(requestContext);
 
         // Verify captcha
-        boolean recaptchaVerified = recaptchaClientService.verify(ipAddress, recaptchaResponseToken);
-        if (!recaptchaVerified) {
+        if (!recaptchaClientService.verify(ipAddress, recaptchaResponseToken)) {
             throw new RecaptchaInvalidException();
         }
 

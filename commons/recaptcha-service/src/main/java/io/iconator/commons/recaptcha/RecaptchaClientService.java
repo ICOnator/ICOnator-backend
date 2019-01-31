@@ -13,7 +13,12 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
+/**
+ * Provides verfication for recaptcha challenge responses.
+ */
 @Service
 public class RecaptchaClientService {
 
@@ -33,6 +38,13 @@ public class RecaptchaClientService {
         this.recaptchaConfigHolder = recaptchaConfigHolder;
     }
 
+    /**
+     * Verfies the given recaptcha response token against Googles recaptcha API.
+     * @param ipAddress The IP address of the user that responded to the recaptcha challenge.
+     * @param recaptchaResponse The recaptcha response token.
+     * @return true if the verification was successful. False if not.
+     * @throws RecaptchaException if the request to the recaptcha API failed because of other reasons.
+     */
     public boolean verify(String ipAddress, String recaptchaResponse) throws RecaptchaException {
 
         if (!recaptchaConfigHolder.isEnabled()) {
@@ -50,13 +62,15 @@ public class RecaptchaClientService {
 
         ResponseEntity<RecaptchaResponse> responseEntity = restTemplate.exchange(requestEntity, RecaptchaResponse.class);
 
-        if (responseEntity != null && responseEntity.getBody() != null) {
+        if (responseEntity.getBody() != null) {
             if (responseEntity.getBody().isSuccess()) {
                 return true;
             } else {
-                String[] errorCodes = responseEntity.getBody().getErrorCodes();
-                for (String errorCode : errorCodes) {
-                    throw getException(errorCode);
+                List<String> errorCodes = Arrays.asList(responseEntity.getBody().getErrorCodes());
+                if (errorCodes.contains(MISSING_INPUT_RESPONSE) || errorCodes.contains(INVALID_INPUT_RESPONSE)) {
+                    return false;
+                } else {
+                    throw getException(errorCodes);
                 }
             }
         }
@@ -77,19 +91,13 @@ public class RecaptchaClientService {
                 .toUri();
     }
 
-    private RecaptchaException getException(String errorCode) {
-        switch (errorCode) {
-            case MISSING_INPUT_SECRET:
-                return new MissingInputSecretException("The secret key was not provided.");
-            case INVALID_INPUT_SECRET:
-                return new InvalidInputSecretException("The secret key provided is invalid.");
-            case MISSING_INPUT_RESPONSE:
-                return new MissingInputResponseException("The recaptcha response was not provided.");
-            case INVALID_INPUT_RESPONSE:
-                return new InvalidInputResponseException("The recaptcha response provided is invalid.");
-            default:
-                return new RecaptchaException("Error in the Recaptcha verify call.");
+    private RecaptchaException getException(List<String> errorCodes) {
+        if (errorCodes.contains(MISSING_INPUT_SECRET)) {
+            return new MissingInputSecretException("The secret key was not provided.");
+        } else if (errorCodes.contains(INVALID_INPUT_SECRET)) {
+            return new InvalidInputSecretException("The secret key provided is invalid.");
+        } else{
+            return new RecaptchaException("Error in the Recaptcha verify call.");
         }
     }
-
 }
