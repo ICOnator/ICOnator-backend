@@ -15,31 +15,24 @@ public class SaleTierResponse {
     @JsonProperty("tierNo")
     private long tierNo;
 
-    @NotNull
     @JsonProperty("name")
     private String name;
 
-    @NotNull
     @JsonProperty("type")
     private StatusType type;
 
-    @NotNull
     @JsonProperty("startDate")
     private Date startDate;
 
-    @NotNull
     @JsonProperty("endDate")
     private Date endDate;
 
-    @NotNull
     @JsonProperty("discount")
     private BigDecimal discount;
 
-    @NotNull
     @JsonProperty("amount")
     private BigInteger amount;
 
-    @NotNull
     @JsonProperty("maxAmount")
     private BigInteger maxAmount;
 

@@ -11,7 +11,6 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WhitelistEmailResponse {
 
-    @NotNull
     @Size(max = Constants.EMAIL_CHAR_MAX_SIZE)
     @JsonProperty("email")
     private String email;

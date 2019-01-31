@@ -10,12 +10,11 @@ import javax.validation.constraints.Size;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WhitelistEmailRequest {
 
-    @NotNull
     @Size(max = Constants.EMAIL_CHAR_MAX_SIZE)
     @JsonProperty("email")
     private String email;
 
-    public WhitelistEmailRequest() {
+    private WhitelistEmailRequest() {
     }
 
     public WhitelistEmailRequest(@NotNull @Size(max = Constants.EMAIL_CHAR_MAX_SIZE) String email) {
