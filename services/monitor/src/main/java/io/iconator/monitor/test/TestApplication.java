@@ -16,12 +16,11 @@ public class TestApplication {
 
     private static String fullNodeAddress = "http://localhost:18545";
 
-    private static Map<String, String> monitoredAddresses = new HashMap<String, String>()
-    {{
-        put("0x953ea1716540342ce3ce3474a1e24d7b862066bf", "");
-    }};
+    private static Map<String, String> monitoredAddresses = new HashMap<>();
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+
+        monitoredAddresses.put("0x953ea1716540342ce3ce3474a1e24d7b862066bf", "");
         Web3j web3j = Web3j.build(new HttpService(fullNodeAddress));
 
         web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(

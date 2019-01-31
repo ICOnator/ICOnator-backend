@@ -58,7 +58,7 @@ public class BlockNrProviderService {
                 return null;
             }
         }
-        if (isTimestampOlderThan(timestamp.longValue(), fallbackIfOlderThan)) {
+        if (isTimestampOlderThan(timestamp, fallbackIfOlderThan)) {
             //fallback is API call to blockchaininfo
             try {
                 LOG.warn("Bitcoin block over two hours old, using fallback");
@@ -85,7 +85,7 @@ public class BlockNrProviderService {
                 return null;
             }
         }
-        if (isTimestampOlderThan(timestamp.longValue(), fallbackIfOlderThan)) {
+        if (isTimestampOlderThan(timestamp, fallbackIfOlderThan)) {
             //fallback is API call to etherscan
             try {
                 LOG.warn("Ethereum block over 30 min old, using fallback");
@@ -99,7 +99,7 @@ public class BlockNrProviderService {
     }
 
     private boolean isTimestampOlderThan(Long timestampInSeconds, Long olderThanInMillis) {
-        return Instant.ofEpochSecond(timestampInSeconds.longValue())
+        return Instant.ofEpochSecond(timestampInSeconds)
                 .plusMillis(olderThanInMillis)
                 .isBefore(Instant.now());
     }
