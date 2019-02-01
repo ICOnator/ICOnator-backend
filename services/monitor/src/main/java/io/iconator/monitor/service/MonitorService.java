@@ -57,7 +57,18 @@ public class MonitorService {
     @Autowired
     private ICOnatorMessageService messageService;
 
-    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRED)
+    /**
+     * Creates a refund entry for the given payment log. The created {@link EligibleForRefund} is added to the payment
+     * log and the payment log's last processed date is updated. Starts a new transaction that is commited after leaving
+     * this method. If any step in the process fails the whole transaction is rolledback. I.e. no refund entry is
+     * created, the payment log does not reference any refund entry and the last processed date of the payment log is
+     * not updated.
+     * @param paymentLog The payment log for which to create a refund entry.
+     * @param reason The refund reason.
+     * @return the payment log updated with a reference to the created refund entry.
+     * @throws RefundEntryAlreadyExistsException if a refund entry already exists for the given payment log.
+     */
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public PaymentLog createRefundEntryForPaymentLogAndCommit(
             PaymentLog paymentLog, RefundReason reason) throws RefundEntryAlreadyExistsException {
 
@@ -89,16 +100,15 @@ public class MonitorService {
     }
 
     /**
-     * Fetches the payment log corresponding to the given transaction id if it is in status
-     * {@link TransactionStatus#PENDING}. If successful it also updates the payment log status to
-     * {@link TransactionStatus#BUILDING} before returning it.
-     * @param transactionId The transaction id for which the corresponding payment log should be
-     *                      retrieved.
-     * @return the payment log for given transaction id if it is in status
-     * {@link TransactionStatus#PENDING}. Null otherwise.
+     * Fetches the payment log corresponding to the given transaction id if it exists and is in status {@link TransactionStatus#PENDING}.
+     * If successful, it updates the payment log's status to {@link TransactionStatus#BUILDING} and updates its last
+     * processed date. Both changes are commited immediatly after the method ends.
+     * @param transactionId The transaction id for which the corresponding payment log should be retrieved.
+     * @return the payment log for given transaction id if it is in status {@link TransactionStatus#PENDING}.
+     * Null otherwise.
      * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
      */
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog getPendingPaymentLogForProcessing(String transactionId)
             throws PaymentLogNotFoundException {
 
@@ -118,20 +128,18 @@ public class MonitorService {
     }
 
     /**
-     * Fetches the payment log that corresponds to the given transaction id if it exists, but only
-     * if the transaction was previously incompletely processed as a building transaciton.
-     *
-     * @param transactionId The transaction id for which corresponding payment
-     *                      log should be retrieved.
+     * Fetches the payment log that corresponds to the given transaction id if it exists, but only if the transaction
+     * was previously incompletely processed in status {@link PaymentLog.TransactionStatus#BUILDING}.
+     * If a payment log is returned, then its last processed date is updated and the change is commited immediately.
+     * @param transactionId The transaction id for which corresponding payment log should be retrieved.
      * @return the payment log for given transaction id if the transaction has to be reprocessed
-     * as a building transaction. Null, if the payment log is still in status
-     * {@link TransactionStatus#PENDING} or the transaction was already fully processed as a building
-     * transaction or * the transaction is still being processed at the moment of calling this method.
-     * See the {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime}
-     * property for the latter.
+     * as a building transaction. Null, if the payment log is still in status {@link TransactionStatus#PENDING}, or the
+     * transaction was already fully processed as a building transaction, or the transaction is still being processed at
+     * the moment of calling this method. See the {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime}
+     * property for the latter case.
      * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
      */
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog getBuildingPaymentLogForReprocessing(String transactionId)
             throws PaymentLogNotFoundException {
 
@@ -163,22 +171,18 @@ public class MonitorService {
     }
 
     /**
-     * Fetches the payment log that corresponds to the given transaction id if it exists, but only
-     * if the transaction was incompletely processed in status {@link TransactionStatus#PENDING}
-     * before.
-     *
-     * @param transactionId The transaction id for which corresponding payment
-     *                      log should be retrieved.
-     * @return the payment log for given transaciton id if the transaction has to be reprocessed
-     * as a pending transaction. Null, if the payment log is already higher than the
-     * {@link TransactionStatus#PENDING} status or the transaction was already fully processed as a
-     * pending transaction or * the transaction is still being processed at the moment of calling
-     * this method. See the
-     * {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime} property
-     * for the latter.
+     * Fetches the payment log that corresponds to the given transaction id if it exists, but only if the transaction
+     * was incompletely processed in status {@link TransactionStatus#PENDING} before. If a payment log is returned, then
+     * its last processed date is updated and committed immediately.
+     * @param transactionId The transaction id for which corresponding payment log should be retrieved.
+     * @return the payment log for given transaction id if the transaction has to be reprocessed as a pending
+     * transaction. Null, if the payment log is already higher than the {@link TransactionStatus#PENDING} status, or the
+     * transaction was already fully processed as a pending transaction, or the transaction is still being processed at
+     * the moment of calling this method. See the {@link io.iconator.monitor.config.MonitorAppConfigHolder#transactionProcessingTime}
+     * property for the latter case.
      * @throws PaymentLogNotFoundException if no payment log exists for the given transaction id.
      */
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog getPendingPaymentLogForReprocessing(String transactionId)
             throws PaymentLogNotFoundException {
 
@@ -202,7 +206,15 @@ public class MonitorService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    /**
+     * Creates, saves and immediately commits a new payment log for the given transaction.
+     * @param tx The transaction for which to create a new payment log.
+     * @param transactionStatus the status of the transaction/payment log.
+     * @return the created payment log or null if the payment log could not be created.
+     * @throws MissingTransactionInformationException if some transaction information cannot be retrieved from the
+     * transaction.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog createNewPaymentLog(TransactionAdapter tx,
                                            TransactionStatus transactionStatus)
             throws MissingTransactionInformationException {
@@ -218,7 +230,15 @@ public class MonitorService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    /**
+     * Queues a message for sending the "transaction received" email to the investor. Sets the corresponding flag on the
+     * payment log and updates its last processed date. These changes are committed immediately.
+     * @param paymentLog the payment log for which to send the message.
+     * @param amountInMainUnit The invested amount in the main unit of the used cryptocurrency (e.g. in ETH or BC).
+     * @param transactionUrl An URL to the transaction on a block explorer website.
+     * @return The updated payment log.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog sendTransactionReceivedMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
         messageService.send(new TransactionReceivedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
@@ -229,7 +249,15 @@ public class MonitorService {
         return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    /**
+     * Queues a message for sending the "allocation" email to the investor. Sets the corresponding flag on the payment
+     * log and updates its last processed date. These changes are committed immediately.
+     * @param paymentLog the payment log for which to send the message.
+     * @param amountInMainUnit The invested amount in the main unit of the used cryptocurrency (e.g. in ETH or BC).
+     * @param transactionUrl An URL to the transaction on a block explorer website.
+     * @return The updated payment log.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PaymentLog sendAllocationMessageAndSavePaymentLog(PaymentLog paymentLog, BigDecimal amountInMainUnit, String transactionUrl) {
         messageService.send(new TokensAllocatedEmailMessage(
                 MessageDTOHelper.build(paymentLog.getInvestor()),
