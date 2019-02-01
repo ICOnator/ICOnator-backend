@@ -166,7 +166,7 @@ public class EthereumMonitorTest {
     }
 
     private Investor createAndSaveInvestor(ECKey key) {
-        return investorService.saveTransactionless(buildInvestor(key));
+        return investorService.saveRequireNewTransaction(buildInvestor(key));
     }
 
     private Investor buildInvestor(ECKey key) {
@@ -189,7 +189,7 @@ public class EthereumMonitorTest {
         BigInteger tomics = monitorService.convertTokensToTomics(new BigDecimal(1000L))
                 .toBigInteger();
 
-        saleTierService.saveTransactionless(
+        saleTierService.saveRequireTransaction(
                 new SaleTier(4, "4", from, to, new BigDecimal("0.0"),
                         BigInteger.ZERO, tomics, true, false));
     }

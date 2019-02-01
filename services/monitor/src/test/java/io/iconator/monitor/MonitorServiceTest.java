@@ -629,7 +629,7 @@ public class MonitorServiceTest {
         try {
             return investorService.getInvestorByEmail(INVESTOR_EMAIL);
         } catch (InvestorNotFoundException e) {
-            return investorService.saveTransactionless(
+            return investorService.saveRequireNewTransaction(
                     new Investor(new java.util.Date(), INVESTOR_EMAIL, "token",
                             "walletAddress", "payInEtherPublicKey", "payInBitcoinPublicKey",
                             "refundEtherAddress", "refundBitcoinAddress", "ipAddress"));
@@ -653,7 +653,7 @@ public class MonitorServiceTest {
         int i = 1;
         while (!succeeded) {
             try {
-                paymentLog = paymentLogService.saveTransactionless(
+                paymentLog = paymentLogService.saveRequireNewTransaction(
                         new PaymentLog(txId, creationDate, currency, blockTime,
                                 weiAmount, USD_FX_RATE, usdAmount, investor,
                                 tomicsAmount, TransactionStatus.BUILDING));
@@ -746,7 +746,7 @@ public class MonitorServiceTest {
                     tomicsMax,
                     hasDynamicDuration,
                     hasDynamicMax);
-            return saleTierService.saveTransactionless(t);
+            return saleTierService.saveRequireTransaction(t);
         }
 
         public void newStartDateMustBe(Date date) {

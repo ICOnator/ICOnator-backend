@@ -59,8 +59,8 @@ public class SaleTierCreation {
                 true,
                 true
         );
-        saleTierService.saveTransactionless(s1);
-        saleTierService.saveTransactionless(s2);
+        saleTierService.saveRequireTransaction(s1);
+        saleTierService.saveRequireTransaction(s2);
         LOG.info("Development tiers successfully set-up.");
         LOG.info("Tier {}: startDate={} endDate={}", s1.getTierNo(), startDateS1, endDateS1);
         LOG.info("Tier {}: startDate={} endDate={}", s2.getTierNo(), startDateS2, endDateS2);

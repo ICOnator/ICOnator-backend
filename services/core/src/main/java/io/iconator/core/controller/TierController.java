@@ -62,7 +62,7 @@ public class TierController {
             @RequestBody List<SaleTierRequest> tiersRequest) {
 
         List<SaleTierResponse> tiersResponse = tiersRequest.stream().map((request) -> {
-            return saleTierService.saveTransactionless(fromRequestToEntity(request));
+            return saleTierService.saveRequireTransaction(fromRequestToEntity(request));
         }).map((savedEntity) -> fromEntityToResponse(savedEntity)).collect(Collectors.toList());
 
         return ResponseEntity.ok(tiersResponse);

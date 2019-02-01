@@ -103,7 +103,7 @@ public class TierControllerTest {
         List<SaleTierRequest> listRequest = Arrays.asList(req1);
         SaleTier saleTierEntityRequest = tierController.fromRequestToEntity(req1);
 
-        when(saleTierService.saveTransactionless(any())).thenReturn(saleTierEntityRequest);
+        when(saleTierService.saveRequireTransaction(any())).thenReturn(saleTierEntityRequest);
 
         MvcResult result = this.mockMvc.perform(post(TIERS_CREATE_ENDPOINT)
                 .with(httpBasic("user", "password"))

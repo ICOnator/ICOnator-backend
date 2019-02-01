@@ -140,6 +140,18 @@ abstract public class BaseMonitor {
         return usdAmount.compareTo(configHolder.getFiatBasePaymentMinimum()) < 0;
     }
 
+    /**
+     * Updates the given payment log (in status {@link PaymentLog.TransactionStatus#BUILDING}) according to the given
+     * transaction. If all neccessary information can be retrieved, including the exchange rate, the payment log is
+     * updated and the changes are immediatly commited. If some information cannot be retrieved a refund entry is
+     * created (also immediatly commited) and the payment log is not updated.
+     * @param tx The transaction corresponding to the payment log.
+     * @param paymentLog The payment log to update.
+     * @return the update payment log or null if some transaction information could not be retrieved and a refund entry
+     * had to be created.
+     * @throws RefundEntryAlreadyExistsException if a refund entry already exists for this payment log. A refund entry
+     * is create if some transaction information cannot be retrieved.
+     */
     private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlreadyExistsException {
         if (paymentLog == null) return null;
         RefundReason reason = null;
@@ -163,7 +175,7 @@ abstract public class BaseMonitor {
             monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
             return null;
         }
-        return paymentLogService.saveAndCommit(paymentLog);
+        return paymentLogService.saveRequireNewTransaction(paymentLog);
     }
 
     private BigDecimal getUSDExchangeRate(Instant blockTimestamp, CurrencyType currencyType)
@@ -216,7 +228,7 @@ abstract public class BaseMonitor {
             LOG.info("Setting status of transaction {} to confirmed.", tx.getTransactionId());
             PaymentLog paymentLog = paymentLogService.getPaymentLog(tx.getTransactionId());
             paymentLog.setTransactionStatus(TransactionStatus.CONFIRMED);
-            paymentLogService.saveAndCommit(paymentLog);
+            paymentLogService.saveRequireNewTransaction(paymentLog);
         } catch (MissingTransactionInformationException e) {
             LOG.error("Couldn't set payment log status to confirmed because the transaction id " +
                     "could not be retrieved from the {} transaction.", tx.getCurrencyType(), e);

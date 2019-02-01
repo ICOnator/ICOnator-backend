@@ -70,14 +70,15 @@ public class SaleTierService {
 
     /**
      * Inserts the given {@link SaleTier} into the database or updates it if it already exists.
-     * Flushes changes to the database. The save is executed transactionless, which means that the
-     * changes are commited to the database immediatly.
+     * Flushes changes to the database. The save requires a transaction. So if the caller does not have an
+     * open transaction, a new transaction is created and commited after this method. Otherwise the caller's transaction
+     * is used and no commit happens directly after this method.
      * @param tier The sale tier to insert/update.
      * @return the inserted/updated sale tier.
      * @see CrudRepository#save(java.lang.Object)
      */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public SaleTier saveTransactionless(SaleTier tier) {
+    @Transactional(propagation = Propagation.REQUIRED)
+    public SaleTier saveRequireTransaction(SaleTier tier) {
         return saleTierRepository.saveAndFlush(tier);
     }
 }

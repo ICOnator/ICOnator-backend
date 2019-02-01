@@ -62,14 +62,15 @@ public class InvestorService {
 
     /**
      * Inserts the given {@link Investor} into the database or updates it if it already exists.
-     * Flushes changes to the database. The save is executed transactionless, which means that the
-     * changes are commited to the database immediatly.
+     * Flushes changes to the database. The save requires a new transaction. If the caller already has an open
+     * transaciton, it gets suspended and a new transaction is opened. The new transaction is commited after leaving
+     * this method.
      * @param investor The investor to insert/update.
      * @return the inserted/updated investor entry.
      * @see CrudRepository#save(java.lang.Object)
      */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Investor saveTransactionless(Investor investor) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Investor saveRequireNewTransaction(Investor investor) {
         return investorRepository.saveAndFlush(investor);
     }
 }

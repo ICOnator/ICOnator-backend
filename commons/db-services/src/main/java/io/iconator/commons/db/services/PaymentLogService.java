@@ -35,27 +35,15 @@ public class PaymentLogService {
 
     /**
      * Inserts the given {@link PaymentLog} into the database or updates it if it already exists.
-     * The save is executed in a new database transaction and commited after returning from this
-     * method even if the calling code already runs in an active transaction.
+     * Flushes changes to the database. The save requires a new transaction. If the caller already has an open
+     * transaciton, it gets suspended and a new transaction is opened. The new transaction is commited after leaving
+     * this method.
      * @param log The payment log to insert/update.
      * @return the inserted/updated payment log.
      * @see CrudRepository#save(java.lang.Object)
      */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PaymentLog saveAndCommit(PaymentLog log) {
-        return paymentLogRepository.saveAndFlush(log);
-    }
-
-    /**
-     * Inserts the given {@link PaymentLog} into the database or updates it if it already exists.
-     * Flushes changes to the database. The save is executed transactionless, which means that the
-     * changes are commited to the database immediatly.
-     * @param log The payment log to insert/update.
-     * @return the inserted/updated payment log.
-     * @see CrudRepository#save(java.lang.Object)
-     */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public PaymentLog saveTransactionless(PaymentLog log) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentLog saveRequireNewTransaction(PaymentLog log) {
         return paymentLogRepository.saveAndFlush(log);
     }
 
