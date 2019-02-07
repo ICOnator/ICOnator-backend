@@ -26,7 +26,7 @@ public class EtherscanService {
 
     private final static Logger LOG = LoggerFactory.getLogger(EtherscanService.class);
 
-    public static String URL = "https://{ethnet}.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={ethkey}";
+    public final static String URL = "https://{ethnet}.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={ethkey}";
 
     @Autowired
     private RatesAppConfigHolder ratesAppConfig;

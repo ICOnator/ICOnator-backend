@@ -79,7 +79,9 @@ public class MonitorBean {
         File blockStoreFile = Files.createTempFile("chain", "tmp").toFile();
         blockStoreFile.deleteOnExit();
         if (blockStoreFile.exists()) {
-            blockStoreFile.delete();
+            if(!blockStoreFile.delete()){
+                throw new RuntimeException("File not deleted successfully. " + blockStoreFile.getName());
+            }
         }
         return new SPVBlockStore(chainNetworkParameters, blockStoreFile);
     }

@@ -28,8 +28,8 @@ public class BlockchainInfoService {
     private final static Logger LOG = LoggerFactory.getLogger(BlockchainInfoService.class);
 
 
-    public static String TEST_URL = "https://testnet.blockchain.info/latestblock";
-    public static String MAIN_URL = "https://blockchain.info/latestblock";
+    public final static String TEST_URL = "https://testnet.blockchain.info/latestblock";
+    public final static String MAIN_URL = "https://blockchain.info/latestblock";
 
     @Autowired
     private RatesAppConfigHolder ratesAppConfig;
