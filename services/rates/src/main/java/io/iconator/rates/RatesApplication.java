@@ -9,9 +9,15 @@ import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoCon
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 import static org.springframework.boot.SpringApplication.run;
 
+/**
+ * Running the rates application starts a scheduled task defined in
+ * {@link io.iconator.rates.task.FetchCurrentRatesRunnable} and configured in
+ * {@link io.iconator.rates.config.ScheduleConfig#configureTasks(ScheduledTaskRegistrar)}.
+ */
 @SpringBootApplication(exclude = RepositoryRestMvcAutoConfiguration.class)
 @EntityScan({"io.iconator.commons.model.db"})
 @EnableJpaRepositories({"io.iconator.commons.sql.dao"})

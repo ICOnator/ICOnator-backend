@@ -19,6 +19,12 @@ import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATO
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.BLOCK_NR_BITCOIN_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
 
+/**
+ * RabbitMQ Consumer that consumes messages holding a block number of the Bitcoin
+ * blockchain. It is assumed that a received block number corresponds to the latest block on the
+ * chain. The latest block number and the block's time stamp are memorized until a new message is
+ * received.
+ */
 @Service
 public class BlockNrBitcoinConsumer {
 

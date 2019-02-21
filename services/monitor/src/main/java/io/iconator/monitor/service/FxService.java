@@ -15,6 +15,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
+/**
+ * Service for retrieving exchange rates.
+ */
 @Service
 public class FxService {
 
@@ -22,9 +25,11 @@ public class FxService {
     private ICOnatorMessageService messageService;
 
     /**
+     * Fetches the exchange rate in USD for the given {@link CurrencyType}. The request for the rate
+     * is sent to a message queue from which the rates application is consuming.
      * @param blockTimestamp the block's timestamp for which the exchange rate shall be fetched.
-     * @param currencyType   the crypto currency for which the exchange rate shall be fetched.
-     * @return an optional object containing the exchange rate in USD per crypto currency unit.
+     * @param currencyType   the currency for which the exchange rate shall be fetched.
+     * @return an optional object containing the exchange rate in USD per currency unit.
      * @throws FxException if the exchange rate could could not be fetched.
      */
     public Optional<BigDecimal> getUSDExchangeRate(Instant blockTimestamp, CurrencyType currencyType)

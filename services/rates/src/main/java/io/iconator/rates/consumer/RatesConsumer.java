@@ -28,7 +28,15 @@ import java.util.stream.Collectors;
 import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATOR_ENTRY_EXCHANGE;
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.RATES_EXCHANGE_REQUEST_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
+import io.iconator.rates.config.RatesAppConfigHolder;
 
+/**
+ * RabbitMQ Consumer that consumes messages that request an exchange rate at a given timestamp
+ * from one currency to one or more other currencies. The consumer responds with the exchange rate
+ * if it finds one in a configurable time interval given by
+ * {@link RatesAppConfigHolder#fetchRangeBetweenThresholdMillisMin} and
+ * {@link RatesAppConfigHolder#fetchRangeBetweenThresholdMillisMax}.
+ */
 @Service
 public class RatesConsumer {
 

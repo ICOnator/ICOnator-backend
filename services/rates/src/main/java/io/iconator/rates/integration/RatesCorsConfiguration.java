@@ -5,6 +5,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Programmatically sets the configuration for cross-origin resource sharing of the rates application.
+ * The origin URLs for which to allow CORS must be specified in the application property
+ * corresponding to {@link RatesCorsConfiguration#corsUrls}.
+ */
 @Configuration
 public class RatesCorsConfiguration implements WebMvcConfigurer {
 

@@ -17,6 +17,9 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.Objects;
 
+/**
+ * Bitcoin-sepcific transaction class.
+ */
 public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
 
     private static final String BLOCKCHAIN_INFO_LINK = "https://blockchain.info/tx/";
@@ -158,6 +161,9 @@ public class BitcoinTransactionAdapter extends BaseTransactionAdapter {
         }
     }
 
+    /**
+     * @return the bitcoinj transaction object.
+     */
     public Transaction getBitcoinjTransaction() {
         return bitcoinjTxOutput.getParentTransaction();
     }

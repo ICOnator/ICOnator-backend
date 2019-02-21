@@ -27,6 +27,9 @@ import java.util.Optional;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * Holds the logic for fetching exchange rates from multiple exchanges.
+ */
 @Service
 public class ExchangeRateService {
 
@@ -67,6 +70,13 @@ public class ExchangeRateService {
     @Autowired
     private Retryer retryer;
 
+    /**
+     * Feches the exchange rate for the given currency pair from the given exchange.
+     * @param exchangeType The exchange service to fetch the rate from.
+     * @param currencyPair The currency pair for which to fetch the rate.
+     * @return an optional object containing the rate or an empty one if the rate could not be
+     * retrieved.
+     */
     public Optional<BigDecimal> getRate(ExchangeType exchangeType, CurrencyPair currencyPair) {
         Ticker ticker = null;
         try {
@@ -95,6 +105,12 @@ public class ExchangeRateService {
         return ticker != null ? ofNullable(ticker.getLast()) : Optional.empty();
     }
 
+    /**
+     * Fetches and stores exchange rates from each enabled exchange service
+     * ({@link RatesAppConfigHolder#enabledExchanges}), for each enabled cryptocurrency
+     * ({@link RatesAppConfigHolder#enabledCryptoCurrencies}). Also calculates and stores the
+     * aggregated exchange rate of each enabled cryptocurrency over all the enabled exchanges.
+     */
     @Transactional
     public void fetchRates() {
         LOG.info("Fetching rates...");

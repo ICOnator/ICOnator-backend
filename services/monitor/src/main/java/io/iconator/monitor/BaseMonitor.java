@@ -27,6 +27,10 @@ import java.util.Optional;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
+/**
+ * Contains the transaction processing logic that should be used by all blockchain-specific
+ * monitor implementations (e.g. {@link EthereumMonitor}.
+ */
 @Component
 abstract public class BaseMonitor {
 
@@ -56,22 +60,36 @@ abstract public class BaseMonitor {
         this.retryer = retryer;
     }
 
+    /**
+     * Starts the monitoring and transaction processing.
+     * Also starts transmitting {@link io.iconator.commons.amqp.model.BlockNrMessage}s, containing
+     * the latest block numbers, to a message queue.
+     */
     protected abstract void start() throws Exception;
 
     /**
+     * Adds the given address to the set of monitored addresses.
+     * The given address creation time can be used by implementing classes to determine at which
+     * block the monitoring of the blockchain should start. Obviously, blocks that are older than
+     * the date of registration of the first investor do not have to be scanned.
      * @param address                  payment address which will be monitored
      * @param addressCreationTimestamp Creation time of the address in miliseconds since the epoch.
-     *                                 Some blockchain implementations can use this to determine
-     *                                 from which block to start scanning the chain.
      */
     abstract protected void addPaymentAddressesForMonitoring(String address, Long addressCreationTimestamp);
 
     /**
-     * @param receivingAddress the address to which a payment has been made.
-     * @return TRUE if this address is monitored. False otherwise.
+     * @param receivingAddress the address for which to check if it is monitored by this monitor.
+     * @return ture if the given address is monitored. False, otherwise.
      */
     abstract protected boolean isAddressMonitored(String receivingAddress);
 
+    /**
+     * Entry point to the processing flow of transactions that are in status pending, i.e. are not
+     * on a block yet but were seen in the network.
+     * This must be called by blockchain-specific implementations when a new pending transaction to
+     * a monitored address is seen in the network.
+     * @param tx The pending transaction.
+     */
     protected void processPendingTransactions(TransactionAdapter tx) {
         try {
             if (!isAddressMonitored(tx.getReceivingAddress())) return;
@@ -92,6 +110,15 @@ abstract public class BaseMonitor {
         }
     }
 
+    /**
+     * Entry point to the processing flow of transactions that are in status building, i.e. are on
+     * a block already.
+     * This must be called by blockchain-specific implementations when a transaction to a monitored
+     * address has been added to a block. Transactions do not have to be covered by more blocks
+     * before calling this method. If, in the end, they should not be on the main chain, they will
+     * never be marked as confirmed transactions.
+     * @param tx The building transaction.
+     */
     protected void processBuildingTransaction(TransactionAdapter tx) {
         PaymentLog paymentLog = null;
         try {
@@ -141,16 +168,17 @@ abstract public class BaseMonitor {
     }
 
     /**
-     * Updates the given payment log (in status {@link PaymentLog.TransactionStatus#BUILDING}) according to the given
-     * transaction. If all neccessary information can be retrieved, including the exchange rate, the payment log is
-     * updated and the changes are immediatly commited. If some information cannot be retrieved a refund entry is
-     * created (also immediatly commited) and the payment log is not updated.
+     * Updates the given payment log (in status {@link PaymentLog.TransactionStatus#BUILDING})
+     * according to the given transaction. If all neccessary information can be retrieved, including
+     * the exchange rate, the payment log is updated and the changes are immediatly commited.
+     * If some information cannot be retrieved a refund entry is created (also immediatly commited)
+     * and the payment log is not updated.
      * @param tx The transaction corresponding to the payment log.
      * @param paymentLog The payment log to update.
-     * @return the update payment log or null if some transaction information could not be retrieved and a refund entry
-     * had to be created.
-     * @throws RefundEntryAlreadyExistsException if a refund entry already exists for this payment log. A refund entry
-     * is create if some transaction information cannot be retrieved.
+     * @return the update payment log or null if some transaction information could not be retrieved
+     * and a refund entry had to be created.
+     * @throws RefundEntryAlreadyExistsException if a refund entry already exists for this payment
+     * log. A refund entry is create if some transaction information cannot be retrieved.
      */
     private PaymentLog updateBuildingPaymentLog(TransactionAdapter tx, PaymentLog paymentLog) throws RefundEntryAlreadyExistsException {
         if (paymentLog == null) return null;
@@ -190,6 +218,17 @@ abstract public class BaseMonitor {
 
     }
 
+    /**
+     * Entry point to the token allocation.
+     * A retryer is used because exceptions might arise due to optimistic locking when trying to
+     * make changes to the sale tiers.
+     * This is only package-private so that it can be called in unit tests directly.
+     * @param paymentLog The payment log of the transaction for which to allocate tokens.
+     * @return The given payment log updated with the allocated amount of tokens if the allocation
+     * was successful.
+     * @throws Throwable If an error occured when allocating the tokens. Though, before exiting this
+     * method a refund entry is created.
+     */
     PaymentLog allocateTokensWithRetries(PaymentLog paymentLog)
             throws Throwable {
 
@@ -216,13 +255,20 @@ abstract public class BaseMonitor {
 
             return updatedPaymentLog;
         } catch (Throwable e) {
-            LOG.error("Failed to distribute payment to tiers for {} transaction {}.", paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
+            LOG.error("Failed to distribute payment to tiers for {} transaction {}.",
+                    paymentLog.getCurrency().name(), paymentLog.getTransactionId(), e.getCause());
             RefundReason reason = RefundReason.TOKEN_ALLOCATION_FAILED;
             monitorService.createRefundEntryForPaymentLogAndCommit(paymentLog, reason);
             throw e;
         }
     }
 
+    /**
+     * Gets the payment log corresponding to the given transaction and set its status to confirmed.
+     * This method should be called by blockchain-specific implementations when a transaction to a
+     * monitored address can be confired, i.e. is burried under enough blocks.
+     * @param tx The confirmed transaction.
+     */
     protected void confirmTransaction(TransactionAdapter tx) {
         try {
             LOG.info("Setting status of transaction {} to confirmed.", tx.getTransactionId());

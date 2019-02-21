@@ -18,6 +18,9 @@ import java.math.BigDecimal;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+/**
+ * Provides an endpoint for retrieving the latest prices of BTC and ETH in USD.
+ */
 @RestController
 public class RatesController {
 

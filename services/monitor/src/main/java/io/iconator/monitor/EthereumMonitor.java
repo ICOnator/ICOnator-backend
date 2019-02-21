@@ -27,6 +27,12 @@ import java.util.Set;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
+/**
+ * Ethereum-specific implementation of the {@link BaseMonitor}.
+ * Uses a simple {@link Set} for storing the minitored payment addresses.
+ * Uses another {@link Set} for tracking fully processed transactions that have not yet been
+ * confirmed (i.e. are not burried under enough blocks yet).
+ */
 public class EthereumMonitor extends BaseMonitor {
 
     private final static Logger LOG = LoggerFactory.getLogger(EthereumMonitor.class);
@@ -54,6 +60,7 @@ public class EthereumMonitor extends BaseMonitor {
         this.messageService = messageService;
     }
 
+    @Override
     public synchronized void addPaymentAddressesForMonitoring(String addressString, Long addressCreationTimestamp) {
         if (!addressString.startsWith("0x"))
             addressString = "0x" + addressString;
@@ -89,6 +96,12 @@ public class EthereumMonitor extends BaseMonitor {
         monitorProcessedTransactions();
     }
 
+    /**
+     * Subscribes a listener that receives new arriving blocks and sends a
+     * {@link BlockNREthereumMessage} containing the new block number to a message queue.
+     * @param highestBlockNumber the block number below which no block numbers will be send. This
+     *                           should be the latest block number when callling this method.
+     */
     private void monitorBlockNumbers(BigInteger highestBlockNumber) {
         Long startBlock = configHolder.getEthereumNodeStartBlock();
         web3j.catchUpToLatestAndSubscribeToNewBlocksObservable(
@@ -103,6 +116,9 @@ public class EthereumMonitor extends BaseMonitor {
                 });
     }
 
+    /**
+     * Subscribes a listener that reacts to new transactions that are not yet on a block.
+     */
     private void monitorPendingTransactions() {
         web3j.pendingTransactionObservable().subscribe(web3jTx -> {
             try {
@@ -113,9 +129,13 @@ public class EthereumMonitor extends BaseMonitor {
                 LOG.error("Error while processing transaction.", t);
             }
         }, t -> LOG.error("Error during scanning of pending transactions.", t));
-
     }
 
+    /**
+     * Subscribes a listener that receives all transactions starting at the block given in
+     * the property {@link MonitorAppConfigHolder#ethereumNodeStartBlock}. Of course only
+     * transactions directed to a monitored address are processed.
+     */
     private void monitorBuildingTransactions() {
         Long startBlock = configHolder.getEthereumNodeStartBlock();
         web3j.catchUpToLatestAndSubscribeToNewTransactionsObservable(new DefaultBlockParameterNumber(startBlock))
@@ -137,6 +157,13 @@ public class EthereumMonitor extends BaseMonitor {
                 }, t -> LOG.error("Error during scanning of transactions.", t));
     }
 
+    /**
+     * Subscribes a listener that receives new blocks when they are added to the chain. With each
+     * block all processed but unconfirmed tarnsactions are checked for their block depth
+     * ({@link MonitorAppConfigHolder#ethereumNodeStartBlock}) and are
+     * confirmed if they are burried under enough blocks. When they are confirmed, they are also
+     * removed from the unconfirmed list.
+     */
     private void monitorProcessedTransactions() {
         web3j.blockObservable(false).subscribe(block -> {
             BigInteger currentBlockNr = block.getBlock().getNumber();
@@ -162,6 +189,9 @@ public class EthereumMonitor extends BaseMonitor {
         return monitoredAddresses.contains(receivingAddress);
     }
 
+    /**
+     * Regularly logs information about the connected Ethereum full node.
+     */
     @Scheduled(fixedRate = 60000)
     public void reportEthereumFullNode() {
         try {

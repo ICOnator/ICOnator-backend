@@ -46,6 +46,9 @@ import java.util.stream.Stream;
 
 import static com.github.rholder.retry.WaitStrategies.randomWait;
 
+/**
+ * Monitor-related bean declarations.
+ */
 @Configuration
 @Import(value = {MonitorAppConfigHolder.class, BitcoinConfig.class})
 public class MonitorBean {

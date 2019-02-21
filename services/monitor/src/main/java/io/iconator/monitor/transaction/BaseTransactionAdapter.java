@@ -8,6 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
+/**
+ * Blockchain-specific transaction adapters should extend this class when implementing the
+ * {@link TransactionAdapter} interface because for example the
+ * {@link TransactionAdapter#getAtomicUnitFactor()} should return the same factor independent of the
+ * blockchain.
+ */
 public abstract class BaseTransactionAdapter implements TransactionAdapter {
 
     final private InvestorService investorService;

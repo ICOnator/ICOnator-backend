@@ -20,6 +20,11 @@ import static io.iconator.commons.amqp.model.constants.ExchangeConstants.ICONATO
 import static io.iconator.commons.amqp.model.constants.RoutingKeyConstants.ADDRESS_SET_WALLET_ROUTING_KEY;
 import static java.util.Optional.ofNullable;
 
+/**
+ * RabbitMQ consumer that consumes messages containing information about newly registered investors.
+ * The payment addresses of a new investor are added to the {@link BitcoinMonitor} and
+ * {@link EthereumMonitor} for monitoring.
+ */
 @Component
 public class SetWalletAddressMessageConsumer {
 

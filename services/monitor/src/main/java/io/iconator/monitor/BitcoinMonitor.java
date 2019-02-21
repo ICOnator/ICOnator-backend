@@ -29,6 +29,10 @@ import java.util.Date;
 
 import static org.bitcoinj.core.TransactionConfidence.ConfidenceType.DEAD;
 
+/**
+ * Bitcoin-specific implementation of the {@link BaseMonitor}.
+ * Uses a {@link Wallet} for storing the set of minitored payment addresses.
+ */
 public class BitcoinMonitor extends BaseMonitor {
 
     private final static Logger LOG = LoggerFactory.getLogger(BitcoinMonitor.class);
@@ -206,6 +210,9 @@ public class BitcoinMonitor extends BaseMonitor {
                 a -> a.toBase58().contentEquals(receivingAddress));
     }
 
+    /**
+     * Regularly logs information about connected peers and chain height.
+     */
     @Scheduled(fixedRate = 60000)
     public void reportBitcoinPeersConnected() {
         int amountConnectedPeers = bitcoinPeerGroup.numConnectedPeers();

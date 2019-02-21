@@ -34,6 +34,11 @@ import java.math.MathContext;
 import java.util.Date;
 import java.util.Optional;
 
+/**
+ * Offers token to currency conversion methods and implements the sale tiers logic. This service is
+ * therefore heavily involved in the transaction processing done by the
+ * {@link io.iconator.monitor.BaseMonitor}.
+ */
 @Service
 public class MonitorService {
 
@@ -77,6 +82,14 @@ public class MonitorService {
         return paymentLogService.updateProcessedDateAndSave(paymentLog);
     }
 
+    /**
+     * Creates and saves a new refund entry according to the given parameters.
+     * The created refund entry is referenced in the given payment log and the updated payment log
+     * is returned.
+     * No database transaction commit is executed.
+     * @throws RefundEntryAlreadyExistsException if a refund entry to the corresponding transaction
+     * ID does already exist.
+     */
     private PaymentLog createRefundEntryForAmount(
             PaymentLog paymentLog, RefundReason reason, BigInteger cryptocurrencyAmount, BigDecimal usdAmount)
             throws RefundEntryAlreadyExistsException {
@@ -89,6 +102,14 @@ public class MonitorService {
         return paymentLog;
     }
 
+    /**
+     * Creates and saves a new refund entry according to the given parameters.
+     * The created refund entry is referenced in the given payment log and the updated payment log
+     * is returned.
+     * No database transaction commit is executed.
+     * @throws RefundEntryAlreadyExistsException if a refund entry to the corresponding transaction
+     * ID does already exist.
+     */
     private PaymentLog createRefundEntryForOverflow(PaymentLog paymentLog, BigDecimal overflowInUsd)
             throws RefundEntryAlreadyExistsException {
 
@@ -312,6 +333,21 @@ public class MonitorService {
         }
     }
 
+    /**
+     * Distributes tokens to the given sale tier according to the given USD amount and the discount
+     * that applies in the given tier. If the given tier becomes full with the given USD amount, the
+     * rest is distributed to the following tiers, if any exist. This is a recursive process.
+     * {@link MonitorService#distributeToNextTier(BigDecimal, Optional, Date)} is called from here
+     * in case of an overflow and that method then again calls this method in turn with the next sale
+     * tier as parameter.
+     * @param usd USD amount to convert to tokens.
+     * @param tier sale tier to distribute the tokens to. Or in other words, the tier from which to
+     *             take the tokens.
+     * @param blockTime The block time of the transaction which is the origin of the invested amount.
+     * @return The {@link TokenAllocationResult} with the allocated amount and/or the amount that
+     * could not be distributed to a tier because all were full, or the total token limit
+     * ({@link MonitorAppConfigHolder#totalTokenAmount} of the ICO was reached.
+     */
     private TokenAllocationResult distributeToTier(BigDecimal usd, SaleTier tier, Date blockTime) {
         // Remembering decimal value to have more precision in case a conversion back to usd is necessary because of an overflow.
         BigDecimal tomicsDecimal = convertUsdToTomics(usd, tier.getDiscount());
@@ -386,18 +422,44 @@ public class MonitorService {
         return convertTomicsToUsd(new BigDecimal(tomics), discount);
     }
 
+    /**
+     * @param tomics The amount of tokens in their atomic unit.
+     * @return the same amount of tokens but in their main unit. The atomic unit factor is
+     * configured in {@link MonitorAppConfigHolder#atomicUnitFactor}.
+     */
     public BigDecimal convertTomicsToTokens(BigInteger tomics) {
         return new BigDecimal(tomics.divide(appConfig.getAtomicUnitFactor()));
     }
 
+    /**
+     * @param tomics The amount of tokens in their atomic unit.
+     * @return the same amount of tokens but in their main unit. The atomic unit factor is
+     * configured in {@link MonitorAppConfigHolder#atomicUnitFactor}.
+     */
     public BigDecimal convertTomicsToTokens(BigDecimal tomics) {
         return tomics.divide(new BigDecimal(appConfig.getAtomicUnitFactor()), MathContext.DECIMAL128);
     }
 
+    /**
+     * @param value The amount of tokens their main unit.
+     * @return the same amount of tokens but in their atomic unit. The atomic unit factor is
+     * configured in {@link MonitorAppConfigHolder#atomicUnitFactor}.
+     */
     public BigDecimal convertTokensToTomics(BigDecimal value) {
         return value.multiply(new BigDecimal(appConfig.getAtomicUnitFactor()));
     }
 
+    /**
+     * This method is called if the invested amount overflows the total token limit of the ICO. It
+     * then distributes the tokens up to the total limit to the given sale tier and adds the
+     * overflow in USD over the total limit to the allocation result.
+     * @param tier the current tier to add distribute the remaining tokens to.
+     * @param tomicsForTier The token amount that should be distributed to the given tier but
+     *                      overflows the total token limit. This amount must not overflow the tiers
+     *                      token limit.
+     * @return an {@link TokenAllocationResult} with the token amount allocated to the given tier
+     * and the overflow in USD that overflowed the total token limit.
+     */
     private TokenAllocationResult handleTotalMaxOverflow(SaleTier tier, BigInteger tomicsForTier) {
         TokenAllocationResult result = distributeTotalRemainingTokensToTier(tier);
         BigInteger totalMaxOverflow = tomicsForTier.subtract(result.getAllocatedTomics());
@@ -419,6 +481,12 @@ public class MonitorService {
         return tomics.compareTo(getTotalRemainingTomics()) > 0;
     }
 
+    /**
+     * Shifts the end date of the given tier and the end and start dates of all following tiers
+     * according to the given block time. The block time becomes the new end date of the given tier.
+     * @param tier The tier for which to shift the end date to the given block time.
+     * @param blockTime the block time according to which the dates will be shifted.
+     */
     private void shiftDates(SaleTier tier, Date blockTime) {
         long dateShift;
         if (blockTime.getTime() < tier.getStartDate().getTime()) {
@@ -445,6 +513,15 @@ public class MonitorService {
         }
     }
 
+    /**
+     * If the given sale tier has a dynamic token limit then this method will set its token limit
+     * to the remaining tokens in the ICO, i.e. the token limit minus all so far distributed tokens.
+     * This method must be called when a tier receives tokens for the first time. This can be the
+     * case when the tier processding it becomes full or when it becomes active (due to its active
+     * date range).
+     * @param tier The tier for which the dynamic token limit is set, if it has a dynamic token
+     *             limit.
+     */
     private void handleDynamicMax(SaleTier tier) {
         if (tier.hasDynamicMax() && (tier.getTomicsMax().compareTo(BigInteger.ZERO) == 0
                 || tier.getTomicsMax() == null)) {

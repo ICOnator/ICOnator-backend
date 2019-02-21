@@ -6,6 +6,9 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
+/**
+ * Offers helper methods for finding outliers in a set of data points.
+ */
 public class OutlierCalculation {
 
     private double[] data;

@@ -15,6 +15,9 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.NoSuchElementException;
 
+/**
+ * Ethereum-sepcific transaction class.
+ */
 public class EthereumTransactionAdapter extends BaseTransactionAdapter {
 
     private static final String ETHERSCAN_LINK = "https://etherscan.io/tx/";
@@ -115,6 +118,9 @@ public class EthereumTransactionAdapter extends BaseTransactionAdapter {
         return ETHERSCAN_LINK + getTransactionId();
     }
 
+    /**
+     * @return the web3j transaction object.
+     */
     public Transaction getWeb3jTransaction() {
         return web3jTransaction;
     }
